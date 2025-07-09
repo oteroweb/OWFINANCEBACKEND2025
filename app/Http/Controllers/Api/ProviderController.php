@@ -98,7 +98,7 @@ class ProviderController extends Controller
         try {
             $data = [ 
             'name'=> $request->input('name'),
-            'address'=> $request->input('symbol'),
+            'address'=> $request->input('address'),
             
             ];
             $provider= $this->ProviderRepo->store($data);
