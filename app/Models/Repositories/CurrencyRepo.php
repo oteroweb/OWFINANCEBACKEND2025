@@ -1,10 +1,9 @@
 <?php
     
-    namespace App\Http\Models\Repositories;
+    namespace App\Models\Repositories;
     
-    use Mockery\Matcher\Type;
     use Illuminate\Support\Facades\Log;
-    use App\Http\Models\Entities\Currency;
+    use App\Models\Entities\Currency;
     
     class CurrencyRepo {
         public function all() {

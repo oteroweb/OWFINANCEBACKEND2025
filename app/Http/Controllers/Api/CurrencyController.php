@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Models\Repositories\CurrencyRepo;
+use App\Http\Controllers\Controller;
+use App\Models\Repositories\CurrencyRepo;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Validator;

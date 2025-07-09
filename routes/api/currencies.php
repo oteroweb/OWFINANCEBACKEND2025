@@ -1,20 +1,18 @@
 <?php
     
-  use Illuminate\Http\Request;
   use Illuminate\Support\Facades\Route;
+  use App\Http\Controllers\Api\CurrencyController;
 
   Route::group([
-    'middleware' => [
-        'api',
-    ],
-    'prefix'     => 'api/1.0/currencies',
+    'middleware' => ['api'],
+    'prefix'     => 'currencies',
 ], function () {
   //Currency ROUTES 
-    Route::get('/all', ['uses'=> 'CurrencyController@all']);
-    Route::get('/all_active', ['uses'=> 'CurrencyController@allActive']);
-    Route::get('/{id}', 'CurrencyController@find');
-    Route::post('/save', 'CurrencyController@save');
-    Route::put('/update/{id}', 'CurrencyController@update');
-    Route::put('/change/active/{id}', 'CurrencyController@change_status');
-    Route::delete('/delete/{id}', 'CurrencyController@delete');
+    Route::get('/', [CurrencyController::class, 'all']);
+    Route::get('/active', [CurrencyController::class, 'allActive']);
+    Route::get('/{id}', [CurrencyController::class, 'find']);
+    Route::post('/', [CurrencyController::class, 'save']);
+    Route::put('/{id}', [CurrencyController::class, 'update']);
+    Route::patch('/{id}/status', [CurrencyController::class, 'change_status']);
+    Route::delete('/{id}', [CurrencyController::class, 'delete']);
   });
