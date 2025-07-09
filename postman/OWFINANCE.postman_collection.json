@@ -1,0 +1,380 @@
+{
+	"info": {
+		"_postman_id": "c326b6e3-6314-4cb6-83ee-d02c8f55e6d6",
+		"name": "OWFINANCE",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "10833727",
+		"_collection_link": "https://bold-moon-5513.postman.co/workspace/Team-Workspace~1b895d1f-68ff-471c-8b10-d59b0e117038/collection/10833727-c326b6e3-6314-4cb6-83ee-d02c8f55e6d6?action=share&source=collection_link&creator=10833727"
+	},
+	"item": [
+		{
+			"name": "USER",
+			"item": [
+				{
+					"name": "test",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "test Copy",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Currency",
+			"item": [
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "mi moneda",
+									"type": "text"
+								},
+								{
+									"key": "tax",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol_native",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "decimal_digits",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "rounding",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "name_plural",
+									"value": "mis monedas",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "last_tax",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "All",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "mi moneda x",
+									"type": "text"
+								},
+								{
+									"key": "tax",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol_native",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "decimal_digits",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "rounding",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "name_plural",
+									"value": "mis monedas x",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "last_tax",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Provider",
+			"item": [
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "mi moneda",
+									"type": "text"
+								},
+								{
+									"key": "tax",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol_native",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "decimal_digits",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "rounding",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "name_plural",
+									"value": "mis monedas",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "last_tax",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/api/v1/providers/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"providers",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "All",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "mi moneda x",
+									"type": "text"
+								},
+								{
+									"key": "tax",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol_native",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "decimal_digits",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "rounding",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "name_plural",
+									"value": "mis monedas x",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "last_tax",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
