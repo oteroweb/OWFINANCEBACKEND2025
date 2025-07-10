@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "e0cc7c3f-901c-438e-b070-70a5bfea3a24",
+		"_postman_id": "005b1f92-37b2-40af-87c1-dc0eb8594248",
 		"name": "OWFINANCE",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "38012052"
+		"_exporter_id": "10833727",
 	},
 	"item": [
 		{
@@ -50,6 +50,26 @@
 			"item": [
 				{
 					"name": "All",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/account_types/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"account_types",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "WithTrashed",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -102,43 +122,8 @@
 									"type": "text"
 								},
 								{
-									"key": "tax",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "symbol",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "symbol_native",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "decimal_digits",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "rounding",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "name_plural",
-									"value": "mis monedas",
-									"type": "text"
-								},
-								{
-									"key": "code",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "last_tax",
-									"value": "1",
+									"key": "icon",
+									"value": "icono",
 									"type": "text"
 								}
 							]
@@ -153,6 +138,13 @@
 								"v1",
 								"account_types",
 								""
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "hola",
+									"disabled": true
+								}
 							]
 						}
 					},
@@ -168,53 +160,20 @@
 							"urlencoded": [
 								{
 									"key": "name",
-									"value": "mi moneda",
-									"type": "text"
+									"value": "mi tipo de cuenta",
+									"type": "text",
+									"disabled": true
 								},
 								{
-									"key": "tax",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "symbol",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "symbol_native",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "decimal_digits",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "rounding",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "name_plural",
-									"value": "mis monedas",
-									"type": "text"
-								},
-								{
-									"key": "code",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "last_tax",
-									"value": "1",
-									"type": "text"
+									"key": "icon",
+									"value": "mi iconox",
+									"type": "text",
+									"disabled": true
 								}
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/1?name=usd",
+							"raw": "{{host}}/api/v1/account_types/1?name=myicono",
 							"host": [
 								"{{host}}"
 							],
@@ -227,7 +186,7 @@
 							"query": [
 								{
 									"key": "name",
-									"value": "usd"
+									"value": "myicono"
 								}
 							]
 						}
@@ -240,7 +199,7 @@
 						"method": "PATCH",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/1?change_status=1",
+							"raw": "{{host}}/api/v1/account_types/1/status",
 							"host": [
 								"{{host}}"
 							],
@@ -248,13 +207,8 @@
 								"api",
 								"v1",
 								"account_types",
-								"1"
-							],
-							"query": [
-								{
-									"key": "change_status",
-									"value": "1"
-								}
+								"1",
+								"status"
 							]
 						}
 					},

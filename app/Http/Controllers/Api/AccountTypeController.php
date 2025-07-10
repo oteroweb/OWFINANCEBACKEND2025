@@ -216,6 +216,25 @@ class AccountTypeController extends Controller
         ];
         return response()->json($response, 500);
     }
+    public function withTrashed() {
+        try { $accounttype = $this->AccountTypeRepo->withTrashed();
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('Data Obtained Correctly'),
+                'data'    => $accounttype,
+            ];
+            return response()->json($response, 200);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
     public function custom_message() {
         
         return [

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name', 35);
             $table->string('icon', 35);
+            $table->boolean('active')->default(1);
             $table->timestamps();
             $table->softDeletes();
         });

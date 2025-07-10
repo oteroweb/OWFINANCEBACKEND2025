@@ -9,6 +9,7 @@
 ], function () {
   //Account Type ROUTES 
     Route::get('/', [AccountTypeController::class, 'all']);
+    Route::get('/all', [AccountTypeController::class, 'withTrashed']);
     Route::get('/active', [AccountTypeController::class, 'allActive']);
     Route::get('/{id}', [AccountTypeController::class, 'find']);
     Route::post('/', [AccountTypeController::class, 'save']);

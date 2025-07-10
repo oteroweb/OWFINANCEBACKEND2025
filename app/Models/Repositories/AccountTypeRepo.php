@@ -36,4 +36,8 @@
             $accounttype->save();
             return $accounttype;
         }
+        public function withTrashed() {
+            $accounttype = AccountType::withTrashed()->get();
+            return $accounttype;
+        }
     }

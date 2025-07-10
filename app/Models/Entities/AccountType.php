@@ -14,6 +14,8 @@ class AccountType extends Model
     protected $fillable = [
             'name',
             'icon',
+            'active',
+            'deleted_at',
     ];
 
     protected $casts = [
