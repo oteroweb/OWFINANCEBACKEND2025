@@ -1,20 +1,18 @@
 <?php
     
-  use Illuminate\Http\Request;
   use Illuminate\Support\Facades\Route;
+  use App\Http\Controllers\Api\ProviderController;
 
   Route::group([
-    'middleware' => [
-        'api',
-    ],
-    'prefix'     => 'api/1.0/providers',
+    'middleware' => ['api'],
+    'prefix'     => 'providers',
 ], function () {
   //Provider ROUTES 
-    Route::get('/all', ['uses'=> 'ProviderController@all']);
-    Route::get('/all_active', ['uses'=> 'ProviderController@allActive']);
-    Route::get('/{id}', 'ProviderController@find');
-    Route::post('/save', 'ProviderController@save');
-    Route::put('/update/{id}', 'ProviderController@update');
-    Route::put('/change/active/{id}', 'ProviderController@change_status');
-    Route::delete('/delete/{id}', 'ProviderController@delete');
+    Route::get('/', [ProviderController::class, 'all']);
+    Route::get('/active', [ProviderController::class, 'allActive']);
+    Route::get('/{id}', [ProviderController::class, 'find']);
+    Route::post('/', [ProviderController::class, 'save']);
+    Route::put('/{id}', [ProviderController::class, 'update']);
+    Route::patch('/{id}/status', [ProviderController::class, 'change_status']);
+    Route::delete('/{id}', [ProviderController::class, 'delete']);
   });

@@ -1,10 +1,9 @@
 <?php
     
-    namespace App\Http\Models\Repositories;
+    namespace App\Models\Repositories;
     
-    use Mockery\Matcher\Type;
     use Illuminate\Support\Facades\Log;
-    use App\Http\Models\Entities\Provider;
+    use App\Models\Entities\Provider;
     
     class ProviderRepo {
         public function all() {

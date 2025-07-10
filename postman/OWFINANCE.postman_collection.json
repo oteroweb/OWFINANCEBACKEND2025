@@ -1,10 +1,9 @@
 {
 	"info": {
-		"_postman_id": "c326b6e3-6314-4cb6-83ee-d02c8f55e6d6",
+		"_postman_id": "e0cc7c3f-901c-438e-b070-70a5bfea3a24",
 		"name": "OWFINANCE",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "10833727",
-		"_collection_link": "https://bold-moon-5513.postman.co/workspace/Team-Workspace~1b895d1f-68ff-471c-8b10-d59b0e117038/collection/10833727-c326b6e3-6314-4cb6-83ee-d02c8f55e6d6?action=share&source=collection_link&creator=10833727"
+		"_exporter_id": "38012052"
 	},
 	"item": [
 		{
@@ -50,6 +49,46 @@
 			"name": "Currency",
 			"item": [
 				{
+					"name": "All",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Create",
 					"request": {
 						"method": "POST",
@@ -105,7 +144,7 @@
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/currencies/",
+							"raw": "{{host}}/api/v1/currencies/?name=usd&symbol=$&align=1&rounding=1&name_plural=1&code=1",
 							"host": [
 								"{{host}}"
 							],
@@ -114,26 +153,32 @@
 								"v1",
 								"currencies",
 								""
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "All",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{host}}/api/v1/currencies/",
-							"host": [
-								"{{host}}"
 							],
-							"path": [
-								"api",
-								"v1",
-								"currencies",
-								""
+							"query": [
+								{
+									"key": "name",
+									"value": "usd"
+								},
+								{
+									"key": "symbol",
+									"value": "$"
+								},
+								{
+									"key": "align",
+									"value": "1"
+								},
+								{
+									"key": "rounding",
+									"value": "1"
+								},
+								{
+									"key": "name_plural",
+									"value": "1"
+								},
+								{
+									"key": "code",
+									"value": "1"
+								}
 							]
 						}
 					},
@@ -149,7 +194,7 @@
 							"urlencoded": [
 								{
 									"key": "name",
-									"value": "mi moneda x",
+									"value": "mi moneda",
 									"type": "text"
 								},
 								{
@@ -179,7 +224,7 @@
 								},
 								{
 									"key": "name_plural",
-									"value": "mis monedas x",
+									"value": "mis monedas",
 									"type": "text"
 								},
 								{
@@ -194,6 +239,78 @@
 								}
 							]
 						},
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/1?name=usd&symbol=$&align=1&rounding=1&name_plural=1&code=1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								"1"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "usd"
+								},
+								{
+									"key": "symbol",
+									"value": "$"
+								},
+								{
+									"key": "align",
+									"value": "1"
+								},
+								{
+									"key": "rounding",
+									"value": "1"
+								},
+								{
+									"key": "name_plural",
+									"value": "1"
+								},
+								{
+									"key": "code",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Status",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/currencies/1?change_status=1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								"1"
+							],
+							"query": [
+								{
+									"key": "change_status",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
 						"url": {
 							"raw": "{{host}}/api/v1/currencies/1",
 							"host": [
@@ -215,6 +332,46 @@
 			"name": "Provider",
 			"item": [
 				{
+					"name": "All",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/providers/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"providers",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/providers/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"providers",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Create",
 					"request": {
 						"method": "POST",
@@ -270,7 +427,7 @@
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/providers/",
+							"raw": "{{host}}/api/v1/providers/?name=j&address=12",
 							"host": [
 								"{{host}}"
 							],
@@ -279,26 +436,16 @@
 								"v1",
 								"providers",
 								""
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "All",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{host}}/api/v1/currencies/",
-							"host": [
-								"{{host}}"
 							],
-							"path": [
-								"api",
-								"v1",
-								"currencies",
-								""
+							"query": [
+								{
+									"key": "name",
+									"value": "j"
+								},
+								{
+									"key": "address",
+									"value": "12"
+								}
 							]
 						}
 					},
@@ -360,15 +507,71 @@
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/currencies/1",
+							"raw": "{{host}}/api/v1/providers/1?name=moneda&address=13",
 							"host": [
 								"{{host}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"currencies",
+								"providers",
 								"1"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "moneda"
+								},
+								{
+									"key": "address",
+									"value": "13"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Status",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/providers/1?change_status=1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"providers",
+								"1"
+							],
+							"query": [
+								{
+									"key": "change_status",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/providers/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"providers",
+								""
 							]
 						}
 					},
