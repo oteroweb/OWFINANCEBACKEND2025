@@ -1,10 +1,9 @@
 <?php
     
-    namespace App\Http\Models\Repositories;
+    namespace App\Models\Repositories;
     
-    use Mockery\Matcher\Type;
     use Illuminate\Support\Facades\Log;
-    use App\Http\Models\Entities\AccountType;
+    use App\Models\Entities\AccountType;
     
     class AccountTypeRepo {
         public function all() {

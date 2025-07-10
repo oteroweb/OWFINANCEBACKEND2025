@@ -46,6 +46,243 @@
 			]
 		},
 		{
+			"name": "Account Type",
+			"item": [
+				{
+					"name": "All",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/account_types/all",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"account_types",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/account_types/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"account_types",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "mi moneda",
+									"type": "text"
+								},
+								{
+									"key": "tax",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol_native",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "decimal_digits",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "rounding",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "name_plural",
+									"value": "mis monedas",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "last_tax",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/api/v1/account_types/",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"account_types",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "mi moneda",
+									"type": "text"
+								},
+								{
+									"key": "tax",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "symbol_native",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "decimal_digits",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "rounding",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "name_plural",
+									"value": "mis monedas",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "last_tax",
+									"value": "1",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{host}}/api/v1/account_types/1?name=usd",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"account_types",
+								"1"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "usd"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Status",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/account_types/1?change_status=1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"account_types",
+								"1"
+							],
+							"query": [
+								{
+									"key": "change_status",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/api/v1/account_types/1",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"account_types",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Currency",
 			"item": [
 				{
@@ -337,7 +574,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/providers/",
+							"raw": "{{host}}/api/v1/providers/all",
 							"host": [
 								"{{host}}"
 							],
@@ -345,7 +582,7 @@
 								"api",
 								"v1",
 								"providers",
-								""
+								"all"
 							]
 						}
 					},
@@ -563,7 +800,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/providers/",
+							"raw": "{{host}}/api/v1/providers/1",
 							"host": [
 								"{{host}}"
 							],
@@ -571,7 +808,7 @@
 								"api",
 								"v1",
 								"providers",
-								""
+								"1"
 							]
 						}
 					},
