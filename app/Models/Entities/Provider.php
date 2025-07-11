@@ -14,6 +14,8 @@ class Provider extends Model
     protected $fillable = [
             'name',
             'address',
+            'active',
+            'deleted_at',
     ];
 
     protected $casts = [

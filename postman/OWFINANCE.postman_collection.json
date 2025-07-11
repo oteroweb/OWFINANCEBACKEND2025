@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "005b1f92-37b2-40af-87c1-dc0eb8594248",
+		"_postman_id": "884d5db0-f50b-44b9-8d3c-e2cb96d0588e",
 		"name": "OWFINANCE",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "10833727",
+		"_exporter_id": "38012052"
 	},
 	"item": [
 		{
@@ -15,9 +15,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/",
+							"raw": "{{Host}}/",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								""
@@ -32,9 +32,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/",
+							"raw": "{{Host}}/",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								""
@@ -54,9 +54,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/",
+							"raw": "{{Host}}/api/v1/account_types/",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -74,9 +74,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/all",
+							"raw": "{{Host}}/api/v1/account_types/all",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -94,15 +94,15 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/1",
+							"raw": "{{Host}}/api/v1/account_types/2",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
 								"v1",
 								"account_types",
-								"1"
+								"2"
 							]
 						}
 					},
@@ -129,9 +129,9 @@
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/",
+							"raw": "{{Host}}/api/v1/account_types/",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -160,9 +160,8 @@
 							"urlencoded": [
 								{
 									"key": "name",
-									"value": "mi tipo de cuenta",
-									"type": "text",
-									"disabled": true
+									"value": "mi tipo de cuentax",
+									"type": "text"
 								},
 								{
 									"key": "icon",
@@ -173,20 +172,21 @@
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/1?name=myicono",
+							"raw": "{{Host}}/api/v1/account_types/2",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
 								"v1",
 								"account_types",
-								"1"
+								"2"
 							],
 							"query": [
 								{
 									"key": "name",
-									"value": "myicono"
+									"value": "myicono",
+									"disabled": true
 								}
 							]
 						}
@@ -199,15 +199,15 @@
 						"method": "PATCH",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/1/status",
+							"raw": "{{Host}}/api/v1/account_types/2/status",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
 								"v1",
 								"account_types",
-								"1",
+								"2",
 								"status"
 							]
 						}
@@ -220,9 +220,9 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/account_types/1",
+							"raw": "{{Host}}/api/v1/account_types/1",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -245,9 +245,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/currencies/",
+							"raw": "{{Host}}/api/v1/currencies/",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -260,14 +260,34 @@
 					"response": []
 				},
 				{
+					"name": "WithTrashed",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{Host}}/api/v1/currencies/all",
+							"host": [
+								"{{Host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"currencies",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Find",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/currencies/1",
+							"raw": "{{Host}}/api/v1/currencies/1",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -335,9 +355,9 @@
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/currencies/?name=usd&symbol=$&align=1&rounding=1&name_plural=1&code=1",
+							"raw": "{{Host}}/api/v1/currencies/",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -348,27 +368,33 @@
 							"query": [
 								{
 									"key": "name",
-									"value": "usd"
+									"value": "usd",
+									"disabled": true
 								},
 								{
 									"key": "symbol",
-									"value": "$"
+									"value": "$",
+									"disabled": true
 								},
 								{
 									"key": "align",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								},
 								{
 									"key": "rounding",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								},
 								{
 									"key": "name_plural",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								},
 								{
 									"key": "code",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								}
 							]
 						}
@@ -385,86 +411,92 @@
 							"urlencoded": [
 								{
 									"key": "name",
-									"value": "mi moneda",
+									"value": "money",
 									"type": "text"
 								},
 								{
 									"key": "tax",
-									"value": "1",
+									"value": "2",
 									"type": "text"
 								},
 								{
 									"key": "symbol",
-									"value": "1",
+									"value": "usd",
 									"type": "text"
 								},
 								{
 									"key": "symbol_native",
-									"value": "1",
+									"value": "4",
 									"type": "text"
 								},
 								{
 									"key": "decimal_digits",
-									"value": "1",
+									"value": "5",
 									"type": "text"
 								},
 								{
 									"key": "rounding",
-									"value": "1",
+									"value": "3",
 									"type": "text"
 								},
 								{
 									"key": "name_plural",
-									"value": "mis monedas",
+									"value": "we money",
 									"type": "text"
 								},
 								{
 									"key": "code",
-									"value": "1",
+									"value": "123",
 									"type": "text"
 								},
 								{
 									"key": "last_tax",
-									"value": "1",
+									"value": "143",
 									"type": "text"
 								}
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/currencies/1?name=usd&symbol=$&align=1&rounding=1&name_plural=1&code=1",
+							"raw": "{{Host}}/api/v1/currencies/2",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
 								"v1",
 								"currencies",
-								"1"
+								"2"
 							],
 							"query": [
 								{
 									"key": "name",
-									"value": "usd"
+									"value": "usd",
+									"disabled": true
 								},
 								{
 									"key": "symbol",
-									"value": "$"
+									"value": "$",
+									"disabled": true
 								},
 								{
 									"key": "align",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								},
 								{
 									"key": "rounding",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								},
 								{
 									"key": "name_plural",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								},
 								{
 									"key": "code",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								}
 							]
 						}
@@ -477,20 +509,22 @@
 						"method": "PATCH",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/currencies/1?change_status=1",
+							"raw": "{{Host}}/api/v1/currencies/2/status",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
 								"v1",
 								"currencies",
-								"1"
+								"2",
+								"status"
 							],
 							"query": [
 								{
 									"key": "change_status",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								}
 							]
 						}
@@ -503,9 +537,9 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/currencies/1",
+							"raw": "{{Host}}/api/v1/currencies/1",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -528,9 +562,29 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/providers/all",
+							"raw": "{{Host}}/api/v1/providers/",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"providers",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "WithTrashed Copy",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{Host}}/api/v1/providers/all",
+							"host": [
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -548,15 +602,15 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/providers/1",
+							"raw": "{{Host}}/api/v1/providers/2",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
 								"v1",
 								"providers",
-								"1"
+								"2"
 							]
 						}
 					},
@@ -576,51 +630,16 @@
 									"type": "text"
 								},
 								{
-									"key": "tax",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "symbol",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "symbol_native",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "decimal_digits",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "rounding",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "name_plural",
-									"value": "mis monedas",
-									"type": "text"
-								},
-								{
-									"key": "code",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "last_tax",
-									"value": "1",
+									"key": "address",
+									"value": "12",
 									"type": "text"
 								}
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/providers/?name=j&address=12",
+							"raw": "{{Host}}/api/v1/providers/",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
@@ -631,11 +650,13 @@
 							"query": [
 								{
 									"key": "name",
-									"value": "j"
+									"value": "j",
+									"disabled": true
 								},
 								{
 									"key": "address",
-									"value": "12"
+									"value": "12",
+									"disabled": true
 								}
 							]
 						}
@@ -652,70 +673,32 @@
 							"urlencoded": [
 								{
 									"key": "name",
-									"value": "mi moneda x",
-									"type": "text"
-								},
-								{
-									"key": "tax",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "symbol",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "symbol_native",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "decimal_digits",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "rounding",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "name_plural",
-									"value": "mis monedas x",
-									"type": "text"
-								},
-								{
-									"key": "code",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "last_tax",
-									"value": "1",
+									"value": "Omega",
 									"type": "text"
 								}
 							]
 						},
 						"url": {
-							"raw": "{{host}}/api/v1/providers/1?name=moneda&address=13",
+							"raw": "{{Host}}/api/v1/providers/2",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
 								"v1",
 								"providers",
-								"1"
+								"2"
 							],
 							"query": [
 								{
 									"key": "name",
-									"value": "moneda"
+									"value": "moneda",
+									"disabled": true
 								},
 								{
 									"key": "address",
-									"value": "13"
+									"value": "13",
+									"disabled": true
 								}
 							]
 						}
@@ -728,20 +711,22 @@
 						"method": "PATCH",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/providers/1?change_status=1",
+							"raw": "{{Host}}/api/v1/providers/2/status",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",
 								"v1",
 								"providers",
-								"1"
+								"2",
+								"status"
 							],
 							"query": [
 								{
 									"key": "change_status",
-									"value": "1"
+									"value": "1",
+									"disabled": true
 								}
 							]
 						}
@@ -754,9 +739,9 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{host}}/api/v1/providers/1",
+							"raw": "{{Host}}/api/v1/providers/1",
 							"host": [
-								"{{host}}"
+								"{{Host}}"
 							],
 							"path": [
 								"api",

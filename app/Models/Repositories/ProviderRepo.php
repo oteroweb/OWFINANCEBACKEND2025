@@ -36,4 +36,8 @@
             $provider->save();
             return $provider;
         }
+        public function withTrashed() {
+            $provider = Provider::withTrashed()->get();
+            return $provider;
+        }
     }
