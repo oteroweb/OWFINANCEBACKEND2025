@@ -9,6 +9,7 @@
 ], function () {
   //Currency ROUTES 
     Route::get('/', [CurrencyController::class, 'all']);
+    Route::get('/all', [CurrencyController::class, 'withTrashed']);
     Route::get('/active', [CurrencyController::class, 'allActive']);
     Route::get('/{id}', [CurrencyController::class, 'find']);
     Route::post('/', [CurrencyController::class, 'save']);

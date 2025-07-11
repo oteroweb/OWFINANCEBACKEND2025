@@ -36,4 +36,8 @@
             $currency->save();
             return $currency;
         }
+        public function withTrashed() {
+            $currency = Currency::withTrashed()->get();
+            return $currency;
+        }
     }

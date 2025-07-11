@@ -19,6 +19,7 @@ class Currency extends Model
             'name_plural',
             'code',
             'active',
+            'deleted_at',
     ];
 
     protected $casts = [
