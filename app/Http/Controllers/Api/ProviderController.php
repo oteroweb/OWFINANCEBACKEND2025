@@ -68,6 +68,7 @@ class ProviderController extends Controller
     /**
      * @group Provider
      * Get
+     * @urlParam id integer required The ID of the provider. Example: 1
      *
      * find
      */
@@ -103,6 +104,9 @@ class ProviderController extends Controller
      * Post
      *
      * save
+     * @bodyParam name string required The name of the provider. Example: Provider 1
+     * @bodyParam address string required The address of the provider. Example: 123 Main St
+     * @bodyParam active boolean optional The status of the provider. Defaults to true. Example: true
      */
     public function save(Request $request) {
         $validator = Validator::make($request->all(), [
@@ -148,6 +152,10 @@ class ProviderController extends Controller
      * Put
      *
      * update
+     * @urlParam id integer required The ID of the provider. Example: 1
+     * @bodyParam name string optional The name of the provider. Example: Provider 1x
+     * @bodyParam address string optional The address of the provider. Example: 456 Oak Ave
+     * @bodyParam active boolean optional The status of the provider. Example: true
      */
     public function update(Request $request, $id) {
         $provider = $this->ProviderRepo->find($id);
@@ -177,6 +185,7 @@ class ProviderController extends Controller
     /**
      * @group Provider
      * Delete
+     * @urlParam id integer required The ID of the provider. Example: 1
      *
      * delete
      */
@@ -226,8 +235,9 @@ class ProviderController extends Controller
 /**
      * @group Provider
      * Patch
+     * @urlParam id integer required The ID of the provider. Example: 1
      *
-     * update
+     * change_status
      */
     public function change_status(Request $request, $id) {
         

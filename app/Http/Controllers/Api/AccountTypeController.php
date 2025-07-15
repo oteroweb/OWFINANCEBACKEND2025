@@ -15,7 +15,127 @@ class AccountTypeController extends Controller
     public function __construct(AccountTypeRepo $AccountTypeRepo) {
         $this->AccountTypeRepo = $AccountTypeRepo;
     }
-     /**
+    /**
+     * @group Account Type
+     * Post
+     *
+     * save
+     * @bodyParam name string required The name of the account type. Example: Account Type 1
+     * @bodyParam icon string required The icon of the account type. Example: fa-bank
+     * @bodyParam active boolean optional The status of the account type. Defaults to true. Example: true
+     */
+    public function save(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'name' =>'required|max:35|',
+            'icon' =>'required|max:35|',
+            
+        ], $this->custom_message());
+        if ($validator->fails()) {
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 400,
+                'message' => __('Incorrect Params'),
+                'data'    => $validator->errors()->getMessages(),
+            ];
+            return response()->json($response);
+        }
+        try {
+            $data = [ 
+            'name'=> $request->input('name'),
+            'icon'=> $request->input('icon'),
+            
+            ];
+            $accounttype= $this->AccountTypeRepo->store($data);
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('Account Type saved correctly'),
+                'data'    => $accounttype,
+            ];
+            return response()->json($response, 200);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
+    
+    /**
+     * @group Account Type
+     * Get
+     * @urlParam id integer required The ID of the account type. Example: 1
+     *
+     * find
+     */
+    public function find($id) {
+        try {
+            $accounttype = $this->AccountTypeRepo->find($id);
+            if (isset($accounttype->id)) {
+                $response = [
+                    'status'  => 'OK',
+                    'code'    => 200,
+                    'message' => __('Account Type Obtained Correctly'),
+                    'data'    => $accounttype,
+                ];
+                return response()->json($response, 200);
+            }
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 404,
+                'message' => __('Not Data with this Account Type') . '.',
+            ];
+            return response()->json($response, 200);
+        } catch (\Exception $ex) {
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
+    
+    /**
+     * @group Account Type
+     * Put
+     *
+     * update
+     * @urlParam id integer required The ID of the account type. Example: 1
+     * @bodyParam name string optional The name of the account type. Example: Account Type 1x
+     * @bodyParam icon string optional The icon of the account type. Example: fa-piggy-bank
+     * @bodyParam active boolean optional The status of the account type. Example: true
+     */
+    public function update(Request $request, $id) {
+        $accounttype = $this->AccountTypeRepo->find($id);
+        if (isset($accounttype->id)) {
+            $data= array();
+            if (($request->input('name'))) { 
+                if (($request->input('name'))) { $data += ['name' => $request->input('name')]; };
+                if (($request->input('icon'))) { $data += ['icon' => $request->input('icon')]; };
+                
+            }
+            $accounttype = $this->AccountTypeRepo->update($accounttype, $data);
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('Account Type updated'),
+                'data'    => $accounttype,
+            ];
+            return response()->json($response, 200);
+        }
+        $response = [
+            'status'  => 'FAILED',
+            'code'    => 500,
+            'message' => __('Account Type dont exists') . '.',
+        ];
+        return response()->json($response, 500);
+    }
+
+    /**
      * @group Account Type
      * Get
      *
@@ -65,104 +185,28 @@ class AccountTypeController extends Controller
             return response()->json($response, 500);
         }
     }  
+    
     /**
      * @group Account Type
-     * Get
+     * Patch
+     * @urlParam id integer required The ID of the account type. Example: 1
      *
-     * find
+     * change_status
      */
-    public function find($id) {
-        try {
-            $accounttype = $this->AccountTypeRepo->find($id);
-            if (isset($accounttype->id)) {
-                $response = [
-                    'status'  => 'OK',
-                    'code'    => 200,
-                    'message' => __('Account Type Obtained Correctly'),
-                    'data'    => $accounttype,
-                ];
-                return response()->json($response, 200);
-            }
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 404,
-                'message' => __('Not Data with this Account Type') . '.',
-            ];
-            return response()->json($response, 200);
-        } catch (\Exception $ex) {
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 500,
-                'message' => __('An error has occurred') . '.',
-            ];
-            return response()->json($response, 500);
-        }
-    }
-    /**
-     * @group Account Type
-     * Post
-     *
-     * save
-     */
-    public function save(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'name' =>'required|max:35|',
-            'icon' =>'required|max:35|',
-            
-        ], $this->custom_message());
-        if ($validator->fails()) {
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 400,
-                'message' => __('Incorrect Params'),
-                'data'    => $validator->errors()->getMessages(),
-            ];
-            return response()->json($response);
-        }
-        try {
-            $data = [ 
-            'name'=> $request->input('name'),
-            'icon'=> $request->input('icon'),
-            
-            ];
-            $accounttype= $this->AccountTypeRepo->store($data);
-            $response = [
-                'status'  => 'OK',
-                'code'    => 200,
-                'message' => __('Account Type saved correctly'),
-                'data'    => $accounttype,
-            ];
-            return response()->json($response, 200);
-        } catch (\Exception $ex) {
-            Log::error($ex);
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 500,
-                'message' => __('An error has occurred') . '.',
-            ];
-            return response()->json($response, 500);
-        }
-    }
-    /**
-     * @group Account Type
-     * Put
-     *
-     * update
-     */
-    public function update(Request $request, $id) {
+    public function change_status(Request $request, $id) {
+        
         $accounttype = $this->AccountTypeRepo->find($id);
-        if (isset($accounttype->id)) {
-            $data= array();
-            if (($request->input('name'))) { 
-                if (($request->input('name'))) { $data += ['name' => $request->input('name')]; };
-                if (($request->input('icon'))) { $data += ['icon' => $request->input('icon')]; };
-                
+        if (isset($accounttype->active)) {
+            if($accounttype->active == 0){
+                $data = ['active' => 1];
+            }else{
+                $data = ['active' => 0];
             }
             $accounttype = $this->AccountTypeRepo->update($accounttype, $data);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
-                'message' => __('Account Type updated'),
+                'message' => __('Status Account Type updated'),
                 'data'    => $accounttype,
             ];
             return response()->json($response, 200);
@@ -170,13 +214,15 @@ class AccountTypeController extends Controller
         $response = [
             'status'  => 'FAILED',
             'code'    => 500,
-            'message' => __('Account Type dont exists') . '.',
+            'message' => __('Account Type does not exist') . '.',
         ];
         return response()->json($response, 500);
     }
-/**
+
+    /**
      * @group Account Type
      * Delete
+     * @urlParam id integer required The ID of the account type. Example: 1
      *
      * delete
      */
@@ -223,37 +269,7 @@ class AccountTypeController extends Controller
             return response()->json($response, 500);
         }
     }
-/**
-     * @group Account Type
-     * Patch
-     *
-     * change_status
-     */
-    public function change_status(Request $request, $id) {
-        
-        $accounttype = $this->AccountTypeRepo->find($id);
-        if (isset($accounttype->active)) {
-            if($accounttype->active == 0){
-                $data = ['active' => 1];
-            }else{
-                $data = ['active' => 0];
-            }
-            $accounttype = $this->AccountTypeRepo->update($accounttype, $data);
-            $response = [
-                'status'  => 'OK',
-                'code'    => 200,
-                'message' => __('Status Account Type updated'),
-                'data'    => $accounttype,
-            ];
-            return response()->json($response, 200);
-        }
-        $response = [
-            'status'  => 'FAILED',
-            'code'    => 500,
-            'message' => __('Account Type does not exist') . '.',
-        ];
-        return response()->json($response, 500);
-    }
+
     /**
      * @group Account Type
      * Get

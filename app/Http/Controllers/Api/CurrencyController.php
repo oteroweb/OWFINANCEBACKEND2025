@@ -68,6 +68,7 @@ class CurrencyController extends Controller
     /**
      * @group Currency
      * Get
+     * @urlParam id integer required The ID of the currency. Example: 1
      *
      * find
      */
@@ -103,6 +104,16 @@ class CurrencyController extends Controller
      * Post
      *
      * save
+     * @bodyParam name string required The name of the currency. Example: US Dollar
+     * @bodyParam tax number required The tax rate. Example: 8.25
+     * @bodyParam last_tax number required The last tax rate. Example: 8.00
+     * @bodyParam symbol string required The currency symbol. Example: $
+     * @bodyParam symbol_native string required The native currency symbol. Example: $
+     * @bodyParam decimal_digits integer required The number of decimal digits. Example: 2
+     * @bodyParam rounding integer required The rounding factor. Example: 0
+     * @bodyParam name_plural string required The plural name of the currency. Example: US dollars
+     * @bodyParam code string required The currency code. Example: USD
+     * @bodyParam active boolean optional The status of the currency. Defaults to true. Example: true
      */
     public function save(Request $request) {
         $validator = Validator::make($request->all(), [
@@ -162,6 +173,17 @@ class CurrencyController extends Controller
      * Put
      *
      * update
+     * @urlParam id integer required The ID of the currency. Example: 1
+     * @bodyParam name string optional The name of the currency. Example: US Dollar
+     * @bodyParam tax number optional The tax rate. Example: 8.50
+     * @bodyParam last_tax number optional The last tax rate. Example: 8.25
+     * @bodyParam symbol string optional The currency symbol. Example: $
+     * @bodyParam symbol_native string optional The native currency symbol. Example: $
+     * @bodyParam decimal_digits integer optional The number of decimal digits. Example: 2
+     * @bodyParam rounding integer optional The rounding factor. Example: 0
+     * @bodyParam name_plural string optional The plural name of the currency. Example: US dollars
+     * @bodyParam code string optional The currency code. Example: USD
+     * @bodyParam active boolean optional The status of the currency. Example: true
      */
     public function update(Request $request, $id) {
         $currency = $this->CurrencyRepo->find($id);
@@ -198,6 +220,7 @@ class CurrencyController extends Controller
      /**
      * @group Currency
      * Delete
+     * @urlParam id integer required The ID of the currency. Example: 1
      *
      * delete
      */
@@ -247,6 +270,7 @@ class CurrencyController extends Controller
      /**
      * @group Currency
      * Patch
+     * @urlParam id integer required The ID of the currency. Example: 1
      *
      * change_status
      */
