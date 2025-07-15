@@ -1,19 +1,19 @@
-name: Monedas
+name: 'Tipos de Cuenta'
 description: ''
 endpoints:
   -
     httpMethods:
       - GET
-    uri: api/currencies/all
+    uri: api/v1/account_types
     metadata:
-      groupName: Monedas
+      groupName: 'Tipos de Cuenta'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Obtener todas las monedas
+        Listar todos los tipos de cuenta
 
-        Lista todas las monedas registradas.
+        Retorna todos los tipos de cuenta registrados.
       description: ''
       authenticated: false
       custom: []
@@ -30,7 +30,7 @@ endpoints:
     responses:
       -
         status: 200
-        content: '{"status":"OK","code":200,"message":"Currency Obtained Correctly","data":[]}'
+        content: '{"status":"OK","code":200,"message":"Account Type Obtained Correctly","data":[{"id":1,"name":"vmqeopfuudtdsufvyvddq","icon":"amniihfqcoynlazghdtqt","active":1,"created_at":"2025-07-14","updated_at":"2025-07-14","deleted_at":null},{"id":2,"name":"vmqeopfuudtdsufvyvddq","icon":"amniihfqcoynlazghdtqt","active":1,"created_at":"2025-07-14","updated_at":"2025-07-14","deleted_at":null}]}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -46,16 +46,16 @@ endpoints:
   -
     httpMethods:
       - GET
-    uri: api/currencies/all-active
+    uri: api/v1/account_types/all
     metadata:
-      groupName: Monedas
+      groupName: 'Tipos de Cuenta'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar monedas activas
+        Listar todos incluyendo eliminados
 
-        Retorna todas las monedas activas.
+        Muestra todos los tipos de cuenta, incluso los eliminados lógicamente.
       description: ''
       authenticated: false
       custom: []
@@ -72,7 +72,7 @@ endpoints:
     responses:
       -
         status: 200
-        content: '{"status":"OK","code":200,"message":"Data Obtained Correctly","data":[]}'
+        content: '{"status":"OK","code":200,"message":"Data Obtained Correctly","data":[{"id":1,"name":"vmqeopfuudtdsufvyvddq","icon":"amniihfqcoynlazghdtqt","active":1,"created_at":"2025-07-14","updated_at":"2025-07-14","deleted_at":null},{"id":2,"name":"vmqeopfuudtdsufvyvddq","icon":"amniihfqcoynlazghdtqt","active":1,"created_at":"2025-07-14","updated_at":"2025-07-14","deleted_at":null}]}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -88,16 +88,58 @@ endpoints:
   -
     httpMethods:
       - GET
-    uri: 'api/currencies/find/{id}'
+    uri: api/v1/account_types/active
     metadata:
-      groupName: Monedas
+      groupName: 'Tipos de Cuenta'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Ver moneda por ID
+        Listar tipos de cuenta activos
 
-        Retorna los datos de una moneda específica por su ID.
+        Retorna solo los tipos de cuenta actualmente activos.
+      description: ''
+      authenticated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: '{"status":"OK","code":200,"message":"Data Obtained Correctly","data":[{"id":1,"name":"vmqeopfuudtdsufvyvddq","icon":"amniihfqcoynlazghdtqt","active":1,"created_at":"2025-07-14","updated_at":"2025-07-14","deleted_at":null},{"id":2,"name":"vmqeopfuudtdsufvyvddq","icon":"amniihfqcoynlazghdtqt","active":1,"created_at":"2025-07-14","updated_at":"2025-07-14","deleted_at":null}]}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - GET
+    uri: 'api/v1/account_types/{id}'
+    metadata:
+      groupName: 'Tipos de Cuenta'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Ver tipo de cuenta por ID
+
+        Retorna los detalles de un tipo de cuenta específico.
       description: ''
       authenticated: false
       custom: []
@@ -107,7 +149,7 @@ endpoints:
     urlParameters:
       id:
         name: id
-        description: 'The ID of the find.'
+        description: 'The ID of the account type.'
         required: true
         example: consequatur
         type: string
@@ -125,7 +167,7 @@ endpoints:
     responses:
       -
         status: 200
-        content: '{"status":"FAILED","code":404,"message":"Not Data with this Currency."}'
+        content: '{"status":"FAILED","code":404,"message":"Not Data with this Account Type."}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -141,16 +183,16 @@ endpoints:
   -
     httpMethods:
       - POST
-    uri: api/currencies/save
+    uri: api/v1/account_types
     metadata:
-      groupName: Monedas
+      groupName: 'Tipos de Cuenta'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Crear nueva moneda
+        Crear nuevo tipo de cuenta
 
-        Registra una nueva moneda en el sistema.
+        Registra un nuevo tipo de cuenta en el sistema.
       description: ''
       authenticated: false
       custom: []
@@ -172,81 +214,11 @@ endpoints:
         exampleWasSpecified: false
         nullable: false
         custom: []
-      tax:
-        name: tax
-        description: 'Must match the regex /^[0-9]+(\.[0-9][0-9]?)?$/.'
-        required: true
-        example: '2771.7'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      last_tax:
-        name: last_tax
-        description: 'Must match the regex /^[0-9]+(\.[0-9][0-9]?)?$/.'
-        required: true
-        example: '2771.7'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      symbol:
-        name: symbol
+      icon:
+        name: icon
         description: 'Must not be greater than 35 characters.'
         required: true
-        example: dsufvyvddqamniihfqcoy
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      symbol_native:
-        name: symbol_native
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: nlazghdtqtqxbajwbpilp
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      decimal_digits:
-        name: decimal_digits
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: mufinllwloauydlsmsjur
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      rounding:
-        name: rounding
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: yvojcybzvrbyickznkygl
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      name_plural:
-        name: name_plural
-        description: 'Must not be greater than 50 characters.'
-        required: true
-        example: oigmkwxphlvazjrcnfbaq
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      code:
-        name: code
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: ywuxhgjjmzuxjubqouzsw
+        example: amniihfqcoynlazghdtqt
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -254,14 +226,7 @@ endpoints:
         custom: []
     cleanBodyParameters:
       name: vmqeopfuudtdsufvyvddq
-      tax: '2771.7'
-      last_tax: '2771.7'
-      symbol: dsufvyvddqamniihfqcoy
-      symbol_native: nlazghdtqtqxbajwbpilp
-      decimal_digits: mufinllwloauydlsmsjur
-      rounding: yvojcybzvrbyickznkygl
-      name_plural: oigmkwxphlvazjrcnfbaq
-      code: ywuxhgjjmzuxjubqouzsw
+      icon: amniihfqcoynlazghdtqt
     fileParameters: []
     responses: []
     responseFields: []
@@ -273,16 +238,16 @@ endpoints:
   -
     httpMethods:
       - PUT
-    uri: 'api/currencies/update/{id}'
+    uri: 'api/v1/account_types/{id}'
     metadata:
-      groupName: Monedas
+      groupName: 'Tipos de Cuenta'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Actualizar moneda
+        Actualizar tipo de cuenta
 
-        Actualiza los datos de una moneda específica.
+        Modifica un tipo de cuenta existente.
       description: ''
       authenticated: false
       custom: []
@@ -292,51 +257,7 @@ endpoints:
     urlParameters:
       id:
         name: id
-        description: 'The ID of the update.'
-        required: true
-        example: consequatur
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-    cleanUrlParameters:
-      id: consequatur
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - DELETE
-    uri: 'api/currencies/delete/{id}'
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Eliminar moneda
-
-        Elimina lógicamente una moneda.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        name: id
-        description: 'The ID of the delete.'
+        description: 'The ID of the account type.'
         required: true
         example: consequatur
         type: string
@@ -361,16 +282,16 @@ endpoints:
   -
     httpMethods:
       - PATCH
-    uri: 'api/currencies/change-status/{id}'
+    uri: 'api/v1/account_types/{id}/status'
     metadata:
-      groupName: Monedas
+      groupName: 'Tipos de Cuenta'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Cambiar estado de la moneda
+        Eliminar tipo de cuenta
 
-        Activa o desactiva una moneda.
+        Elimina lógicamente un tipo de cuenta.
       description: ''
       authenticated: false
       custom: []
@@ -380,448 +301,7 @@ endpoints:
     urlParameters:
       id:
         name: id
-        description: 'The ID of the change status.'
-        required: true
-        example: consequatur
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-    cleanUrlParameters:
-      id: consequatur
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - GET
-    uri: api/currencies/with-trashed
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Listar todas las monedas (incluyendo eliminadas)
-
-        Retorna todas las monedas, incluso las eliminadas lógicamente.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        status: 200
-        content: '{"status":"OK","code":200,"message":"Data Obtained Correctly","data":[]}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-        custom: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - GET
-    uri: api/v1/currencies
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Obtener todas las monedas
-
-        Lista todas las monedas registradas.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        status: 200
-        content: '{"status":"OK","code":200,"message":"Currency Obtained Correctly","data":[]}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-        custom: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - GET
-    uri: api/v1/currencies/all
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Listar todas las monedas (incluyendo eliminadas)
-
-        Retorna todas las monedas, incluso las eliminadas lógicamente.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        status: 200
-        content: '{"status":"OK","code":200,"message":"Data Obtained Correctly","data":[]}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-        custom: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - GET
-    uri: api/v1/currencies/active
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Listar monedas activas
-
-        Retorna todas las monedas activas.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        status: 200
-        content: '{"status":"OK","code":200,"message":"Data Obtained Correctly","data":[]}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-        custom: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - GET
-    uri: 'api/v1/currencies/{id}'
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Ver moneda por ID
-
-        Retorna los datos de una moneda específica por su ID.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        name: id
-        description: 'The ID of the currency.'
-        required: true
-        example: consequatur
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-    cleanUrlParameters:
-      id: consequatur
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        status: 200
-        content: '{"status":"FAILED","code":404,"message":"Not Data with this Currency."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-        custom: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - POST
-    uri: api/v1/currencies
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Crear nueva moneda
-
-        Registra una nueva moneda en el sistema.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      name:
-        name: name
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: vmqeopfuudtdsufvyvddq
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      tax:
-        name: tax
-        description: 'Must match the regex /^[0-9]+(\.[0-9][0-9]?)?$/.'
-        required: true
-        example: '2771.7'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      last_tax:
-        name: last_tax
-        description: 'Must match the regex /^[0-9]+(\.[0-9][0-9]?)?$/.'
-        required: true
-        example: '2771.7'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      symbol:
-        name: symbol
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: dsufvyvddqamniihfqcoy
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      symbol_native:
-        name: symbol_native
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: nlazghdtqtqxbajwbpilp
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      decimal_digits:
-        name: decimal_digits
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: mufinllwloauydlsmsjur
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      rounding:
-        name: rounding
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: yvojcybzvrbyickznkygl
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      name_plural:
-        name: name_plural
-        description: 'Must not be greater than 50 characters.'
-        required: true
-        example: oigmkwxphlvazjrcnfbaq
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-      code:
-        name: code
-        description: 'Must not be greater than 35 characters.'
-        required: true
-        example: ywuxhgjjmzuxjubqouzsw
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-    cleanBodyParameters:
-      name: vmqeopfuudtdsufvyvddq
-      tax: '2771.7'
-      last_tax: '2771.7'
-      symbol: dsufvyvddqamniihfqcoy
-      symbol_native: nlazghdtqtqxbajwbpilp
-      decimal_digits: mufinllwloauydlsmsjur
-      rounding: yvojcybzvrbyickznkygl
-      name_plural: oigmkwxphlvazjrcnfbaq
-      code: ywuxhgjjmzuxjubqouzsw
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - PUT
-    uri: 'api/v1/currencies/{id}'
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Actualizar moneda
-
-        Actualiza los datos de una moneda específica.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        name: id
-        description: 'The ID of the currency.'
-        required: true
-        example: consequatur
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        custom: []
-    cleanUrlParameters:
-      id: consequatur
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-    custom: []
-  -
-    httpMethods:
-      - PATCH
-    uri: 'api/v1/currencies/{id}/status'
-    metadata:
-      groupName: Monedas
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Cambiar estado de la moneda
-
-        Activa o desactiva una moneda.
-      description: ''
-      authenticated: false
-      custom: []
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        name: id
-        description: 'The ID of the currency.'
+        description: 'The ID of the account type.'
         required: true
         example: consequatur
         type: string
@@ -846,16 +326,16 @@ endpoints:
   -
     httpMethods:
       - DELETE
-    uri: 'api/v1/currencies/{id}'
+    uri: 'api/v1/account_types/{id}'
     metadata:
-      groupName: Monedas
+      groupName: 'Tipos de Cuenta'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Eliminar moneda
+        Cambiar estado del tipo de cuenta
 
-        Elimina lógicamente una moneda.
+        Activa o desactiva un tipo de cuenta.
       description: ''
       authenticated: false
       custom: []
@@ -865,7 +345,7 @@ endpoints:
     urlParameters:
       id:
         name: id
-        description: 'The ID of the currency.'
+        description: 'The ID of the account type.'
         required: true
         example: consequatur
         type: string

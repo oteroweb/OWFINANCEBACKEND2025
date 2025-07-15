@@ -16,13 +16,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::controller(CurrencyController::class)->prefix('currencies')->group(function () {
-    Route::get('/all', 'all');
-    Route::get('/all-active', 'allActive');
-    Route::get('/find/{id}', 'find');
-    Route::post('/save', 'save');
-    Route::put('/update/{id}', 'update');
-    Route::delete('/delete/{id}', 'delete');
-    Route::patch('/change-status/{id}', 'change_status');
-    Route::get('/with-trashed', 'withTrashed');
-});
+// Route::controller(CurrencyController::class)->prefix('currencies')->group(function () {
+//     Route::get('/all', 'all');
+//     Route::get('/all-active', 'allActive');
+//     Route::get('/find/{id}', 'find');
+//     Route::post('/save', 'save');
+//     Route::put('/update/{id}', 'update');
+//     Route::delete('/delete/{id}', 'delete');
+//     Route::patch('/change-status/{id}', 'change_status');
+//     Route::get('/with-trashed', 'withTrashed');
+// });
