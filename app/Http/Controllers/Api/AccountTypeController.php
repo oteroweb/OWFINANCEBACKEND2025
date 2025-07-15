@@ -15,6 +15,12 @@ class AccountTypeController extends Controller
     public function __construct(AccountTypeRepo $AccountTypeRepo) {
         $this->AccountTypeRepo = $AccountTypeRepo;
     }
+    /**
+     * @group Tipos de Cuenta
+     * Listar todos los tipos de cuenta
+     *
+     * Retorna todos los tipos de cuenta registrados.
+     */
     public function all() {
         try { $accounttype = $this->AccountTypeRepo->all();
             $response = [
@@ -33,7 +39,13 @@ class AccountTypeController extends Controller
             ];
             return response()->json($response, 500);
         }
-    }     
+    } 
+    /**
+ * @group Tipos de Cuenta
+ * Listar tipos de cuenta activos
+ *
+ * Retorna solo los tipos de cuenta actualmente activos.
+ */    
     public function allActive() {
         try { $accounttype = $this->AccountTypeRepo->allActive();
             $response = [
@@ -53,6 +65,12 @@ class AccountTypeController extends Controller
             return response()->json($response, 500);
         }
     }  
+    /**
+ * @group Tipos de Cuenta
+ * Ver tipo de cuenta por ID
+ *
+ * Retorna los detalles de un tipo de cuenta específico.
+ */
     public function find($id) {
         try {
             $accounttype = $this->AccountTypeRepo->find($id);
@@ -80,7 +98,12 @@ class AccountTypeController extends Controller
             return response()->json($response, 500);
         }
     }
-    
+    /**
+ * @group Tipos de Cuenta
+ * Crear nuevo tipo de cuenta
+ *
+ * Registra un nuevo tipo de cuenta en el sistema.
+ */
     public function save(Request $request) {
         $validator = Validator::make($request->all(), [
             'name' =>'required|max:35|',
@@ -120,7 +143,12 @@ class AccountTypeController extends Controller
             return response()->json($response, 500);
         }
     }
-
+    /**
+ * @group Tipos de Cuenta
+ * Actualizar tipo de cuenta
+ *
+ * Modifica un tipo de cuenta existente.
+ */
     public function update(Request $request, $id) {
         $accounttype = $this->AccountTypeRepo->find($id);
         if (isset($accounttype->id)) {
@@ -146,7 +174,12 @@ class AccountTypeController extends Controller
         ];
         return response()->json($response, 500);
     }
-
+/**
+ * @group Tipos de Cuenta
+ * Cambiar estado del tipo de cuenta
+ *
+ * Activa o desactiva un tipo de cuenta.
+ */
     public function delete(Request $request, $id) {
         try {
             if ($this->AccountTypeRepo->find($id)) {
@@ -190,7 +223,12 @@ class AccountTypeController extends Controller
             return response()->json($response, 500);
         }
     }
-
+/**
+ * @group Tipos de Cuenta
+ * Eliminar tipo de cuenta
+ *
+ * Elimina lógicamente un tipo de cuenta.
+ */
     public function change_status(Request $request, $id) {
         
         $accounttype = $this->AccountTypeRepo->find($id);
@@ -216,6 +254,12 @@ class AccountTypeController extends Controller
         ];
         return response()->json($response, 500);
     }
+    /**
+ * @group Tipos de Cuenta
+ * Listar todos incluyendo eliminados
+ *
+ * Muestra todos los tipos de cuenta, incluso los eliminados lógicamente.
+ */
     public function withTrashed() {
         try { $accounttype = $this->AccountTypeRepo->withTrashed();
             $response = [

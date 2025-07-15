@@ -15,6 +15,12 @@ class ProviderController extends Controller
     public function __construct(ProviderRepo $ProviderRepo) {
         $this->ProviderRepo = $ProviderRepo;
     }
+    /**
+ * @group Proveedores
+ * Listar todos los proveedores
+ *
+ * Retorna todos los proveedores registrados.
+ */
     public function all() {
         try { $provider = $this->ProviderRepo->all();
             $response = [
@@ -34,6 +40,12 @@ class ProviderController extends Controller
             return response()->json($response, 500);
         }
     }     
+    /**
+ * @group Proveedores
+ * Listar proveedores activos
+ *
+ * Muestra solo los proveedores activos.
+ */
     public function allActive() {
         try { $provider = $this->ProviderRepo->allActive();
             $response = [
@@ -53,6 +65,12 @@ class ProviderController extends Controller
             return response()->json($response, 500);
         }
     }  
+    /**
+ * @group Proveedores
+ * Ver proveedor por ID
+ *
+ * Retorna los detalles de un proveedor específico.
+ */
     public function find($id) {
         try {
             $provider = $this->ProviderRepo->find($id);
@@ -80,7 +98,12 @@ class ProviderController extends Controller
             return response()->json($response, 500);
         }
     }
-    
+    /**
+ * @group Proveedores
+ * Crear nuevo proveedor
+ *
+ * Registra un proveedor en el sistema.
+ */
     public function save(Request $request) {
         $validator = Validator::make($request->all(), [
             'name' =>'required|max:35|',
@@ -120,7 +143,12 @@ class ProviderController extends Controller
             return response()->json($response, 500);
         }
     }
-
+/**
+ * @group Proveedores
+ * Actualizar proveedor
+ *
+ * Modifica los datos de un proveedor.
+ */
     public function update(Request $request, $id) {
         $provider = $this->ProviderRepo->find($id);
         if (isset($provider->id)) {
@@ -146,7 +174,12 @@ class ProviderController extends Controller
         ];
         return response()->json($response, 500);
     }
-
+/**
+ * @group Proveedores
+ * Cambiar estado del proveedor
+ *
+ * Activa o desactiva un proveedor.
+ */
     public function delete(Request $request, $id) {
         try {
             if ($this->ProviderRepo->find($id)) {
@@ -190,7 +223,12 @@ class ProviderController extends Controller
             return response()->json($response, 500);
         }
     }
-
+/**
+ * @group Proveedores
+ * Eliminar proveedor
+ *
+ * Elimina lógicamente un proveedor.
+ */
     public function change_status(Request $request, $id) {
         
         $provider = $this->ProviderRepo->find($id);
@@ -216,6 +254,12 @@ class ProviderController extends Controller
         ];
         return response()->json($response, 500);
     }
+    /**
+ * @group Proveedores
+ * Listar todos incluyendo eliminados
+ *
+ * Retorna todos los proveedores, incluyendo los eliminados lógicamente.
+ */
      public function withTrashed() {
         try { $provider = $this->ProviderRepo->withTrashed();
             $response = [
