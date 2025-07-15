@@ -104,7 +104,7 @@ class CurrencyController extends Controller
      * Post
      *
      * save
-     * @bodyParam name string required The name of the currency. Example: US Dollar
+     * @bodyParam name string required The name of the currency. Example: Currency 1
      * @bodyParam tax number required The tax rate. Example: 8.25
      * @bodyParam last_tax number required The last tax rate. Example: 8.00
      * @bodyParam symbol string required The currency symbol. Example: $
@@ -174,7 +174,7 @@ class CurrencyController extends Controller
      *
      * update
      * @urlParam id integer required The ID of the currency. Example: 1
-     * @bodyParam name string optional The name of the currency. Example: US Dollar
+     * @bodyParam name string optional The name of the currency. Example: Currency 1x
      * @bodyParam tax number optional The tax rate. Example: 8.50
      * @bodyParam last_tax number optional The last tax rate. Example: 8.25
      * @bodyParam symbol string optional The currency symbol. Example: $
