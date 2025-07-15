@@ -16,10 +16,10 @@ class CurrencyController extends Controller
         $this->CurrencyRepo = $CurrencyRepo;
     }
      /**
-     * @group Monedas
-     * Obtener todas las monedas
+     * @group Currency
+     * Get
      *
-     * Lista todas las monedas registradas.
+     * all
      */
     public function all() {
         try { $currency = $this->CurrencyRepo->all();
@@ -40,11 +40,11 @@ class CurrencyController extends Controller
             return response()->json($response, 500);
         }
     }   
-      /**
-     * @group Monedas
-     * Listar monedas activas
+    /**
+     * @group Currency
+     * Get
      *
-     * Retorna todas las monedas activas.
+     * all Active
      */
     public function allActive() {
         try { $currency = $this->CurrencyRepo->allActive();
@@ -66,10 +66,10 @@ class CurrencyController extends Controller
         }
     }  
     /**
-     * @group Monedas
-     * Ver moneda por ID
+     * @group Currency
+     * Get
      *
-     * Retorna los datos de una moneda específica por su ID.
+     * find
      */
     public function find($id) {
         try {
@@ -99,10 +99,10 @@ class CurrencyController extends Controller
         }
     }
      /**
-     * @group Monedas
-     * Crear nueva moneda
+     * @group Currency
+     * Post
      *
-     * Registra una nueva moneda en el sistema.
+     * save
      */
     public function save(Request $request) {
         $validator = Validator::make($request->all(), [
@@ -157,11 +157,11 @@ class CurrencyController extends Controller
             return response()->json($response, 500);
         }
     }
- /**
-     * @group Monedas
-     * Actualizar moneda
+    /**
+     * @group Currency
+     * Put
      *
-     * Actualiza los datos de una moneda específica.
+     * update
      */
     public function update(Request $request, $id) {
         $currency = $this->CurrencyRepo->find($id);
@@ -196,10 +196,10 @@ class CurrencyController extends Controller
         return response()->json($response, 500);
     }
      /**
-     * @group Monedas
-     * Eliminar moneda
+     * @group Currency
+     * Delete
      *
-     * Elimina lógicamente una moneda.
+     * delete
      */
     public function delete(Request $request, $id) {
         try {
@@ -245,10 +245,10 @@ class CurrencyController extends Controller
         }
     }
      /**
-     * @group Monedas
-     * Cambiar estado de la moneda
+     * @group Currency
+     * Patch
      *
-     * Activa o desactiva una moneda.
+     * change_status
      */
     public function change_status(Request $request, $id) {
         
@@ -275,11 +275,11 @@ class CurrencyController extends Controller
         ];
         return response()->json($response, 500);
     }
-      /**
-     * @group Monedas
-     * Listar todas las monedas (incluyendo eliminadas)
+     /**
+     * @group Currency
+     * Get
      *
-     * Retorna todas las monedas, incluso las eliminadas lógicamente.
+     * withTrashed
      */
 
     public function withTrashed() {

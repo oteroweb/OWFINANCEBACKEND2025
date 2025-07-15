@@ -1,4 +1,4 @@
-name: Proveedores
+name: Provider
 description: ''
 endpoints:
   -
@@ -6,14 +6,14 @@ endpoints:
       - GET
     uri: api/v1/providers
     metadata:
-      groupName: Proveedores
+      groupName: Provider
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar todos los proveedores
+        Get
 
-        Retorna todos los proveedores registrados.
+        all
       description: ''
       authenticated: false
       custom: []
@@ -48,14 +48,14 @@ endpoints:
       - GET
     uri: api/v1/providers/all
     metadata:
-      groupName: Proveedores
+      groupName: Provider
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar todos incluyendo eliminados
+        Get
 
-        Retorna todos los proveedores, incluyendo los eliminados lógicamente.
+        withTrashed
       description: ''
       authenticated: false
       custom: []
@@ -90,14 +90,14 @@ endpoints:
       - GET
     uri: api/v1/providers/active
     metadata:
-      groupName: Proveedores
+      groupName: Provider
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar proveedores activos
+        Get
 
-        Muestra solo los proveedores activos.
+        all active
       description: ''
       authenticated: false
       custom: []
@@ -132,14 +132,14 @@ endpoints:
       - GET
     uri: 'api/v1/providers/{id}'
     metadata:
-      groupName: Proveedores
+      groupName: Provider
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Ver proveedor por ID
+        Get
 
-        Retorna los detalles de un proveedor específico.
+        find
       description: ''
       authenticated: false
       custom: []
@@ -185,14 +185,14 @@ endpoints:
       - POST
     uri: api/v1/providers
     metadata:
-      groupName: Proveedores
+      groupName: Provider
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Crear nuevo proveedor
+        Post
 
-        Registra un proveedor en el sistema.
+        save
       description: ''
       authenticated: false
       custom: []
@@ -240,14 +240,14 @@ endpoints:
       - PUT
     uri: 'api/v1/providers/{id}'
     metadata:
-      groupName: Proveedores
+      groupName: Provider
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Actualizar proveedor
+        Put
 
-        Modifica los datos de un proveedor.
+        update
       description: ''
       authenticated: false
       custom: []
@@ -284,14 +284,14 @@ endpoints:
       - PATCH
     uri: 'api/v1/providers/{id}/status'
     metadata:
-      groupName: Proveedores
+      groupName: Provider
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Eliminar proveedor
+        Patch
 
-        Elimina lógicamente un proveedor.
+        update
       description: ''
       authenticated: false
       custom: []
@@ -328,14 +328,14 @@ endpoints:
       - DELETE
     uri: 'api/v1/providers/{id}'
     metadata:
-      groupName: Proveedores
+      groupName: Provider
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Cambiar estado del proveedor
+        Delete
 
-        Activa o desactiva un proveedor.
+        delete
       description: ''
       authenticated: false
       custom: []

@@ -1,4 +1,4 @@
-name: 'Tipos de Cuenta'
+name: 'Account Type'
 description: ''
 endpoints:
   -
@@ -6,14 +6,14 @@ endpoints:
       - GET
     uri: api/v1/account_types
     metadata:
-      groupName: 'Tipos de Cuenta'
+      groupName: 'Account Type'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar todos los tipos de cuenta
+        Get
 
-        Retorna todos los tipos de cuenta registrados.
+        all
       description: ''
       authenticated: false
       custom: []
@@ -48,14 +48,14 @@ endpoints:
       - GET
     uri: api/v1/account_types/all
     metadata:
-      groupName: 'Tipos de Cuenta'
+      groupName: 'Account Type'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar todos incluyendo eliminados
+        Get
 
-        Muestra todos los tipos de cuenta, incluso los eliminados lógicamente.
+        withTrashed
       description: ''
       authenticated: false
       custom: []
@@ -90,14 +90,14 @@ endpoints:
       - GET
     uri: api/v1/account_types/active
     metadata:
-      groupName: 'Tipos de Cuenta'
+      groupName: 'Account Type'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar tipos de cuenta activos
+        Get
 
-        Retorna solo los tipos de cuenta actualmente activos.
+        all active
       description: ''
       authenticated: false
       custom: []
@@ -132,14 +132,14 @@ endpoints:
       - GET
     uri: 'api/v1/account_types/{id}'
     metadata:
-      groupName: 'Tipos de Cuenta'
+      groupName: 'Account Type'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Ver tipo de cuenta por ID
+        Get
 
-        Retorna los detalles de un tipo de cuenta específico.
+        find
       description: ''
       authenticated: false
       custom: []
@@ -185,14 +185,14 @@ endpoints:
       - POST
     uri: api/v1/account_types
     metadata:
-      groupName: 'Tipos de Cuenta'
+      groupName: 'Account Type'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Crear nuevo tipo de cuenta
+        Post
 
-        Registra un nuevo tipo de cuenta en el sistema.
+        save
       description: ''
       authenticated: false
       custom: []
@@ -240,14 +240,14 @@ endpoints:
       - PUT
     uri: 'api/v1/account_types/{id}'
     metadata:
-      groupName: 'Tipos de Cuenta'
+      groupName: 'Account Type'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Actualizar tipo de cuenta
+        Put
 
-        Modifica un tipo de cuenta existente.
+        update
       description: ''
       authenticated: false
       custom: []
@@ -284,14 +284,14 @@ endpoints:
       - PATCH
     uri: 'api/v1/account_types/{id}/status'
     metadata:
-      groupName: 'Tipos de Cuenta'
+      groupName: 'Account Type'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Eliminar tipo de cuenta
+        Patch
 
-        Elimina lógicamente un tipo de cuenta.
+        change_status
       description: ''
       authenticated: false
       custom: []
@@ -328,14 +328,14 @@ endpoints:
       - DELETE
     uri: 'api/v1/account_types/{id}'
     metadata:
-      groupName: 'Tipos de Cuenta'
+      groupName: 'Account Type'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Cambiar estado del tipo de cuenta
+        Delete
 
-        Activa o desactiva un tipo de cuenta.
+        delete
       description: ''
       authenticated: false
       custom: []

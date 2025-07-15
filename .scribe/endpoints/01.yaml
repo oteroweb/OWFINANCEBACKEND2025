@@ -1,4 +1,4 @@
-name: Monedas
+name: Currency
 description: ''
 endpoints:
   -
@@ -6,14 +6,14 @@ endpoints:
       - GET
     uri: api/v1/currencies
     metadata:
-      groupName: Monedas
+      groupName: Currency
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Obtener todas las monedas
+        Get
 
-        Lista todas las monedas registradas.
+        all
       description: ''
       authenticated: false
       custom: []
@@ -48,14 +48,14 @@ endpoints:
       - GET
     uri: api/v1/currencies/all
     metadata:
-      groupName: Monedas
+      groupName: Currency
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar todas las monedas (incluyendo eliminadas)
+        Get
 
-        Retorna todas las monedas, incluso las eliminadas lógicamente.
+        withTrashed
       description: ''
       authenticated: false
       custom: []
@@ -90,14 +90,14 @@ endpoints:
       - GET
     uri: api/v1/currencies/active
     metadata:
-      groupName: Monedas
+      groupName: Currency
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Listar monedas activas
+        Get
 
-        Retorna todas las monedas activas.
+        all Active
       description: ''
       authenticated: false
       custom: []
@@ -132,14 +132,14 @@ endpoints:
       - GET
     uri: 'api/v1/currencies/{id}'
     metadata:
-      groupName: Monedas
+      groupName: Currency
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Ver moneda por ID
+        Get
 
-        Retorna los datos de una moneda específica por su ID.
+        find
       description: ''
       authenticated: false
       custom: []
@@ -185,14 +185,14 @@ endpoints:
       - POST
     uri: api/v1/currencies
     metadata:
-      groupName: Monedas
+      groupName: Currency
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Crear nueva moneda
+        Post
 
-        Registra una nueva moneda en el sistema.
+        save
       description: ''
       authenticated: false
       custom: []
@@ -317,14 +317,14 @@ endpoints:
       - PUT
     uri: 'api/v1/currencies/{id}'
     metadata:
-      groupName: Monedas
+      groupName: Currency
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Actualizar moneda
+        Put
 
-        Actualiza los datos de una moneda específica.
+        update
       description: ''
       authenticated: false
       custom: []
@@ -361,14 +361,14 @@ endpoints:
       - PATCH
     uri: 'api/v1/currencies/{id}/status'
     metadata:
-      groupName: Monedas
+      groupName: Currency
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Cambiar estado de la moneda
+        Patch
 
-        Activa o desactiva una moneda.
+        change_status
       description: ''
       authenticated: false
       custom: []
@@ -405,14 +405,14 @@ endpoints:
       - DELETE
     uri: 'api/v1/currencies/{id}'
     metadata:
-      groupName: Monedas
+      groupName: Currency
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Eliminar moneda
+        Delete
 
-        Elimina lógicamente una moneda.
+        delete
       description: ''
       authenticated: false
       custom: []

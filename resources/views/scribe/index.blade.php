@@ -66,144 +66,144 @@
                     <a href="#authenticating-requests">Authenticating requests</a>
                 </li>
                             </ul>
-                    <ul id="tocify-header-monedas" class="tocify-header">
-                <li class="tocify-item level-1" data-unique="monedas">
-                    <a href="#monedas">Monedas</a>
+                    <ul id="tocify-header-account-type" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="account-type">
+                    <a href="#account-type">Account Type</a>
                 </li>
-                                    <ul id="tocify-subheader-monedas" class="tocify-subheader">
-                                                    <li class="tocify-item level-2" data-unique="monedas-GETapi-v1-currencies">
-                                <a href="#monedas-GETapi-v1-currencies">Obtener todas las monedas
+                                    <ul id="tocify-subheader-account-type" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="account-type-GETapi-v1-account_types">
+                                <a href="#account-type-GETapi-v1-account_types">Get
 
-Lista todas las monedas registradas.</a>
+all</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="monedas-GETapi-v1-currencies-all">
-                                <a href="#monedas-GETapi-v1-currencies-all">Listar todas las monedas (incluyendo eliminadas)
+                                                                                <li class="tocify-item level-2" data-unique="account-type-GETapi-v1-account_types-all">
+                                <a href="#account-type-GETapi-v1-account_types-all">Get
 
-Retorna todas las monedas, incluso las eliminadas lógicamente.</a>
+withTrashed</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="monedas-GETapi-v1-currencies-active">
-                                <a href="#monedas-GETapi-v1-currencies-active">Listar monedas activas
+                                                                                <li class="tocify-item level-2" data-unique="account-type-GETapi-v1-account_types-active">
+                                <a href="#account-type-GETapi-v1-account_types-active">Get
 
-Retorna todas las monedas activas.</a>
+all active</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="monedas-GETapi-v1-currencies--id-">
-                                <a href="#monedas-GETapi-v1-currencies--id-">Ver moneda por ID
+                                                                                <li class="tocify-item level-2" data-unique="account-type-GETapi-v1-account_types--id-">
+                                <a href="#account-type-GETapi-v1-account_types--id-">Get
 
-Retorna los datos de una moneda específica por su ID.</a>
+find</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="monedas-POSTapi-v1-currencies">
-                                <a href="#monedas-POSTapi-v1-currencies">Crear nueva moneda
+                                                                                <li class="tocify-item level-2" data-unique="account-type-POSTapi-v1-account_types">
+                                <a href="#account-type-POSTapi-v1-account_types">Post
 
-Registra una nueva moneda en el sistema.</a>
+save</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="monedas-PUTapi-v1-currencies--id-">
-                                <a href="#monedas-PUTapi-v1-currencies--id-">Actualizar moneda
+                                                                                <li class="tocify-item level-2" data-unique="account-type-PUTapi-v1-account_types--id-">
+                                <a href="#account-type-PUTapi-v1-account_types--id-">Put
 
-Actualiza los datos de una moneda específica.</a>
+update</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="monedas-PATCHapi-v1-currencies--id--status">
-                                <a href="#monedas-PATCHapi-v1-currencies--id--status">Cambiar estado de la moneda
+                                                                                <li class="tocify-item level-2" data-unique="account-type-PATCHapi-v1-account_types--id--status">
+                                <a href="#account-type-PATCHapi-v1-account_types--id--status">Patch
 
-Activa o desactiva una moneda.</a>
+change_status</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="monedas-DELETEapi-v1-currencies--id-">
-                                <a href="#monedas-DELETEapi-v1-currencies--id-">Eliminar moneda
+                                                                                <li class="tocify-item level-2" data-unique="account-type-DELETEapi-v1-account_types--id-">
+                                <a href="#account-type-DELETEapi-v1-account_types--id-">Delete
 
-Elimina lógicamente una moneda.</a>
+delete</a>
                             </li>
                                                                         </ul>
                             </ul>
-                    <ul id="tocify-header-proveedores" class="tocify-header">
-                <li class="tocify-item level-1" data-unique="proveedores">
-                    <a href="#proveedores">Proveedores</a>
+                    <ul id="tocify-header-currency" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="currency">
+                    <a href="#currency">Currency</a>
                 </li>
-                                    <ul id="tocify-subheader-proveedores" class="tocify-subheader">
-                                                    <li class="tocify-item level-2" data-unique="proveedores-GETapi-v1-providers">
-                                <a href="#proveedores-GETapi-v1-providers">Listar todos los proveedores
+                                    <ul id="tocify-subheader-currency" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="currency-GETapi-v1-currencies">
+                                <a href="#currency-GETapi-v1-currencies">Get
 
-Retorna todos los proveedores registrados.</a>
+all</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="proveedores-GETapi-v1-providers-all">
-                                <a href="#proveedores-GETapi-v1-providers-all">Listar todos incluyendo eliminados
+                                                                                <li class="tocify-item level-2" data-unique="currency-GETapi-v1-currencies-all">
+                                <a href="#currency-GETapi-v1-currencies-all">Get
 
-Retorna todos los proveedores, incluyendo los eliminados lógicamente.</a>
+withTrashed</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="proveedores-GETapi-v1-providers-active">
-                                <a href="#proveedores-GETapi-v1-providers-active">Listar proveedores activos
+                                                                                <li class="tocify-item level-2" data-unique="currency-GETapi-v1-currencies-active">
+                                <a href="#currency-GETapi-v1-currencies-active">Get
 
-Muestra solo los proveedores activos.</a>
+all Active</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="proveedores-GETapi-v1-providers--id-">
-                                <a href="#proveedores-GETapi-v1-providers--id-">Ver proveedor por ID
+                                                                                <li class="tocify-item level-2" data-unique="currency-GETapi-v1-currencies--id-">
+                                <a href="#currency-GETapi-v1-currencies--id-">Get
 
-Retorna los detalles de un proveedor específico.</a>
+find</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="proveedores-POSTapi-v1-providers">
-                                <a href="#proveedores-POSTapi-v1-providers">Crear nuevo proveedor
+                                                                                <li class="tocify-item level-2" data-unique="currency-POSTapi-v1-currencies">
+                                <a href="#currency-POSTapi-v1-currencies">Post
 
-Registra un proveedor en el sistema.</a>
+save</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="proveedores-PUTapi-v1-providers--id-">
-                                <a href="#proveedores-PUTapi-v1-providers--id-">Actualizar proveedor
+                                                                                <li class="tocify-item level-2" data-unique="currency-PUTapi-v1-currencies--id-">
+                                <a href="#currency-PUTapi-v1-currencies--id-">Put
 
-Modifica los datos de un proveedor.</a>
+update</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="proveedores-PATCHapi-v1-providers--id--status">
-                                <a href="#proveedores-PATCHapi-v1-providers--id--status">Eliminar proveedor
+                                                                                <li class="tocify-item level-2" data-unique="currency-PATCHapi-v1-currencies--id--status">
+                                <a href="#currency-PATCHapi-v1-currencies--id--status">Patch
 
-Elimina lógicamente un proveedor.</a>
+change_status</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="proveedores-DELETEapi-v1-providers--id-">
-                                <a href="#proveedores-DELETEapi-v1-providers--id-">Cambiar estado del proveedor
+                                                                                <li class="tocify-item level-2" data-unique="currency-DELETEapi-v1-currencies--id-">
+                                <a href="#currency-DELETEapi-v1-currencies--id-">Delete
 
-Activa o desactiva un proveedor.</a>
+delete</a>
                             </li>
                                                                         </ul>
                             </ul>
-                    <ul id="tocify-header-tipos-de-cuenta" class="tocify-header">
-                <li class="tocify-item level-1" data-unique="tipos-de-cuenta">
-                    <a href="#tipos-de-cuenta">Tipos de Cuenta</a>
+                    <ul id="tocify-header-provider" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="provider">
+                    <a href="#provider">Provider</a>
                 </li>
-                                    <ul id="tocify-subheader-tipos-de-cuenta" class="tocify-subheader">
-                                                    <li class="tocify-item level-2" data-unique="tipos-de-cuenta-GETapi-v1-account_types">
-                                <a href="#tipos-de-cuenta-GETapi-v1-account_types">Listar todos los tipos de cuenta
+                                    <ul id="tocify-subheader-provider" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="provider-GETapi-v1-providers">
+                                <a href="#provider-GETapi-v1-providers">Get
 
-Retorna todos los tipos de cuenta registrados.</a>
+all</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="tipos-de-cuenta-GETapi-v1-account_types-all">
-                                <a href="#tipos-de-cuenta-GETapi-v1-account_types-all">Listar todos incluyendo eliminados
+                                                                                <li class="tocify-item level-2" data-unique="provider-GETapi-v1-providers-all">
+                                <a href="#provider-GETapi-v1-providers-all">Get
 
-Muestra todos los tipos de cuenta, incluso los eliminados lógicamente.</a>
+withTrashed</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="tipos-de-cuenta-GETapi-v1-account_types-active">
-                                <a href="#tipos-de-cuenta-GETapi-v1-account_types-active">Listar tipos de cuenta activos
+                                                                                <li class="tocify-item level-2" data-unique="provider-GETapi-v1-providers-active">
+                                <a href="#provider-GETapi-v1-providers-active">Get
 
-Retorna solo los tipos de cuenta actualmente activos.</a>
+all active</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="tipos-de-cuenta-GETapi-v1-account_types--id-">
-                                <a href="#tipos-de-cuenta-GETapi-v1-account_types--id-">Ver tipo de cuenta por ID
+                                                                                <li class="tocify-item level-2" data-unique="provider-GETapi-v1-providers--id-">
+                                <a href="#provider-GETapi-v1-providers--id-">Get
 
-Retorna los detalles de un tipo de cuenta específico.</a>
+find</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="tipos-de-cuenta-POSTapi-v1-account_types">
-                                <a href="#tipos-de-cuenta-POSTapi-v1-account_types">Crear nuevo tipo de cuenta
+                                                                                <li class="tocify-item level-2" data-unique="provider-POSTapi-v1-providers">
+                                <a href="#provider-POSTapi-v1-providers">Post
 
-Registra un nuevo tipo de cuenta en el sistema.</a>
+save</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="tipos-de-cuenta-PUTapi-v1-account_types--id-">
-                                <a href="#tipos-de-cuenta-PUTapi-v1-account_types--id-">Actualizar tipo de cuenta
+                                                                                <li class="tocify-item level-2" data-unique="provider-PUTapi-v1-providers--id-">
+                                <a href="#provider-PUTapi-v1-providers--id-">Put
 
-Modifica un tipo de cuenta existente.</a>
+update</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="tipos-de-cuenta-PATCHapi-v1-account_types--id--status">
-                                <a href="#tipos-de-cuenta-PATCHapi-v1-account_types--id--status">Eliminar tipo de cuenta
+                                                                                <li class="tocify-item level-2" data-unique="provider-PATCHapi-v1-providers--id--status">
+                                <a href="#provider-PATCHapi-v1-providers--id--status">Patch
 
-Elimina lógicamente un tipo de cuenta.</a>
+update</a>
                             </li>
-                                                                                <li class="tocify-item level-2" data-unique="tipos-de-cuenta-DELETEapi-v1-account_types--id-">
-                                <a href="#tipos-de-cuenta-DELETEapi-v1-account_types--id-">Cambiar estado del tipo de cuenta
+                                                                                <li class="tocify-item level-2" data-unique="provider-DELETEapi-v1-providers--id-">
+                                <a href="#provider-DELETEapi-v1-providers--id-">Delete
 
-Activa o desactiva un tipo de cuenta.</a>
+delete</a>
                             </li>
                                                                         </ul>
                             </ul>
@@ -235,13 +235,1111 @@ You can switch the language used with the tabs at the top right (or from the nav
         <h1 id="authenticating-requests">Authenticating requests</h1>
 <p>This API is not authenticated.</p>
 
-        <h1 id="monedas">Monedas</h1>
+        <h1 id="account-type">Account Type</h1>
 
     
 
-                                <h2 id="monedas-GETapi-v1-currencies">Obtener todas las monedas
+                                <h2 id="account-type-GETapi-v1-account_types">Get
 
-Lista todas las monedas registradas.</h2>
+all</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-v1-account_types">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/v1/account_types" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/v1/account_types"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-account_types">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;status&quot;: &quot;OK&quot;,
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;Account Type Obtained Correctly&quot;,
+    &quot;data&quot;: [
+        {
+            &quot;id&quot;: 1,
+            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
+            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
+            &quot;active&quot;: 1,
+            &quot;created_at&quot;: &quot;2025-07-14&quot;,
+            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
+            &quot;deleted_at&quot;: null
+        },
+        {
+            &quot;id&quot;: 2,
+            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
+            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
+            &quot;active&quot;: 1,
+            &quot;created_at&quot;: &quot;2025-07-14&quot;,
+            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
+            &quot;deleted_at&quot;: null
+        }
+    ]
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-account_types" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-account_types"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-account_types"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-account_types" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-account_types">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-account_types" data-method="GET"
+      data-path="api/v1/account_types"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-account_types', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-account_types"
+                    onclick="tryItOut('GETapi-v1-account_types');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-account_types"
+                    onclick="cancelTryOut('GETapi-v1-account_types');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-account_types"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/account_types</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-account_types"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-account_types"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="account-type-GETapi-v1-account_types-all">Get
+
+withTrashed</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-v1-account_types-all">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/v1/account_types/all" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/v1/account_types/all"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-account_types-all">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;status&quot;: &quot;OK&quot;,
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;Data Obtained Correctly&quot;,
+    &quot;data&quot;: [
+        {
+            &quot;id&quot;: 1,
+            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
+            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
+            &quot;active&quot;: 1,
+            &quot;created_at&quot;: &quot;2025-07-14&quot;,
+            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
+            &quot;deleted_at&quot;: null
+        },
+        {
+            &quot;id&quot;: 2,
+            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
+            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
+            &quot;active&quot;: 1,
+            &quot;created_at&quot;: &quot;2025-07-14&quot;,
+            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
+            &quot;deleted_at&quot;: null
+        }
+    ]
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-account_types-all" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-account_types-all"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-account_types-all"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-account_types-all" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-account_types-all">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-account_types-all" data-method="GET"
+      data-path="api/v1/account_types/all"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-account_types-all', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-account_types-all"
+                    onclick="tryItOut('GETapi-v1-account_types-all');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-account_types-all"
+                    onclick="cancelTryOut('GETapi-v1-account_types-all');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-account_types-all"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/account_types/all</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-account_types-all"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-account_types-all"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="account-type-GETapi-v1-account_types-active">Get
+
+all active</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-v1-account_types-active">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/v1/account_types/active" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/v1/account_types/active"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-account_types-active">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;status&quot;: &quot;OK&quot;,
+    &quot;code&quot;: 200,
+    &quot;message&quot;: &quot;Data Obtained Correctly&quot;,
+    &quot;data&quot;: [
+        {
+            &quot;id&quot;: 1,
+            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
+            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
+            &quot;active&quot;: 1,
+            &quot;created_at&quot;: &quot;2025-07-14&quot;,
+            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
+            &quot;deleted_at&quot;: null
+        },
+        {
+            &quot;id&quot;: 2,
+            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
+            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
+            &quot;active&quot;: 1,
+            &quot;created_at&quot;: &quot;2025-07-14&quot;,
+            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
+            &quot;deleted_at&quot;: null
+        }
+    ]
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-account_types-active" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-account_types-active"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-account_types-active"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-account_types-active" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-account_types-active">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-account_types-active" data-method="GET"
+      data-path="api/v1/account_types/active"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-account_types-active', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-account_types-active"
+                    onclick="tryItOut('GETapi-v1-account_types-active');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-account_types-active"
+                    onclick="cancelTryOut('GETapi-v1-account_types-active');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-account_types-active"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/account_types/active</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-account_types-active"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-account_types-active"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
+                    <h2 id="account-type-GETapi-v1-account_types--id-">Get
+
+find</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-v1-account_types--id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost:8000/api/v1/account_types/consequatur" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/v1/account_types/consequatur"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-account_types--id-">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+access-control-allow-origin: *
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;status&quot;: &quot;FAILED&quot;,
+    &quot;code&quot;: 404,
+    &quot;message&quot;: &quot;Not Data with this Account Type.&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-account_types--id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-account_types--id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-account_types--id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-account_types--id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-account_types--id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-account_types--id-" data-method="GET"
+      data-path="api/v1/account_types/{id}"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-account_types--id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-account_types--id-"
+                    onclick="tryItOut('GETapi-v1-account_types--id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-account_types--id-"
+                    onclick="cancelTryOut('GETapi-v1-account_types--id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-account_types--id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/account_types/{id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-account_types--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-account_types--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="id"                data-endpoint="GETapi-v1-account_types--id-"
+               value="consequatur"
+               data-component="url">
+    <br>
+<p>The ID of the account type. Example: <code>consequatur</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="account-type-POSTapi-v1-account_types">Post
+
+save</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-POSTapi-v1-account_types">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost:8000/api/v1/account_types" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"name\": \"vmqeopfuudtdsufvyvddq\",
+    \"icon\": \"amniihfqcoynlazghdtqt\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/v1/account_types"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "name": "vmqeopfuudtdsufvyvddq",
+    "icon": "amniihfqcoynlazghdtqt"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-v1-account_types">
+</span>
+<span id="execution-results-POSTapi-v1-account_types" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-v1-account_types"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-v1-account_types"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-v1-account_types" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-v1-account_types">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-v1-account_types" data-method="POST"
+      data-path="api/v1/account_types"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-v1-account_types', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-v1-account_types"
+                    onclick="tryItOut('POSTapi-v1-account_types');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-v1-account_types"
+                    onclick="cancelTryOut('POSTapi-v1-account_types');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-v1-account_types"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/v1/account_types</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-v1-account_types"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-v1-account_types"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>name</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="name"                data-endpoint="POSTapi-v1-account_types"
+               value="vmqeopfuudtdsufvyvddq"
+               data-component="body">
+    <br>
+<p>Must not be greater than 35 characters. Example: <code>vmqeopfuudtdsufvyvddq</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>icon</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="icon"                data-endpoint="POSTapi-v1-account_types"
+               value="amniihfqcoynlazghdtqt"
+               data-component="body">
+    <br>
+<p>Must not be greater than 35 characters. Example: <code>amniihfqcoynlazghdtqt</code></p>
+        </div>
+        </form>
+
+                    <h2 id="account-type-PUTapi-v1-account_types--id-">Put
+
+update</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-PUTapi-v1-account_types--id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PUT \
+    "http://localhost:8000/api/v1/account_types/consequatur" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/v1/account_types/consequatur"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "PUT",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PUTapi-v1-account_types--id-">
+</span>
+<span id="execution-results-PUTapi-v1-account_types--id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PUTapi-v1-account_types--id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PUTapi-v1-account_types--id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PUTapi-v1-account_types--id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PUTapi-v1-account_types--id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PUTapi-v1-account_types--id-" data-method="PUT"
+      data-path="api/v1/account_types/{id}"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PUTapi-v1-account_types--id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PUTapi-v1-account_types--id-"
+                    onclick="tryItOut('PUTapi-v1-account_types--id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PUTapi-v1-account_types--id-"
+                    onclick="cancelTryOut('PUTapi-v1-account_types--id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PUTapi-v1-account_types--id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-darkblue">PUT</small>
+            <b><code>api/v1/account_types/{id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PUTapi-v1-account_types--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PUTapi-v1-account_types--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="id"                data-endpoint="PUTapi-v1-account_types--id-"
+               value="consequatur"
+               data-component="url">
+    <br>
+<p>The ID of the account type. Example: <code>consequatur</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="account-type-PATCHapi-v1-account_types--id--status">Patch
+
+change_status</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-PATCHapi-v1-account_types--id--status">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost:8000/api/v1/account_types/consequatur/status" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/v1/account_types/consequatur/status"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-v1-account_types--id--status">
+</span>
+<span id="execution-results-PATCHapi-v1-account_types--id--status" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PATCHapi-v1-account_types--id--status"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-v1-account_types--id--status"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-v1-account_types--id--status" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-v1-account_types--id--status">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PATCHapi-v1-account_types--id--status" data-method="PATCH"
+      data-path="api/v1/account_types/{id}/status"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-v1-account_types--id--status', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-v1-account_types--id--status"
+                    onclick="tryItOut('PATCHapi-v1-account_types--id--status');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-v1-account_types--id--status"
+                    onclick="cancelTryOut('PATCHapi-v1-account_types--id--status');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-v1-account_types--id--status"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/v1/account_types/{id}/status</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-v1-account_types--id--status"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-v1-account_types--id--status"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="id"                data-endpoint="PATCHapi-v1-account_types--id--status"
+               value="consequatur"
+               data-component="url">
+    <br>
+<p>The ID of the account type. Example: <code>consequatur</code></p>
+            </div>
+                    </form>
+
+                    <h2 id="account-type-DELETEapi-v1-account_types--id-">Delete
+
+delete</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-DELETEapi-v1-account_types--id-">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request DELETE \
+    "http://localhost:8000/api/v1/account_types/consequatur" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost:8000/api/v1/account_types/consequatur"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+fetch(url, {
+    method: "DELETE",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-DELETEapi-v1-account_types--id-">
+</span>
+<span id="execution-results-DELETEapi-v1-account_types--id-" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-DELETEapi-v1-account_types--id-"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-DELETEapi-v1-account_types--id-"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-DELETEapi-v1-account_types--id-" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-DELETEapi-v1-account_types--id-">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-DELETEapi-v1-account_types--id-" data-method="DELETE"
+      data-path="api/v1/account_types/{id}"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-v1-account_types--id-', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-DELETEapi-v1-account_types--id-"
+                    onclick="tryItOut('DELETEapi-v1-account_types--id-');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-DELETEapi-v1-account_types--id-"
+                    onclick="cancelTryOut('DELETEapi-v1-account_types--id-');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-DELETEapi-v1-account_types--id-"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-red">DELETE</small>
+            <b><code>api/v1/account_types/{id}</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="DELETEapi-v1-account_types--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="DELETEapi-v1-account_types--id-"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="id"                data-endpoint="DELETEapi-v1-account_types--id-"
+               value="consequatur"
+               data-component="url">
+    <br>
+<p>The ID of the account type. Example: <code>consequatur</code></p>
+            </div>
+                    </form>
+
+                <h1 id="currency">Currency</h1>
+
+    
+
+                                <h2 id="currency-GETapi-v1-currencies">Get
+
+all</h2>
 
 <p>
 </p>
@@ -368,9 +1466,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="monedas-GETapi-v1-currencies-all">Listar todas las monedas (incluyendo eliminadas)
+                    <h2 id="currency-GETapi-v1-currencies-all">Get
 
-Retorna todas las monedas, incluso las eliminadas lógicamente.</h2>
+withTrashed</h2>
 
 <p>
 </p>
@@ -497,9 +1595,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="monedas-GETapi-v1-currencies-active">Listar monedas activas
+                    <h2 id="currency-GETapi-v1-currencies-active">Get
 
-Retorna todas las monedas activas.</h2>
+all Active</h2>
 
 <p>
 </p>
@@ -626,9 +1724,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="monedas-GETapi-v1-currencies--id-">Ver moneda por ID
+                    <h2 id="currency-GETapi-v1-currencies--id-">Get
 
-Retorna los datos de una moneda específica por su ID.</h2>
+find</h2>
 
 <p>
 </p>
@@ -766,9 +1864,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="monedas-POSTapi-v1-currencies">Crear nueva moneda
+                    <h2 id="currency-POSTapi-v1-currencies">Post
 
-Registra una nueva moneda en el sistema.</h2>
+save</h2>
 
 <p>
 </p>
@@ -1001,9 +2099,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
-                    <h2 id="monedas-PUTapi-v1-currencies--id-">Actualizar moneda
+                    <h2 id="currency-PUTapi-v1-currencies--id-">Put
 
-Actualiza los datos de una moneda específica.</h2>
+update</h2>
 
 <p>
 </p>
@@ -1123,9 +2221,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="monedas-PATCHapi-v1-currencies--id--status">Cambiar estado de la moneda
+                    <h2 id="currency-PATCHapi-v1-currencies--id--status">Patch
 
-Activa o desactiva una moneda.</h2>
+change_status</h2>
 
 <p>
 </p>
@@ -1245,9 +2343,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="monedas-DELETEapi-v1-currencies--id-">Eliminar moneda
+                    <h2 id="currency-DELETEapi-v1-currencies--id-">Delete
 
-Elimina lógicamente una moneda.</h2>
+delete</h2>
 
 <p>
 </p>
@@ -1367,13 +2465,13 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                <h1 id="proveedores">Proveedores</h1>
+                <h1 id="provider">Provider</h1>
 
     
 
-                                <h2 id="proveedores-GETapi-v1-providers">Listar todos los proveedores
+                                <h2 id="provider-GETapi-v1-providers">Get
 
-Retorna todos los proveedores registrados.</h2>
+all</h2>
 
 <p>
 </p>
@@ -1500,9 +2598,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="proveedores-GETapi-v1-providers-all">Listar todos incluyendo eliminados
+                    <h2 id="provider-GETapi-v1-providers-all">Get
 
-Retorna todos los proveedores, incluyendo los eliminados lógicamente.</h2>
+withTrashed</h2>
 
 <p>
 </p>
@@ -1629,9 +2727,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="proveedores-GETapi-v1-providers-active">Listar proveedores activos
+                    <h2 id="provider-GETapi-v1-providers-active">Get
 
-Muestra solo los proveedores activos.</h2>
+all active</h2>
 
 <p>
 </p>
@@ -1758,9 +2856,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
-                    <h2 id="proveedores-GETapi-v1-providers--id-">Ver proveedor por ID
+                    <h2 id="provider-GETapi-v1-providers--id-">Get
 
-Retorna los detalles de un proveedor específico.</h2>
+find</h2>
 
 <p>
 </p>
@@ -1898,9 +2996,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="proveedores-POSTapi-v1-providers">Crear nuevo proveedor
+                    <h2 id="provider-POSTapi-v1-providers">Post
 
-Registra un proveedor en el sistema.</h2>
+save</h2>
 
 <p>
 </p>
@@ -2042,9 +3140,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
-                    <h2 id="proveedores-PUTapi-v1-providers--id-">Actualizar proveedor
+                    <h2 id="provider-PUTapi-v1-providers--id-">Put
 
-Modifica los datos de un proveedor.</h2>
+update</h2>
 
 <p>
 </p>
@@ -2164,9 +3262,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="proveedores-PATCHapi-v1-providers--id--status">Eliminar proveedor
+                    <h2 id="provider-PATCHapi-v1-providers--id--status">Patch
 
-Elimina lógicamente un proveedor.</h2>
+update</h2>
 
 <p>
 </p>
@@ -2286,9 +3384,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
-                    <h2 id="proveedores-DELETEapi-v1-providers--id-">Cambiar estado del proveedor
+                    <h2 id="provider-DELETEapi-v1-providers--id-">Delete
 
-Activa o desactiva un proveedor.</h2>
+delete</h2>
 
 <p>
 </p>
@@ -2405,1104 +3503,6 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="url">
     <br>
 <p>The ID of the provider. Example: <code>consequatur</code></p>
-            </div>
-                    </form>
-
-                <h1 id="tipos-de-cuenta">Tipos de Cuenta</h1>
-
-    
-
-                                <h2 id="tipos-de-cuenta-GETapi-v1-account_types">Listar todos los tipos de cuenta
-
-Retorna todos los tipos de cuenta registrados.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-GETapi-v1-account_types">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/v1/account_types" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/v1/account_types"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "GET",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-GETapi-v1-account_types">
-            <blockquote>
-            <p>Example response (200):</p>
-        </blockquote>
-                <details class="annotation">
-            <summary style="cursor: pointer;">
-                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
-            </summary>
-            <pre><code class="language-http">cache-control: no-cache, private
-content-type: application/json
-access-control-allow-origin: *
- </code></pre></details>         <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;status&quot;: &quot;OK&quot;,
-    &quot;code&quot;: 200,
-    &quot;message&quot;: &quot;Account Type Obtained Correctly&quot;,
-    &quot;data&quot;: [
-        {
-            &quot;id&quot;: 1,
-            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
-            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
-            &quot;active&quot;: 1,
-            &quot;created_at&quot;: &quot;2025-07-14&quot;,
-            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
-            &quot;deleted_at&quot;: null
-        },
-        {
-            &quot;id&quot;: 2,
-            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
-            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
-            &quot;active&quot;: 1,
-            &quot;created_at&quot;: &quot;2025-07-14&quot;,
-            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
-            &quot;deleted_at&quot;: null
-        }
-    ]
-}</code>
- </pre>
-    </span>
-<span id="execution-results-GETapi-v1-account_types" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-GETapi-v1-account_types"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-v1-account_types"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-GETapi-v1-account_types" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-v1-account_types">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-GETapi-v1-account_types" data-method="GET"
-      data-path="api/v1/account_types"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-account_types', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-v1-account_types"
-                    onclick="tryItOut('GETapi-v1-account_types');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-v1-account_types"
-                    onclick="cancelTryOut('GETapi-v1-account_types');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-v1-account_types"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-green">GET</small>
-            <b><code>api/v1/account_types</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-v1-account_types"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-v1-account_types"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        </form>
-
-                    <h2 id="tipos-de-cuenta-GETapi-v1-account_types-all">Listar todos incluyendo eliminados
-
-Muestra todos los tipos de cuenta, incluso los eliminados lógicamente.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-GETapi-v1-account_types-all">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/v1/account_types/all" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/v1/account_types/all"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "GET",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-GETapi-v1-account_types-all">
-            <blockquote>
-            <p>Example response (200):</p>
-        </blockquote>
-                <details class="annotation">
-            <summary style="cursor: pointer;">
-                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
-            </summary>
-            <pre><code class="language-http">cache-control: no-cache, private
-content-type: application/json
-access-control-allow-origin: *
- </code></pre></details>         <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;status&quot;: &quot;OK&quot;,
-    &quot;code&quot;: 200,
-    &quot;message&quot;: &quot;Data Obtained Correctly&quot;,
-    &quot;data&quot;: [
-        {
-            &quot;id&quot;: 1,
-            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
-            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
-            &quot;active&quot;: 1,
-            &quot;created_at&quot;: &quot;2025-07-14&quot;,
-            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
-            &quot;deleted_at&quot;: null
-        },
-        {
-            &quot;id&quot;: 2,
-            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
-            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
-            &quot;active&quot;: 1,
-            &quot;created_at&quot;: &quot;2025-07-14&quot;,
-            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
-            &quot;deleted_at&quot;: null
-        }
-    ]
-}</code>
- </pre>
-    </span>
-<span id="execution-results-GETapi-v1-account_types-all" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-GETapi-v1-account_types-all"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-v1-account_types-all"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-GETapi-v1-account_types-all" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-v1-account_types-all">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-GETapi-v1-account_types-all" data-method="GET"
-      data-path="api/v1/account_types/all"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-account_types-all', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-v1-account_types-all"
-                    onclick="tryItOut('GETapi-v1-account_types-all');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-v1-account_types-all"
-                    onclick="cancelTryOut('GETapi-v1-account_types-all');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-v1-account_types-all"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-green">GET</small>
-            <b><code>api/v1/account_types/all</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-v1-account_types-all"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-v1-account_types-all"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        </form>
-
-                    <h2 id="tipos-de-cuenta-GETapi-v1-account_types-active">Listar tipos de cuenta activos
-
-Retorna solo los tipos de cuenta actualmente activos.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-GETapi-v1-account_types-active">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/v1/account_types/active" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/v1/account_types/active"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "GET",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-GETapi-v1-account_types-active">
-            <blockquote>
-            <p>Example response (200):</p>
-        </blockquote>
-                <details class="annotation">
-            <summary style="cursor: pointer;">
-                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
-            </summary>
-            <pre><code class="language-http">cache-control: no-cache, private
-content-type: application/json
-access-control-allow-origin: *
- </code></pre></details>         <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;status&quot;: &quot;OK&quot;,
-    &quot;code&quot;: 200,
-    &quot;message&quot;: &quot;Data Obtained Correctly&quot;,
-    &quot;data&quot;: [
-        {
-            &quot;id&quot;: 1,
-            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
-            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
-            &quot;active&quot;: 1,
-            &quot;created_at&quot;: &quot;2025-07-14&quot;,
-            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
-            &quot;deleted_at&quot;: null
-        },
-        {
-            &quot;id&quot;: 2,
-            &quot;name&quot;: &quot;vmqeopfuudtdsufvyvddq&quot;,
-            &quot;icon&quot;: &quot;amniihfqcoynlazghdtqt&quot;,
-            &quot;active&quot;: 1,
-            &quot;created_at&quot;: &quot;2025-07-14&quot;,
-            &quot;updated_at&quot;: &quot;2025-07-14&quot;,
-            &quot;deleted_at&quot;: null
-        }
-    ]
-}</code>
- </pre>
-    </span>
-<span id="execution-results-GETapi-v1-account_types-active" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-GETapi-v1-account_types-active"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-v1-account_types-active"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-GETapi-v1-account_types-active" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-v1-account_types-active">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-GETapi-v1-account_types-active" data-method="GET"
-      data-path="api/v1/account_types/active"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-account_types-active', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-v1-account_types-active"
-                    onclick="tryItOut('GETapi-v1-account_types-active');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-v1-account_types-active"
-                    onclick="cancelTryOut('GETapi-v1-account_types-active');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-v1-account_types-active"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-green">GET</small>
-            <b><code>api/v1/account_types/active</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-v1-account_types-active"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-v1-account_types-active"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        </form>
-
-                    <h2 id="tipos-de-cuenta-GETapi-v1-account_types--id-">Ver tipo de cuenta por ID
-
-Retorna los detalles de un tipo de cuenta específico.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-GETapi-v1-account_types--id-">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost:8000/api/v1/account_types/consequatur" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/v1/account_types/consequatur"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "GET",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-GETapi-v1-account_types--id-">
-            <blockquote>
-            <p>Example response (200):</p>
-        </blockquote>
-                <details class="annotation">
-            <summary style="cursor: pointer;">
-                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
-            </summary>
-            <pre><code class="language-http">cache-control: no-cache, private
-content-type: application/json
-access-control-allow-origin: *
- </code></pre></details>         <pre>
-
-<code class="language-json" style="max-height: 300px;">{
-    &quot;status&quot;: &quot;FAILED&quot;,
-    &quot;code&quot;: 404,
-    &quot;message&quot;: &quot;Not Data with this Account Type.&quot;
-}</code>
- </pre>
-    </span>
-<span id="execution-results-GETapi-v1-account_types--id-" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-GETapi-v1-account_types--id-"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-GETapi-v1-account_types--id-"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-GETapi-v1-account_types--id-" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-GETapi-v1-account_types--id-">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-GETapi-v1-account_types--id-" data-method="GET"
-      data-path="api/v1/account_types/{id}"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-account_types--id-', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-GETapi-v1-account_types--id-"
-                    onclick="tryItOut('GETapi-v1-account_types--id-');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-GETapi-v1-account_types--id-"
-                    onclick="cancelTryOut('GETapi-v1-account_types--id-');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-GETapi-v1-account_types--id-"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-green">GET</small>
-            <b><code>api/v1/account_types/{id}</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="GETapi-v1-account_types--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="GETapi-v1-account_types--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="id"                data-endpoint="GETapi-v1-account_types--id-"
-               value="consequatur"
-               data-component="url">
-    <br>
-<p>The ID of the account type. Example: <code>consequatur</code></p>
-            </div>
-                    </form>
-
-                    <h2 id="tipos-de-cuenta-POSTapi-v1-account_types">Crear nuevo tipo de cuenta
-
-Registra un nuevo tipo de cuenta en el sistema.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-POSTapi-v1-account_types">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request POST \
-    "http://localhost:8000/api/v1/account_types" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json" \
-    --data "{
-    \"name\": \"vmqeopfuudtdsufvyvddq\",
-    \"icon\": \"amniihfqcoynlazghdtqt\"
-}"
-</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/v1/account_types"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-let body = {
-    "name": "vmqeopfuudtdsufvyvddq",
-    "icon": "amniihfqcoynlazghdtqt"
-};
-
-fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-POSTapi-v1-account_types">
-</span>
-<span id="execution-results-POSTapi-v1-account_types" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-POSTapi-v1-account_types"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-POSTapi-v1-account_types"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-POSTapi-v1-account_types" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-POSTapi-v1-account_types">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-POSTapi-v1-account_types" data-method="POST"
-      data-path="api/v1/account_types"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('POSTapi-v1-account_types', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-POSTapi-v1-account_types"
-                    onclick="tryItOut('POSTapi-v1-account_types');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-POSTapi-v1-account_types"
-                    onclick="cancelTryOut('POSTapi-v1-account_types');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-POSTapi-v1-account_types"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-black">POST</small>
-            <b><code>api/v1/account_types</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="POSTapi-v1-account_types"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="POSTapi-v1-account_types"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
-        <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>name</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="name"                data-endpoint="POSTapi-v1-account_types"
-               value="vmqeopfuudtdsufvyvddq"
-               data-component="body">
-    <br>
-<p>Must not be greater than 35 characters. Example: <code>vmqeopfuudtdsufvyvddq</code></p>
-        </div>
-                <div style=" padding-left: 28px;  clear: unset;">
-            <b style="line-height: 2;"><code>icon</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="icon"                data-endpoint="POSTapi-v1-account_types"
-               value="amniihfqcoynlazghdtqt"
-               data-component="body">
-    <br>
-<p>Must not be greater than 35 characters. Example: <code>amniihfqcoynlazghdtqt</code></p>
-        </div>
-        </form>
-
-                    <h2 id="tipos-de-cuenta-PUTapi-v1-account_types--id-">Actualizar tipo de cuenta
-
-Modifica un tipo de cuenta existente.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-PUTapi-v1-account_types--id-">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request PUT \
-    "http://localhost:8000/api/v1/account_types/consequatur" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/v1/account_types/consequatur"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "PUT",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-PUTapi-v1-account_types--id-">
-</span>
-<span id="execution-results-PUTapi-v1-account_types--id-" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-PUTapi-v1-account_types--id-"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-PUTapi-v1-account_types--id-"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-PUTapi-v1-account_types--id-" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-PUTapi-v1-account_types--id-">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-PUTapi-v1-account_types--id-" data-method="PUT"
-      data-path="api/v1/account_types/{id}"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('PUTapi-v1-account_types--id-', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-PUTapi-v1-account_types--id-"
-                    onclick="tryItOut('PUTapi-v1-account_types--id-');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-PUTapi-v1-account_types--id-"
-                    onclick="cancelTryOut('PUTapi-v1-account_types--id-');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-PUTapi-v1-account_types--id-"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-darkblue">PUT</small>
-            <b><code>api/v1/account_types/{id}</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="PUTapi-v1-account_types--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="PUTapi-v1-account_types--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="id"                data-endpoint="PUTapi-v1-account_types--id-"
-               value="consequatur"
-               data-component="url">
-    <br>
-<p>The ID of the account type. Example: <code>consequatur</code></p>
-            </div>
-                    </form>
-
-                    <h2 id="tipos-de-cuenta-PATCHapi-v1-account_types--id--status">Eliminar tipo de cuenta
-
-Elimina lógicamente un tipo de cuenta.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-PATCHapi-v1-account_types--id--status">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request PATCH \
-    "http://localhost:8000/api/v1/account_types/consequatur/status" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/v1/account_types/consequatur/status"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "PATCH",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-PATCHapi-v1-account_types--id--status">
-</span>
-<span id="execution-results-PATCHapi-v1-account_types--id--status" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-PATCHapi-v1-account_types--id--status"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-PATCHapi-v1-account_types--id--status"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-PATCHapi-v1-account_types--id--status" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-PATCHapi-v1-account_types--id--status">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-PATCHapi-v1-account_types--id--status" data-method="PATCH"
-      data-path="api/v1/account_types/{id}/status"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-v1-account_types--id--status', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-PATCHapi-v1-account_types--id--status"
-                    onclick="tryItOut('PATCHapi-v1-account_types--id--status');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-PATCHapi-v1-account_types--id--status"
-                    onclick="cancelTryOut('PATCHapi-v1-account_types--id--status');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-PATCHapi-v1-account_types--id--status"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-purple">PATCH</small>
-            <b><code>api/v1/account_types/{id}/status</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="PATCHapi-v1-account_types--id--status"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="PATCHapi-v1-account_types--id--status"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="id"                data-endpoint="PATCHapi-v1-account_types--id--status"
-               value="consequatur"
-               data-component="url">
-    <br>
-<p>The ID of the account type. Example: <code>consequatur</code></p>
-            </div>
-                    </form>
-
-                    <h2 id="tipos-de-cuenta-DELETEapi-v1-account_types--id-">Cambiar estado del tipo de cuenta
-
-Activa o desactiva un tipo de cuenta.</h2>
-
-<p>
-</p>
-
-
-
-<span id="example-requests-DELETEapi-v1-account_types--id-">
-<blockquote>Example request:</blockquote>
-
-
-<div class="bash-example">
-    <pre><code class="language-bash">curl --request DELETE \
-    "http://localhost:8000/api/v1/account_types/consequatur" \
-    --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
-
-
-<div class="javascript-example">
-    <pre><code class="language-javascript">const url = new URL(
-    "http://localhost:8000/api/v1/account_types/consequatur"
-);
-
-const headers = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
-};
-
-fetch(url, {
-    method: "DELETE",
-    headers,
-}).then(response =&gt; response.json());</code></pre></div>
-
-</span>
-
-<span id="example-responses-DELETEapi-v1-account_types--id-">
-</span>
-<span id="execution-results-DELETEapi-v1-account_types--id-" hidden>
-    <blockquote>Received response<span
-                id="execution-response-status-DELETEapi-v1-account_types--id-"></span>:
-    </blockquote>
-    <pre class="json"><code id="execution-response-content-DELETEapi-v1-account_types--id-"
-      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
-</span>
-<span id="execution-error-DELETEapi-v1-account_types--id-" hidden>
-    <blockquote>Request failed with error:</blockquote>
-    <pre><code id="execution-error-message-DELETEapi-v1-account_types--id-">
-
-Tip: Check that you&#039;re properly connected to the network.
-If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
-You can check the Dev Tools console for debugging information.</code></pre>
-</span>
-<form id="form-DELETEapi-v1-account_types--id-" data-method="DELETE"
-      data-path="api/v1/account_types/{id}"
-      data-authed="0"
-      data-hasfiles="0"
-      data-isarraybody="0"
-      autocomplete="off"
-      onsubmit="event.preventDefault(); executeTryOut('DELETEapi-v1-account_types--id-', this);">
-    <h3>
-        Request&nbsp;&nbsp;&nbsp;
-                    <button type="button"
-                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-tryout-DELETEapi-v1-account_types--id-"
-                    onclick="tryItOut('DELETEapi-v1-account_types--id-');">Try it out ⚡
-            </button>
-            <button type="button"
-                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-canceltryout-DELETEapi-v1-account_types--id-"
-                    onclick="cancelTryOut('DELETEapi-v1-account_types--id-');" hidden>Cancel 🛑
-            </button>&nbsp;&nbsp;
-            <button type="submit"
-                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
-                    id="btn-executetryout-DELETEapi-v1-account_types--id-"
-                    data-initial-text="Send Request 💥"
-                    data-loading-text="⏱ Sending..."
-                    hidden>Send Request 💥
-            </button>
-            </h3>
-            <p>
-            <small class="badge badge-red">DELETE</small>
-            <b><code>api/v1/account_types/{id}</code></b>
-        </p>
-                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Content-Type"                data-endpoint="DELETEapi-v1-account_types--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                                <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
-&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="Accept"                data-endpoint="DELETEapi-v1-account_types--id-"
-               value="application/json"
-               data-component="header">
-    <br>
-<p>Example: <code>application/json</code></p>
-            </div>
-                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
-                    <div style="padding-left: 28px; clear: unset;">
-                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
-<small>string</small>&nbsp;
- &nbsp;
-                <input type="text" style="display: none"
-                              name="id"                data-endpoint="DELETEapi-v1-account_types--id-"
-               value="consequatur"
-               data-component="url">
-    <br>
-<p>The ID of the account type. Example: <code>consequatur</code></p>
             </div>
                     </form>
 
