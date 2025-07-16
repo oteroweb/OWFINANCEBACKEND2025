@@ -5,6 +5,7 @@ namespace App\Models\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Entities\Provider;
 
 class Transaction extends Model
 {
@@ -30,4 +31,9 @@ class Transaction extends Model
         'deleted_at' => 'datetime:Y-m-d',
         'date'       => 'datetime:Y-m-d H:i:s',
     ];
+
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class);
+    }
 }
