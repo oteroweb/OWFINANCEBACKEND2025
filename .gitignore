@@ -24,3 +24,4 @@ Homestead.yaml
 Thumbs.db
 .scribe
 resources/views/scribe/index.blade.php
+public/vendor/scribe/
