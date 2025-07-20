@@ -5,28 +5,35 @@ namespace App\Models\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
-use App\Models\Entities\Transaction;
+use App\Models\Entities\Provider;
 
-class Provider extends Model
+class Transaction extends Model
 {
     use SoftDeletes;
     use Notifiable;
-    // protected $table      = 'providers';
+
     protected $fillable = [
-            'name',
-            'address',
-            'active',
-            'deleted_at',
+        'name',
+        'amount',
+        'description',
+        'date',
+        'active',
+        'deleted_at',
+        'provider_id',
+        'url_file',
+        'rate_id',
+        'amount_tax',
     ];
 
     protected $casts = [
         'created_at' => 'datetime:Y-m-d',
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',
+        'date'       => 'datetime:Y-m-d H:i:s',
     ];
 
-    public function transactions()
+    public function provider()
     {
-        return $this->hasMany(Transaction::class);
+        return $this->belongsTo(Provider::class);
     }
 }
