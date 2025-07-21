@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('account_types', function (Blueprint $table) {
+        Schema::create('rates', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 35);
-            $table->string('description',255);
-            $table->string('icon', 35);
-            $table->boolean('active')->default(1);
-            $table->timestamps();
+            $table->string('name', 100);
+            $table->date('date');
+            $table->boolean('active')->default(true);
             $table->softDeletes();
+            $table->timestamps();
         });
     }
 
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('account_types');
+        Schema::dropIfExists('rates');
     }
 };

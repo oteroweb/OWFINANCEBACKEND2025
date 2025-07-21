@@ -14,7 +14,16 @@ return new class extends Migration
         Schema::create('providers', function (Blueprint $table) {
             $table->id();
             $table->string('name', 35);
-            $table->string('address', 35);
+            $table->string('description', 255)->nullable();
+            $table->string('address', 255)->nullable();
+            $table->string('email', 50)->unique();
+            $table->string('phone', 20)->nullable();
+            $table->string('website', 100)->nullable();
+            $table->string('logo', 100)->nullable();
+            $table->string('country', 50)->nullable();
+            $table->string('city', 50)->nullable();
+            $table->string('postal_code', 20)->nullable();
+            $table->string('state', 50)->nullable();
             $table->boolean('active')->default(1);
             $table->timestamps();
             $table->softDeletes();

@@ -3,14 +3,14 @@
 namespace App\Models\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Entities\Transaction;
 
 class Provider extends Model
 {
-    use SoftDeletes;
-    use Notifiable;
+    use HasFactory, SoftDeletes, Notifiable;
     // protected $table      = 'providers';
     protected $fillable = [
             'name',
@@ -28,5 +28,10 @@ class Provider extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\ProviderFactory::new();
     }
 }

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name', 35);
             $table->unsignedBigInteger('currency_id');
             $table->decimal('initial', 10, 2);
+            $table->decimal('balance', 10, 2)->default(0);
             $table->unsignedBigInteger('account_type_id');
             $table->boolean('active')->default(true);
             $table->timestamps();

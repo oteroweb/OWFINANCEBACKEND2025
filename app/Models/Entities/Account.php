@@ -27,4 +27,9 @@ class Account extends Model
     {
         return $this->belongsTo(AccountType::class);
     }
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\AccountFactory::new();
+    }
 }
