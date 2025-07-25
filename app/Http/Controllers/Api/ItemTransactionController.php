@@ -1,0 +1,315 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Repositories\ItemTransactionRepo;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+
+class ItemTransactionController extends Controller
+{
+    private $ItemTransactionRepo;
+
+    public function __construct(ItemTransactionRepo $ItemTransactionRepo)
+    {
+        $this->ItemTransactionRepo = $ItemTransactionRepo;
+    }
+
+    /**
+     * @group ItemTransaction
+     * Get
+     *
+     * all
+     */
+    public function all()
+    {
+        try {
+            $itemTransaction = $this->ItemTransactionRepo->all();
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('ItemTransaction Obtained Correctly'),
+                'data'    => $itemTransaction,
+            ];
+            return response()->json($response, 200);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
+
+    /**
+     * @group ItemTransaction
+     * Get
+     *
+     * all active
+     */
+    public function allActive()
+    {
+        try {
+            $itemTransaction = $this->ItemTransactionRepo->allActive();
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('Data Obtained Correctly'),
+                'data'    => $itemTransaction,
+            ];
+            return response()->json($response, 200);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
+
+    /**
+     * @group ItemTransaction
+     * Get
+     * @urlParam id integer required The ID of the item transaction. Example: 1
+     *
+     * find
+     */
+    public function find($id)
+    {
+        try {
+            $itemTransaction = $this->ItemTransactionRepo->find($id);
+            if (isset($itemTransaction->id)) {
+                $response = [
+                    'status'  => 'OK',
+                    'code'    => 200,
+                    'message' => __('ItemTransaction Obtained Correctly'),
+                    'data'    => $itemTransaction,
+                ];
+                return response()->json($response, 200);
+            }
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 404,
+                'message' => __('Not Data with this ItemTransaction') . '.',
+            ];
+            return response()->json($response, 200);
+        } catch (\Exception $ex) {
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
+
+    /**
+     * @group ItemTransaction
+     * Post
+     *
+     * save
+     */
+    public function save(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'transaction_id' => 'required|exists:transactions,id',
+            'name'           => 'required|max:100',
+            'amount'         => 'required|numeric',
+            'date'           => 'required|date',
+        ], $this->custom_message());
+
+        if ($validator->fails()) {
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 400,
+                'message' => __('Incorrect Params'),
+                'data'    => $validator->errors()->getMessages(),
+            ];
+            return response()->json($response);
+        }
+        try {
+            $data = [
+                'transaction_id' => $request->input('transaction_id'),
+                'name'           => $request->input('name'),
+                'amount'         => $request->input('amount'),
+                'tax_id'         => $request->input('tax_id'),
+                'rate_id'        => $request->input('rate_id'),
+                'description'    => $request->input('description'),
+                'jar_id'         => $request->input('jar_id'),
+                'date'           => $request->input('date'),
+                'category_id'    => $request->input('category_id'),
+                'user_id'        => $request->input('user_id'),
+                'custom_name'    => $request->input('custom_name'),
+            ];
+            $itemTransaction = $this->ItemTransactionRepo->store($data);
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('ItemTransaction saved correctly'),
+                'data'    => $itemTransaction,
+            ];
+            return response()->json($response, 200);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
+
+    /**
+     * @group ItemTransaction
+     * Put
+     *
+     * update
+     * @urlParam id integer required The ID of the item transaction. Example: 1
+     */
+    public function update(Request $request, $id)
+    {
+        $itemTransaction = $this->ItemTransactionRepo->find($id);
+        if (isset($itemTransaction->id)) {
+            $data = [];
+            if ($request->has('transaction_id')) { $data['transaction_id'] = $request->input('transaction_id'); }
+            if ($request->has('name')) { $data['name'] = $request->input('name'); }
+            if ($request->has('amount')) { $data['amount'] = $request->input('amount'); }
+            if ($request->has('tax_id')) { $data['tax_id'] = $request->input('tax_id'); }
+            if ($request->has('rate_id')) { $data['rate_id'] = $request->input('rate_id'); }
+            if ($request->has('description')) { $data['description'] = $request->input('description'); }
+            if ($request->has('jar_id')) { $data['jar_id'] = $request->input('jar_id'); }
+            if ($request->has('date')) { $data['date'] = $request->input('date'); }
+            if ($request->has('category_id')) { $data['category_id'] = $request->input('category_id'); }
+            if ($request->has('user_id')) { $data['user_id'] = $request->input('user_id'); }
+            if ($request->has('custom_name')) { $data['custom_name'] = $request->input('custom_name'); }
+            if ($request->has('active')) { $data['active'] = $request->input('active'); }
+            $itemTransaction = $this->ItemTransactionRepo->update($itemTransaction, $data);
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('ItemTransaction updated'),
+                'data'    => $itemTransaction,
+            ];
+            return response()->json($response, 200);
+        }
+        $response = [
+            'status'  => 'FAILED',
+            'code'    => 500,
+            'message' => __('ItemTransaction dont exists') . '.',
+        ];
+        return response()->json($response, 500);
+    }
+
+    /**
+     * @group ItemTransaction
+     * Delete
+     * @urlParam id integer required The ID of the item transaction. Example: 1
+     *
+     * delete
+     */
+    public function delete(Request $request, $id)
+    {
+        try {
+            if ($this->ItemTransactionRepo->find($id)) {
+                $itemTransaction = $this->ItemTransactionRepo->find($id);
+                $itemTransaction = $this->ItemTransactionRepo->delete($itemTransaction);
+                $response = [
+                    'status'  => 'OK',
+                    'code'    => 200,
+                    'message' => __('ItemTransaction Deleted Successfully'),
+                    'data'    => $itemTransaction,
+                ];
+                return response()->json($response, 200);
+            } else {
+                $response = [
+                    'status'  => 'OK',
+                    'code'    => 404,
+                    'message' => __('ItemTransaction not Found'),
+                ];
+                return response()->json($response, 200);
+            }
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
+
+    /**
+     * @group ItemTransaction
+     * Patch
+     * @urlParam id integer required The ID of the item transaction. Example: 1
+     *
+     * change_status
+     */
+    public function change_status(Request $request, $id)
+    {
+        $itemTransaction = $this->ItemTransactionRepo->find($id);
+        if (isset($itemTransaction->active)) {
+            $data = ['active' => $itemTransaction->active ? 0 : 1];
+            $itemTransaction = $this->ItemTransactionRepo->update($itemTransaction, $data);
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('Status ItemTransaction updated'),
+                'data'    => $itemTransaction,
+            ];
+            return response()->json($response, 200);
+        }
+        $response = [
+            'status'  => 'FAILED',
+            'code'    => 500,
+            'message' => __('ItemTransaction does not exist') . '.',
+        ];
+        return response()->json($response, 500);
+    }
+
+    /**
+     * @group ItemTransaction
+     * Get
+     *
+     * withTrashed
+     */
+    public function withTrashed()
+    {
+        try {
+            $itemTransaction = $this->ItemTransactionRepo->withTrashed();
+            $response = [
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => __('Data Obtained Correctly'),
+                'data'    => $itemTransaction,
+            ];
+            return response()->json($response, 200);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
+            return response()->json($response, 500);
+        }
+    }
+
+    public function custom_message()
+    {
+        return [
+            'transaction_id.required' => __('The transaction_id is required'),
+            'name.required'           => __('The name is required'),
+            'amount.required'         => __('The amount is required'),
+            'date.required'           => __('The date is required'),
+        ];
+    }
+}

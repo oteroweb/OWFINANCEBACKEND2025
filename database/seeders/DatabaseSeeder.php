@@ -21,7 +21,9 @@ class DatabaseSeeder extends Seeder
             ProviderSeeder::class,
             AccountSeeder::class,
             RateSeeder::class,
+            TaxSeeder::class,
             TransactionSeeder::class,
+            ItemTransactionSeeder::class,
         ]);
     }
 }
