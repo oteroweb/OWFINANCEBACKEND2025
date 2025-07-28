@@ -36,6 +36,8 @@ class TransactionFactory extends Factory
             'provider_id' => 1,
             'url_file' => $this->faker->url(),
             'rate_id' => 1,
+            'transaction_type' => $this->faker->randomElement(['income','expense']),
+            'user_id' => 1,
             'amount_tax' => $this->faker->randomFloat(2, 0, 100),
             
         ];
