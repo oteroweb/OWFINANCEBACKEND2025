@@ -21,7 +21,11 @@ class DatabaseSeeder extends Seeder
             ProviderSeeder::class,
             AccountSeeder::class,
             RateSeeder::class,
+            TaxSeeder::class,
+            CategorySeeder::class,
+            JarSeeder::class,
             TransactionSeeder::class,
+            ItemTransactionSeeder::class,
         ]);
     }
 }

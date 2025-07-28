@@ -21,6 +21,8 @@ return new class extends Migration
             $table->unsignedBigInteger('provider_id')->nullable();
             $table->string('url_file')->nullable();
             $table->unsignedBigInteger('rate_id')->nullable();
+            $table->string('transaction_type')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('account_id')->nullable();
             $table->decimal('amount_tax', 10, 2)->nullable();
             $table->timestamps();
@@ -28,6 +30,7 @@ return new class extends Migration
 
             $table->foreign('provider_id')->references('id')->on('providers');
             $table->foreign('rate_id')->references('id')->on('rates')->onDelete('set null');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
             $table->foreign('account_id')->references('id')->on('accounts')->onDelete('set null');
         });
     }

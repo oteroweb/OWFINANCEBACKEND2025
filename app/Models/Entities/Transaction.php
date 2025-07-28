@@ -22,6 +22,9 @@ class Transaction extends Model
         'provider_id',
         'url_file',
         'rate_id',
+        'transaction_type',
+        'user_id',
+        'account_id',
         'amount_tax',
     ];
 
