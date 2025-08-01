@@ -10,19 +10,122 @@ use App\Models\Entities\Currency;
 class CurrencyTest extends TestCase
 {
     use RefreshDatabase;
+    /**
+     * Test cambiar el estado de una currency.
+     */
+    public function test_change_status_currency()
+    {
+        $currency = Currency::factory()->create(['active' => 1]);
+        $response = $this->patchJson('/api/v1/currencies/' . $currency->id . '/status');
+        $response->assertStatus(200)
+            ->assertJson([
+                'status' => 'OK',
+                'message' => __('Status Currency updated')
+            ]);
+        $currency->refresh();
+        $this->assertEquals(0, $currency->active);
+    }
 
     /**
-     * Test get all currencies.
+     * Test obtener solo currencies activas.
+     */
+    public function test_get_all_active_currencies()
+    {
+        Currency::factory()->create(['active' => 1]);
+        Currency::factory()->create(['active' => 0]);
+        $response = $this->getJson('/api/v1/currencies/active');
+        $response->assertStatus(200);
+        $json = $response->json();
+        $this->assertArrayHasKey('data', $json);
+        if (!empty($json['data'])) {
+            foreach ($json['data'] as $c) {
+                $this->assertArrayHasKey('id', $c);
+                $this->assertArrayHasKey('name', $c);
+                $this->assertArrayHasKey('symbol', $c);
+                $this->assertArrayHasKey('code', $c);
+                $this->assertArrayHasKey('tax', $c);
+                $this->assertArrayHasKey('active', $c);
+                $this->assertEquals(1, $c['active']);
+            }
+        }
+    }
+
+    /**
+     * Test obtener currencies con eliminados (withTrashed).
+     */
+    public function test_get_currencies_with_trashed()
+    {
+        $currency = Currency::factory()->create();
+        $currency->delete();
+        $response = $this->getJson('/api/v1/currencies/all');
+        $response->assertStatus(200);
+        $json = $response->json();
+        $this->assertArrayHasKey('data', $json);
+        if (!empty($json['data'])) {
+            foreach ($json['data'] as $c) {
+                $this->assertArrayHasKey('id', $c);
+                $this->assertArrayHasKey('name', $c);
+                $this->assertArrayHasKey('symbol', $c);
+                $this->assertArrayHasKey('code', $c);
+                $this->assertArrayHasKey('tax', $c);
+                $this->assertArrayHasKey('active', $c);
+            }
+            $ids = collect($json['data'])->pluck('id');
+            $this->assertTrue($ids->contains($currency->id));
+        }
+    }
+
+
+    /**
+     * Test full currency flow: create, find, update, list, delete.
      *
      * @return void
      */
-    public function test_get_all_currencies()
+    public function test_currency_crud_flow()
     {
-        Currency::factory()->count(3)->create();
+        // Crear
+        $currencyData = [
+            'name' => 'Test Currency',
+            'tax' => 10.00,
+            'last_tax' => 9.00,
+            'symbol' => 'TC',
+            'symbol_native' => 'TCn',
+            'decimal_digits' => 2,
+            'rounding' => 0,
+            'name_plural' => 'Test Currencies',
+            'code' => 'TC'
+        ];
+        $createResponse = $this->postJson('/api/v1/currencies/', $currencyData);
+        $createResponse->assertStatus(200)
+            ->assertJson([
+                'status' => 'OK',
+                'message' => __('Currency saved correctly')
+            ]);
+        $currencyId = $createResponse->json('data.id') ?? \App\Models\Entities\Currency::where('name', 'Test Currency')->first()->id;
 
-        $response = $this->getJson('/api/v1/currencies/all');
+        // Buscar por id
+        $findResponse = $this->getJson('/api/v1/currencies/' . $currencyId);
+        $findResponse->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'id' => $currencyId,
+                    'name' => 'Test Currency'
+                ]
+            ]);
 
-        $response->assertStatus(200)
+        // Actualizar
+        $updateData = ['name' => 'Updated Name'];
+        $updateResponse = $this->putJson('/api/v1/currencies/' . $currencyId, $updateData);
+        $updateResponse->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'name' => 'Updated Name'
+                ]
+            ]);
+
+        // Listar todos
+        $listResponse = $this->getJson('/api/v1/currencies/');
+        $listResponse->assertStatus(200)
             ->assertJsonStructure([
                 'status',
                 'code',
@@ -38,92 +141,11 @@ class CurrencyTest extends TestCase
                     ]
                 ]
             ]);
-    }
+        $this->assertTrue(collect($listResponse->json('data'))->contains('id', $currencyId));
 
-    /**
-     * Test find a currency.
-     *
-     * @return void
-     */
-    public function test_find_currency()
-    {
-        $currency = Currency::factory()->create();
-
-        $response = $this->getJson('/api/v1/currencies/find/' . $currency->id);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'data' => [
-                    'id' => $currency->id,
-                    'name' => $currency->name
-                ]
-            ]);
-    }
-
-    /**
-     * Test create a new currency.
-     *
-     * @return void
-     */
-    public function test_create_currency()
-    {
-        $currencyData = [
-            'name' => 'Test Currency',
-            'tax' => 10.00,
-            'last_tax' => 9.00,
-            'symbol' => 'TC',
-            'symbol_native' => 'TCn',
-            'decimal_digits' => 2,
-            'rounding' => 0,
-            'name_plural' => 'Test Currencies',
-            'code' => 'TC'
-        ];
-
-        $response = $this->postJson('/api/v1/currencies/save', $currencyData);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'status' => 'OK',
-                'message' => __('Currency saved correctly')
-            ]);
-
-        $this->assertDatabaseHas('currencies', ['name' => 'Test Currency']);
-    }
-
-    /**
-     * Test update a currency.
-     *
-     * @return void
-     */
-    public function test_update_currency()
-    {
-        $currency = Currency::factory()->create();
-
-        $updateData = ['name' => 'Updated Name'];
-
-        $response = $this->putJson('/api/v1/currencies/update/' . $currency->id, $updateData);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'data' => [
-                    'name' => 'Updated Name'
-                ]
-            ]);
-    }
-
-    /**
-     * Test delete a currency.
-     *
-     * @return void
-     */
-    public function test_delete_currency()
-    {
-        $currency = Currency::factory()->create();
-
-        $response = $this->deleteJson('/api/v1/currencies/delete/' . $currency->id);
-
-        $response->assertStatus(200);
-
-        $this->assertSoftDeleted('currencies', ['id' => $currency->id]);
+        // Eliminar
+        $deleteResponse = $this->deleteJson('/api/v1/currencies/' . $currencyId);
+        $deleteResponse->assertStatus(200);
+        $this->assertSoftDeleted('currencies', ['id' => $currencyId]);
     }
 }

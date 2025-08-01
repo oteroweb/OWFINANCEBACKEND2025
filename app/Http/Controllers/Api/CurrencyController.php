@@ -47,12 +47,13 @@ class CurrencyController extends Controller
      * all Active
      */
     public function allActive() {
-        try { $currency = $this->CurrencyRepo->allActive();
+        try {
+            $currency = $this->CurrencyRepo->allActive();
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
                 'message' => __('Data Obtained Correctly'),
-                'data'    => $currency,
+                'data'    => $currency ? $currency->toArray() : [],
             ];
             return response()->json($response, 200);
         } catch (\Exception $ex) {
@@ -307,12 +308,13 @@ class CurrencyController extends Controller
      */
 
     public function withTrashed() {
-        try { $currency = $this->CurrencyRepo->withTrashed();
+        try {
+            $currency = $this->CurrencyRepo->withTrashed();
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
                 'message' => __('Data Obtained Correctly'),
-                'data'    => $currency,
+                'data'    => $currency ? $currency->toArray() : [],
             ];
             return response()->json($response, 200);
         } catch (\Exception $ex) {
