@@ -21,6 +21,8 @@ return new class extends Migration
             $table->decimal('balance', 10, 2)->default(0);
             $table->unsignedBigInteger('currency_id')->nullable();
             $table->unsignedBigInteger('client_id')->nullable();
+            $table->boolean('active')->default(1);
+            $table->softDeletes();
             $table->rememberToken();
             $table->timestamps();
 
