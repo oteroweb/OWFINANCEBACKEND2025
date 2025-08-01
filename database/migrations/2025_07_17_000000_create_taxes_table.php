@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name', 35);
             $table->decimal('percent', 10, 2);
-            $table->boolean('active')->default(true);
+            $table->tinyInteger('active')->default(1);
             $table->date('date')->nullable();
             $table->timestamps();
             $table->softDeletes();

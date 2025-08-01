@@ -19,10 +19,21 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'phone',
         'email',
         'password',
         'role_id',
+        'balance',
+        'currency_id',
+        'client_id',
     ];
+    /**
+     * The accounts that belong to the user.
+     */
+    public function accounts()
+    {
+        return $this->belongsToMany(\App\Models\Entities\Account::class, 'account_user', 'user_id', 'account_id');
+    }
 
     /**
      * The attributes that should be hidden for serialization.

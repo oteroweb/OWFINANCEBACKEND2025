@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('initial', 10, 2);
             $table->decimal('balance', 10, 2)->default(0);
             $table->unsignedBigInteger('account_type_id');
-            $table->boolean('active')->default(true);
+            $table->tinyInteger('active')->default(1);
             $table->timestamps();
             $table->softDeletes();
 

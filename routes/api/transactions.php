@@ -9,11 +9,11 @@
 ], function () {
   //Transaction ROUTES
     Route::post('/', [TransactionController::class, 'save']);
-    Route::get('/{id}', [TransactionController::class, 'find']);
-    Route::put('/{id}', [TransactionController::class, 'update']);
+    Route::get('/active', [TransactionController::class, 'allActive']);
+    Route::get('/all', [TransactionController::class, 'withTrashed']);
     Route::get('/', [TransactionController::class, 'all']);
     Route::patch('/{id}/status', [TransactionController::class, 'change_status']);
-    Route::get('/active', [TransactionController::class, 'allActive']);
+    Route::put('/{id}', [TransactionController::class, 'update']);
     Route::delete('/{id}', [TransactionController::class, 'delete']);
-    Route::get('/all', [TransactionController::class, 'withTrashed']);
+    Route::get('/{id}', [TransactionController::class, 'find']);
   });

@@ -5,15 +5,15 @@ use App\Http\Controllers\Api\AccountController;
 
 Route::group([
     'middleware' => ['api'],
-    'prefix'     => 'v1/accounts',
+    'prefix'     => 'accounts',
 ], function () {
     //Account ROUTES 
     Route::post('/', [AccountController::class, 'save']);
-    Route::get('/{id}', [AccountController::class, 'find']);
-    Route::put('/{id}', [AccountController::class, 'update']);
+    Route::get('/active', [AccountController::class, 'allActive']);
+    Route::get('/all', [AccountController::class, 'withTrashed']);
     Route::get('/', [AccountController::class, 'all']);
     Route::patch('/{id}/status', [AccountController::class, 'change_status']);
-    Route::get('/active', [AccountController::class, 'allActive']);
+    Route::put('/{id}', [AccountController::class, 'update']);
     Route::delete('/{id}', [AccountController::class, 'delete']);
-    Route::get('/all', [AccountController::class, 'withTrashed']);
+    Route::get('/{id}', [AccountController::class, 'find']);
 });

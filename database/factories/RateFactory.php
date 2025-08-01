@@ -14,7 +14,7 @@ class RateFactory extends Factory
         return [
             'name' => $this->faker->word(),
             'date' => $this->faker->date(),
-            'active' => $this->faker->boolean(90),
+            'active' => $this->faker->randomElement([1, 0]),
         ];
     }
 }

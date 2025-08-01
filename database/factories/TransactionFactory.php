@@ -32,7 +32,7 @@ class TransactionFactory extends Factory
             'account_id' => $this->faker->numberBetween(1, 5), // Assuming you have accounts with IDs 1-10
             'name' => $this->faker->word(),
             'date' => $this->faker->dateTimeThisYear(),
-            'active' => $this->faker->boolean(),
+            'active' => $this->faker->randomElement([1, 0]),
             'provider_id' => 1,
             'url_file' => $this->faker->url(),
             'rate_id' => 1,

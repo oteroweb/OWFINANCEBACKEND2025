@@ -17,7 +17,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->string('description')->nullable();
             $table->dateTime('date');
-            $table->boolean('active')->default(true);
+            $table->tinyInteger('active')->default(1);
             $table->unsignedBigInteger('provider_id')->nullable();
             $table->string('url_file')->nullable();
             $table->unsignedBigInteger('rate_id')->nullable();

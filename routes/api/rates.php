@@ -9,8 +9,8 @@ Route::group([
 ], function () {
     // Rates ROUTES
     Route::post('/', [RateController::class, 'store']);
-    Route::get('/{id}', [RateController::class, 'show']);
-    Route::put('/{id}', [RateController::class, 'update']);
     Route::get('/', [RateController::class, 'index']);
     Route::delete('/{id}', [RateController::class, 'destroy']);
+    Route::put('/{id}', [RateController::class, 'update']);
+    Route::get('/{id}', [RateController::class, 'show']);
 });

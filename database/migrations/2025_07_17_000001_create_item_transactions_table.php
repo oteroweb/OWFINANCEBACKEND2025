@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('rate_id')->nullable();
             $table->string('description')->nullable();
             $table->unsignedBigInteger('jar_id')->nullable();
-            $table->boolean('active')->default(true);
+            $table->tinyInteger('active')->default(1);
             $table->softDeletes();
             $table->dateTime('date');
             $table->unsignedBigInteger('category_id')->nullable();
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->foreign('transaction_id')->references('id')->on('transactions')->onDelete('cascade');
             $table->foreign('tax_id')->references('id')->on('taxes')->onDelete('set null');
             $table->foreign('rate_id')->references('id')->on('rates')->onDelete('set null');
-            $table->foreign('jar_id')->references('id')->on('jar')->onDelete('set null');
+            $table->foreign('jar_id')->references('id')->on('jars')->onDelete('set null');
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('set null');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
         });

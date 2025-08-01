@@ -8,13 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('jar', function (Blueprint $table) {
+        Schema::create('jars', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100);
             $table->boolean('is_active')->default(true);
             $table->decimal('percent', 10, 2)->nullable();
             $table->string('type')->nullable();
-            $table->boolean('active')->default(true);
+            $table->tinyInteger('active')->default(1);
             $table->softDeletes();
             $table->date('date')->nullable();
             $table->timestamps();

@@ -14,11 +14,19 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('phone')->nullable();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->decimal('balance', 10, 2)->default(0);
+            $table->unsignedBigInteger('currency_id')->nullable();
+            $table->unsignedBigInteger('client_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
+
+            $table->foreign('currency_id')->references('id')->on('currencies')->nullOnDelete();
+            // Si tienes una tabla clients, descomenta la siguiente línea:
+            $table->foreign('client_id')->references('id')->on('clients')->nullOnDelete();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

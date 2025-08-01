@@ -25,7 +25,12 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             JarSeeder::class,
             TransactionSeeder::class,
+            ItemCategorySeeder::class,
             ItemTransactionSeeder::class,
+            ItemSeeder::class,
+            PaymentTransactionSeeder::class,
+            PaymentTransactionTaxSeeder::class,
+            AccountTaxSeeder::class,
         ]);
     }
 }

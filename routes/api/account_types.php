@@ -9,11 +9,11 @@
 ], function () {
   //Account Type ROUTES 
     Route::post('/', [AccountTypeController::class, 'save']);
-    Route::get('/{id}', [AccountTypeController::class, 'find']);
-    Route::put('/{id}', [AccountTypeController::class, 'update']);
+    Route::get('/active', [AccountTypeController::class, 'allActive']);
+    Route::get('/all', [AccountTypeController::class, 'withTrashed']);
     Route::get('/', [AccountTypeController::class, 'all']);
     Route::patch('/{id}/status', [AccountTypeController::class, 'change_status']);
-    Route::get('/active', [AccountTypeController::class, 'allActive']);
+    Route::put('/{id}', [AccountTypeController::class, 'update']);
     Route::delete('/{id}', [AccountTypeController::class, 'delete']);
-    Route::get('/all', [AccountTypeController::class, 'withTrashed']);
+    Route::get('/{id}', [AccountTypeController::class, 'find']);
   });

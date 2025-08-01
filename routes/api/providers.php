@@ -9,11 +9,11 @@
 ], function () {
   //Provider ROUTES 
     Route::post('/', [ProviderController::class, 'save']);
-    Route::get('/{id}', [ProviderController::class, 'find']);
-    Route::put('/{id}', [ProviderController::class, 'update']);
+    Route::get('/active', [ProviderController::class, 'allActive']);
+    Route::get('/all', [ProviderController::class, 'withTrashed']);
     Route::get('/', [ProviderController::class, 'all']);
     Route::patch('/{id}/status', [ProviderController::class, 'change_status']);
-    Route::get('/active', [ProviderController::class, 'allActive']);
+    Route::put('/{id}', [ProviderController::class, 'update']);
     Route::delete('/{id}', [ProviderController::class, 'delete']);
-    Route::get('/all', [ProviderController::class, 'withTrashed']);
+    Route::get('/{id}', [ProviderController::class, 'find']);
   });

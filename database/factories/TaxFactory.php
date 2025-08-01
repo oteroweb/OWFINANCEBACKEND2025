@@ -14,7 +14,7 @@ class TaxFactory extends Factory
         return [
             'name' => $this->faker->word(),
             'percent' => $this->faker->randomFloat(2, 0, 100),
-            'active' => $this->faker->boolean(90),
+            'active' => $this->faker->randomElement([1, 0]),
             'date' => $this->faker->date(),
         ];
     }
