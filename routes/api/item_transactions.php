@@ -9,11 +9,11 @@ Route::group([
 ], function () {
     //ItemTransaction ROUTES
     Route::post('/', [ItemTransactionController::class, 'save']);
-    Route::get('/{id}', [ItemTransactionController::class, 'find']);
-    Route::put('/{id}', [ItemTransactionController::class, 'update']);
+    Route::get('/active', [ItemTransactionController::class, 'allActive']);
+    Route::get('/all', [ItemTransactionController::class, 'withTrashed']);
     Route::get('/', [ItemTransactionController::class, 'all']);
     Route::patch('/{id}/status', [ItemTransactionController::class, 'change_status']);
-    Route::get('/active', [ItemTransactionController::class, 'allActive']);
+    Route::put('/{id}', [ItemTransactionController::class, 'update']);
     Route::delete('/{id}', [ItemTransactionController::class, 'delete']);
-    Route::get('/all', [ItemTransactionController::class, 'withTrashed']);
+    Route::get('/{id}', [ItemTransactionController::class, 'find']);
 });

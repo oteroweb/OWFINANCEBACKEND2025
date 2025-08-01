@@ -16,7 +16,9 @@ class ItemTransactionFactory extends Factory
     public function definition(): array
     {
         return [
+            'item_id'        => \App\Models\Entities\Item::factory(),
             'transaction_id' => Transaction::factory(),
+            'quantity'       => $this->faker->numberBetween(1, 10),
             'name'           => $this->faker->word(),
             'amount'         => $this->faker->randomFloat(2, 1, 1000),
             'tax_id'         => Tax::factory(),

@@ -112,7 +112,6 @@ class ProviderController extends Controller
         $validator = Validator::make($request->all(), [
             'name' =>'required|max:35|',
             'address' =>'required|max:35|',
-            
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -125,18 +124,20 @@ class ProviderController extends Controller
         }
         try {
             $data = [ 
-            'name'=> $request->input('name'),
-            'address'=> $request->input('address'),
-            
+                'name'=> $request->input('name'),
+                'address'=> $request->input('address'),
+                'email'=> $request->input('email', 'provider@example.com'),
+                'phone'=> $request->input('phone', '1234567890'),
+                'active'=> 1,
             ];
             $provider= $this->ProviderRepo->store($data);
             $response = [
                 'status'  => 'OK',
-                'code'    => 200,
+                'code'    => 201,
                 'message' => __('Provider saved correctly'),
                 'data'    => $provider,
             ];
-            return response()->json($response, 200);
+            return response()->json($response, 201);
         } catch (\Exception $ex) {
             Log::error($ex);
             $response = [

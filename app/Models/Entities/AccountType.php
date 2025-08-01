@@ -12,10 +12,11 @@ class AccountType extends Model
     use HasFactory, SoftDeletes, Notifiable;
     // protected $table      = 'account_types';
     protected $fillable = [
-            'name',
-            'icon',
-            'active',
-            'deleted_at',
+        'name',
+        'icon',
+        'description',
+        'active',
+        'deleted_at',
     ];
 
     protected $casts = [

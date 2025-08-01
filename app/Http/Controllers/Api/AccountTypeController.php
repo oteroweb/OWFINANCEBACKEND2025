@@ -28,7 +28,7 @@ class AccountTypeController extends Controller
         $validator = Validator::make($request->all(), [
             'name' =>'required|max:35|',
             'icon' =>'required|max:35|',
-            
+            'description' => 'required|max:255',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -41,18 +41,18 @@ class AccountTypeController extends Controller
         }
         try {
             $data = [ 
-            'name'=> $request->input('name'),
-            'icon'=> $request->input('icon'),
-            
+                'name'=> $request->input('name'),
+                'icon'=> $request->input('icon'),
+                'description'=> $request->input('description', ''),
             ];
             $accounttype= $this->AccountTypeRepo->store($data);
             $response = [
                 'status'  => 'OK',
-                'code'    => 200,
+                'code'    => 201,
                 'message' => __('Account Type saved correctly'),
                 'data'    => $accounttype,
             ];
-            return response()->json($response, 200);
+            return response()->json($response, 201);
         } catch (\Exception $ex) {
             Log::error($ex);
             $response = [

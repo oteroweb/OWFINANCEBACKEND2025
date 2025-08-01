@@ -27,21 +27,10 @@ class ItemTransactionController extends Controller
     {
         try {
             $itemTransaction = $this->ItemTransactionRepo->all();
-            $response = [
-                'status'  => 'OK',
-                'code'    => 200,
-                'message' => __('ItemTransaction Obtained Correctly'),
-                'data'    => $itemTransaction,
-            ];
-            return response()->json($response, 200);
+            return response()->json($itemTransaction, 200);
         } catch (\Exception $ex) {
             Log::error($ex);
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 500,
-                'message' => __('An error has occurred') . '.',
-            ];
-            return response()->json($response, 500);
+            return response()->json([], 500);
         }
     }
 
@@ -55,21 +44,10 @@ class ItemTransactionController extends Controller
     {
         try {
             $itemTransaction = $this->ItemTransactionRepo->allActive();
-            $response = [
-                'status'  => 'OK',
-                'code'    => 200,
-                'message' => __('Data Obtained Correctly'),
-                'data'    => $itemTransaction,
-            ];
-            return response()->json($response, 200);
+            return response()->json($itemTransaction, 200);
         } catch (\Exception $ex) {
             Log::error($ex);
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 500,
-                'message' => __('An error has occurred') . '.',
-            ];
-            return response()->json($response, 500);
+            return response()->json([], 500);
         }
     }
 
@@ -85,27 +63,11 @@ class ItemTransactionController extends Controller
         try {
             $itemTransaction = $this->ItemTransactionRepo->find($id);
             if (isset($itemTransaction->id)) {
-                $response = [
-                    'status'  => 'OK',
-                    'code'    => 200,
-                    'message' => __('ItemTransaction Obtained Correctly'),
-                    'data'    => $itemTransaction,
-                ];
-                return response()->json($response, 200);
+                return response()->json($itemTransaction, 200);
             }
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 404,
-                'message' => __('Not Data with this ItemTransaction') . '.',
-            ];
-            return response()->json($response, 200);
+            return response()->json(null, 404);
         } catch (\Exception $ex) {
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 500,
-                'message' => __('An error has occurred') . '.',
-            ];
-            return response()->json($response, 500);
+            return response()->json(null, 500);
         }
     }
 
@@ -118,7 +80,9 @@ class ItemTransactionController extends Controller
     public function save(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'item_id'        => 'required|exists:items,id',
             'transaction_id' => 'required|exists:transactions,id',
+            'quantity'       => 'required|integer|min:1',
             'name'           => 'required|max:100',
             'amount'         => 'required|numeric',
             'date'           => 'required|date',
@@ -135,7 +99,9 @@ class ItemTransactionController extends Controller
         }
         try {
             $data = [
+                'item_id'        => $request->input('item_id'),
                 'transaction_id' => $request->input('transaction_id'),
+                'quantity'       => $request->input('quantity'),
                 'name'           => $request->input('name'),
                 'amount'         => $request->input('amount'),
                 'tax_id'         => $request->input('tax_id'),
@@ -178,7 +144,9 @@ class ItemTransactionController extends Controller
         $itemTransaction = $this->ItemTransactionRepo->find($id);
         if (isset($itemTransaction->id)) {
             $data = [];
+            if ($request->has('item_id')) { $data['item_id'] = $request->input('item_id'); }
             if ($request->has('transaction_id')) { $data['transaction_id'] = $request->input('transaction_id'); }
+            if ($request->has('quantity')) { $data['quantity'] = $request->input('quantity'); }
             if ($request->has('name')) { $data['name'] = $request->input('name'); }
             if ($request->has('amount')) { $data['amount'] = $request->input('amount'); }
             if ($request->has('tax_id')) { $data['tax_id'] = $request->input('tax_id'); }
@@ -285,21 +253,10 @@ class ItemTransactionController extends Controller
     {
         try {
             $itemTransaction = $this->ItemTransactionRepo->withTrashed();
-            $response = [
-                'status'  => 'OK',
-                'code'    => 200,
-                'message' => __('Data Obtained Correctly'),
-                'data'    => $itemTransaction,
-            ];
-            return response()->json($response, 200);
+            return response()->json($itemTransaction, 200);
         } catch (\Exception $ex) {
             Log::error($ex);
-            $response = [
-                'status'  => 'FAILED',
-                'code'    => 500,
-                'message' => __('An error has occurred') . '.',
-            ];
-            return response()->json($response, 500);
+            return response()->json([], 500);
         }
     }
 

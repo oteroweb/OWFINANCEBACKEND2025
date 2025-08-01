@@ -142,6 +142,7 @@ class TransactionController extends Controller
                 'url_file'=> $request->input('url_file'),
                 'rate_id'=> $request->input('rate_id'),
                 'amount_tax'=> $request->input('amount_tax'),
+                'account_id'=> $request->input('account_id'),
             ];
             $transaction= $this->transactionRepo->store($data);
             $response = [

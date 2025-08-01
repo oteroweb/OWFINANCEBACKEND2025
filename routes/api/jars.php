@@ -9,11 +9,11 @@ Route::group([
 ], function () {
     //Jar ROUTES
     Route::post('/', [JarController::class, 'save']);
+    Route::get('/active', [JarController::class, 'allActive']);
+    Route::get('/all', [JarController::class, 'withTrashed']);
+    Route::get('/', [JarController::class, 'all']);
     Route::get('/{id}', [JarController::class, 'find']);
     Route::put('/{id}', [JarController::class, 'update']);
-    Route::get('/', [JarController::class, 'all']);
     Route::patch('/{id}/status', [JarController::class, 'change_status']);
-    Route::get('/active', [JarController::class, 'allActive']);
     Route::delete('/{id}', [JarController::class, 'delete']);
-    Route::get('/all', [JarController::class, 'withTrashed']);
 });

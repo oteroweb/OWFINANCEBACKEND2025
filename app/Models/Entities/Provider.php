@@ -13,10 +13,14 @@ class Provider extends Model
     use HasFactory, SoftDeletes, Notifiable;
     // protected $table      = 'providers';
     protected $fillable = [
-            'name',
-            'address',
-            'active',
-            'deleted_at',
+        'name',
+        'address',
+        'active',
+        'deleted_at',
+        'email',
+        'phone',
+        'website',
+        'description',
     ];
 
     protected $casts = [

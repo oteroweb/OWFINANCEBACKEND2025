@@ -14,6 +14,7 @@ class Rate extends Model
     protected $fillable = [
         'name',
         'date',
+        'value',
         'active',
         'deleted_at',
     ];

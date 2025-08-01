@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\ItemCategoryController;
 
 Route::group([
     'middleware' => ['api'],
-    'prefix'     => 'item-categories',
+    'prefix'     => 'item_categories',
 ], function () {
     Route::post('/', [ItemCategoryController::class, 'save']);
     Route::get('/active', [ItemCategoryController::class, 'allActive']);

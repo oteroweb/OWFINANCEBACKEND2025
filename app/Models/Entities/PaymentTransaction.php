@@ -23,4 +23,9 @@ class PaymentTransaction extends Model
         'amount',
         'active',
     ];
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class);
+    }
 }

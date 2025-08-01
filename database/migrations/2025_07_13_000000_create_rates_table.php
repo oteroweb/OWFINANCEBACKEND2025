@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name', 100);
             $table->date('date');
+            $table->decimal('value', 12, 4)->default(0);
             $table->tinyInteger('active')->default(1);
             $table->softDeletes();
             $table->timestamps();

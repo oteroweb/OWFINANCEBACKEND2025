@@ -14,11 +14,11 @@ class ItemFactory extends Factory
         return [
             'name' => $this->faker->word,
             'last_price' => $this->faker->randomFloat(2, 1, 1000),
-            'tax_id' => 1, // Ajusta según tus tests
+            'tax_id' => \App\Models\Entities\Tax::factory(),
             'active' => 1,
             'date' => $this->faker->date(),
             'custom_name' => $this->faker->word,
-            'item_category_id' => 1, // Ajusta según tus tests
+            'item_category_id' => \App\Models\Entities\ItemCategory::factory(),
         ];
     }
 }

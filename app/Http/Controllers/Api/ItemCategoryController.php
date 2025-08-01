@@ -5,47 +5,100 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Entities\ItemCategory;
+use App\Models\Entities\Repositories\ItemCategoryRepository;
 
 class ItemCategoryController extends Controller
 {
+    protected $repo;
+
+    public function __construct(ItemCategoryRepository $repo)
+    {
+        $this->repo = $repo;
+    }
+
     public function all()
     {
-        return ItemCategory::all();
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => '',
+            'data' => $this->repo->all()
+        ]);
     }
     public function allActive()
     {
-        return ItemCategory::where('active', 1)->get();
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => '',
+            'data' => $this->repo->allActive()
+        ]);
     }
     public function withTrashed()
     {
-        return ItemCategory::withTrashed()->get();
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => '',
+            'data' => $this->repo->withTrashed()
+        ]);
     }
     public function find($id)
     {
-        return ItemCategory::findOrFail($id);
+        $itemCategory = $this->repo->find($id);
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => '',
+            'data' => $itemCategory
+        ]);
     }
     public function save(Request $request)
     {
-        $itemCategory = ItemCategory::create($request->all());
-        return response()->json($itemCategory, 201);
+        $data = $request->validate([
+            'name' => 'required',
+        ]);
+        $data['active'] = 1;
+        $itemCategory = $this->repo->create($data);
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => '',
+            'data' => $itemCategory
+        ]);
     }
     public function update(Request $request, $id)
     {
-        $itemCategory = ItemCategory::findOrFail($id);
-        $itemCategory->update($request->all());
-        return response()->json($itemCategory);
+        $itemCategory = $this->repo->find($id);
+        $data = $request->only(['name']);
+        $itemCategory = $this->repo->update($itemCategory, $data);
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => '',
+            'data' => $itemCategory
+        ]);
     }
     public function delete($id)
     {
-        $itemCategory = ItemCategory::findOrFail($id);
-        $itemCategory->delete();
-        return response()->json(null, 204);
+        $itemCategory = $this->repo->find($id);
+        $this->repo->delete($itemCategory);
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => '',
+            'data' => null
+        ]);
     }
     public function change_status($id)
     {
-        $itemCategory = ItemCategory::findOrFail($id);
-        $itemCategory->active = !$itemCategory->active;
-        $itemCategory->save();
-        return response()->json($itemCategory);
+        $itemCategory = $this->repo->find($id);
+        $itemCategory = $this->repo->changeStatus($itemCategory);
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => __('Status Item Category updated'),
+            'data' => $itemCategory
+        ]);
     }
 }

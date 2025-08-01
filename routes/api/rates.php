@@ -8,9 +8,12 @@ Route::group([
     'prefix'     => 'rates',
 ], function () {
     // Rates ROUTES
-    Route::post('/', [RateController::class, 'store']);
-    Route::get('/', [RateController::class, 'index']);
-    Route::delete('/{id}', [RateController::class, 'destroy']);
+    Route::post('/', [RateController::class, 'save']);
+    Route::get('/all', [RateController::class, 'withTrashed']);
+    Route::get('/active', [RateController::class, 'allActive']);
+    Route::get('/{id}', [RateController::class, 'find']);
     Route::put('/{id}', [RateController::class, 'update']);
-    Route::get('/{id}', [RateController::class, 'show']);
+    Route::get('/', [RateController::class, 'all']);
+    Route::patch('/{id}/status', [RateController::class, 'change_status']);
+    Route::delete('/{id}', [RateController::class, 'delete']);
 });

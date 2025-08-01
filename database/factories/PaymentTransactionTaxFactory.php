@@ -11,9 +11,11 @@ class PaymentTransactionTaxFactory extends Factory
 
     public function definition(): array
     {
+        $paymentTransaction = \App\Models\Entities\PaymentTransaction::factory()->create();
+        $tax = \App\Models\Entities\Tax::factory()->create();
         return [
-            'payment_transaction_id' => 1, // Ajusta según tus tests
-            'tax_id' => 1, // Ajusta según tus tests
+            'payment_transaction_id' => $paymentTransaction->id,
+            'tax_id' => $tax->id,
             'amount' => $this->faker->randomFloat(2, 1, 1000),
             'percent' => $this->faker->randomFloat(2, 0, 100),
             'active' => 1,
