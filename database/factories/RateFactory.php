@@ -13,6 +13,7 @@ class RateFactory extends Factory
     {
         return [
             'name' => $this->faker->word(),
+            'value' => $this->faker->randomFloat(2, 0, 1000), // Random float between 0 and 1000 with 2 decimal place
             'date' => $this->faker->date(),
             'active' => $this->faker->randomElement([1, 0]),
         ];

@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Entities\Provider;
+use App\Models\Entities\Rate;
+use App\Models\Entities\User;
+use App\Models\Entities\Account;
 
 class Transaction extends Model
 {
@@ -38,6 +41,18 @@ class Transaction extends Model
     public function provider()
     {
         return $this->belongsTo(Provider::class);
+    }
+
+    public function rate() {
+        return $this->belongsTo(Rate::class);
+    }
+
+    public function user() {
+        return $this->belongsTo(User::class);
+    }
+
+    public function account() {
+        return $this->belongsTo(Account::class);
     }
 
     protected static function newFactory()

@@ -7,13 +7,13 @@ use App\Models\Entities\Transaction;
 
 class TransactionRepo {
     public function all() {
-        return Transaction::whereIn('active', [1,0])->with(['provider'])->get();
+        return Transaction::whereIn('active', [1,0])->with(['provider', 'rate', 'user', 'account'])->get();
     }
     public function allActive() {
-        return Transaction::where('active', 1)->with(['provider'])->get();
+        return Transaction::where('active', 1)->with(['provider', 'rate', 'user', 'account'])->get();
     }
     public function find($id) {
-        return Transaction::with(['provider'])->find($id);
+        return Transaction::with(['provider', 'rate', 'user', 'account'])->find($id);
     }
     public function store($data) {
         $transaction = new Transaction();
@@ -32,6 +32,6 @@ class TransactionRepo {
         return $transaction;
     }
     public function withTrashed() {
-        return Transaction::withTrashed()->get();
+        return Transaction::withTrashed()->with(['provider', 'rate', 'user', 'account'])->get();
     }
 }
