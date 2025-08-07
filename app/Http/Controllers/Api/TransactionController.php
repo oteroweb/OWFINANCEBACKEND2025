@@ -20,8 +20,11 @@ class TransactionController extends Controller
      *
      * all
      */
-    public function all() {
-        try { $transaction = $this->transactionRepo->all();
+    public function all(Request $request) {
+        try {
+            $sortBy = $request->query('sort_by', 'date');
+            $descending = filter_var($request->query('descending', 'false'), FILTER_VALIDATE_BOOLEAN);
+            $transaction = $this->transactionRepo->all($sortBy, $descending);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,

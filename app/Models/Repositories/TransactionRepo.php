@@ -6,8 +6,13 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Entities\Transaction;
 
 class TransactionRepo {
-    public function all() {
-        return Transaction::whereIn('active', [1,0])->with(['provider', 'rate', 'user', 'account'])->get();
+    public function all($sortBy = 'date', $descending = false) {
+        $query = Transaction::whereIn('active', [1,0])->with(['provider', 'rate', 'user', 'account']);
+        if ($sortBy) {
+            $direction = $descending ? 'desc' : 'asc';
+            $query = $query->orderBy($sortBy, $direction);
+        }
+        return $query->get();
     }
     public function allActive() {
         return Transaction::where('active', 1)->with(['provider', 'rate', 'user', 'account'])->get();
