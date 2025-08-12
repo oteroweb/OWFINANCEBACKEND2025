@@ -106,6 +106,16 @@ class ProviderController extends Controller
      * save
      * @bodyParam name string required The name of the provider. Example: Provider 1
      * @bodyParam address string required The address of the provider. Example: 123 Main St
+     * @bodyParam email string optional The email of the provider. Defaults to provider@example.com
+     * @bodyParam phone string optional The phone number of the provider. Defaults to 1234567890
+     * @bodyParam website string optional The website of the provider. Defaults to http://example
+     * @bodyParam description string optional The description of the provider. Example: This is a sample provider.
+     * @bodyParam logo string optional The logo of the provider. Example: logo.png
+     * @bodyParam country string optional The country of the provider. Example: USA
+     * @bodyParam city string optional The city of the provider. Example: New York
+     * @bodyParam postal_code string optional The postal code of the provider. Example: 10001
+     * @bodyParam state string optional The state of the provider. Example: California
+     * @bodyParam user_id integer optional The ID of the user associated with the provider. Defaults to the authenticated user's ID.
      * @bodyParam active boolean optional The status of the provider. Defaults to true. Example: true
      */
     public function save(Request $request) {
@@ -128,8 +138,15 @@ class ProviderController extends Controller
                 'address'=> $request->input('address'),
                 'email'=> $request->input('email', 'provider@example.com'),
                 'phone'=> $request->input('phone', '1234567890'),
+                'website'=> $request->input('website', 'http://example'),
+                'description'=> $request->input('description', 'This is a sample provider.'),
+                'logo'=> $request->input('logo', 'logo.png'),
+                'country'=> $request->input('country', 'USA'),
+                'city'=> $request->input('city', 'New York'),
+                'postal_code'=> $request->input('postal_code', '10001'),
+                'state'=> $request->input('state', 'California'),
                 'active'=> 1,
-                'user_id' => $request->user()->id,
+                'user_id' => $request->input('user_id')
             ];
             $provider= $this->ProviderRepo->store($data);
             $response = [
