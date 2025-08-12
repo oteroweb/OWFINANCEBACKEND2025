@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('city', 50)->nullable();
             $table->string('postal_code', 20)->nullable();
             $table->string('state', 50)->nullable();
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users');
             $table->tinyInteger('active')->default(1);
             $table->timestamps();
