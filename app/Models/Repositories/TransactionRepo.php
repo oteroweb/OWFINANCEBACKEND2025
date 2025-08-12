@@ -6,17 +6,40 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Entities\Transaction;
 
 class TransactionRepo {
-    public function all($sortBy = 'date', $descending = false) {
-        $query = Transaction::whereIn('active', [1,0])->with(['provider', 'rate', 'user', 'account']);
+    /**
+     * Get all transactions, sorted by a field and direction.
+     * @param string $sortBy
+     * @param bool $descending
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function all($sortBy = 'date', $descending = false)
+    {
+        $query = Transaction::whereIn('active', [1,0])
+            ->with(['provider', 'rate', 'user', 'account']);
         if ($sortBy) {
             $direction = $descending ? 'desc' : 'asc';
             $query = $query->orderBy($sortBy, $direction);
         }
         return $query->get();
     }
-    public function allActive() {
-        return Transaction::where('active', 1)->with(['provider', 'rate', 'user', 'account'])->get();
+
+    /**
+     * Get all active transactions, sorted by a field and direction.
+     * @param string $sortBy
+     * @param bool $descending
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function allActive($sortBy = 'date', $descending = false)
+    {
+        $query = Transaction::where('active', 1)
+            ->with(['provider', 'rate', 'user', 'account']);
+        if ($sortBy) {
+            $direction = $descending ? 'desc' : 'asc';
+            $query = $query->orderBy($sortBy, $direction);
+        }
+        return $query->get();
     }
+
     public function find($id) {
         return Transaction::with(['provider', 'rate', 'user', 'account'])->find($id);
     }

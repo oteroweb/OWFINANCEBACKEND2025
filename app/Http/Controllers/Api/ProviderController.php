@@ -129,6 +129,7 @@ class ProviderController extends Controller
                 'email'=> $request->input('email', 'provider@example.com'),
                 'phone'=> $request->input('phone', '1234567890'),
                 'active'=> 1,
+                'user_id' => $request->user()->id,
             ];
             $provider= $this->ProviderRepo->store($data);
             $response = [
@@ -165,6 +166,7 @@ class ProviderController extends Controller
             if (($request->input('name'))) { 
                 if (($request->input('name'))) { $data += ['name' => $request->input('name')]; };
                 if (($request->input('address'))) { $data += ['address' => $request->input('address')]; };
+                if (($request->input('user_id'))) { $data += ['user_id' => $request->input('user_id')]; };
                 
             }
             $provider = $this->ProviderRepo->update($provider, $data);

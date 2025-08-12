@@ -21,6 +21,7 @@ class Provider extends Model
         'phone',
         'website',
         'description',
+        'user_id',
     ];
 
     protected $casts = [
@@ -28,6 +29,11 @@ class Provider extends Model
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function transactions()
     {

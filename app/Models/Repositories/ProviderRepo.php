@@ -7,17 +7,17 @@
     
     class ProviderRepo {
         public function all() {
-            $provider = Provider::whereIn('active', [1,0])->with([])
+            $provider = Provider::whereIn('active', [1,0])->with(['user'])
             ->get();            
             return $provider;
         }
         public function allActive() {
-            $provider = Provider::whereIn('active', [1])->with([])
+            $provider = Provider::whereIn('active', [1])->with(['user'])
             ->get();            
             return $provider;
         }
         public function find($id) {
-            $provider = Provider::with([])->find($id);
+            $provider = Provider::with(['user'])->find($id);
             return $provider;
         }        
         public function store($data) {            
@@ -37,7 +37,7 @@
             return $provider;
         }
         public function withTrashed() {
-            $provider = Provider::withTrashed()->get();
+            $provider = Provider::withTrashed()->with(['user'])->get();
             return $provider;
         }
     }

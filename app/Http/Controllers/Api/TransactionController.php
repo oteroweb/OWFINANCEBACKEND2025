@@ -22,6 +22,7 @@ class TransactionController extends Controller
      */
     public function all(Request $request) {
         try {
+            // Determine sorting parameters
             $sortBy = $request->query('sort_by', 'date');
             $descending = filter_var($request->query('descending', 'false'), FILTER_VALIDATE_BOOLEAN);
             $transaction = $this->transactionRepo->all($sortBy, $descending);
@@ -48,8 +49,12 @@ class TransactionController extends Controller
      *
      * all active
      */
-    public function allActive() {
-        try { $transaction = $this->transactionRepo->allActive();
+    public function allActive(Request $request) {
+        try {
+            // Determine sorting parameters
+            $sortBy = $request->query('sort_by', 'date');
+            $descending = filter_var($request->query('descending', 'false'), FILTER_VALIDATE_BOOLEAN);
+            $transaction = $this->transactionRepo->allActive($sortBy, $descending);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
