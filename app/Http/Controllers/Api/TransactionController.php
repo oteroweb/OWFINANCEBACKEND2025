@@ -22,10 +22,12 @@ class TransactionController extends Controller
      */
     public function all(Request $request) {
         try {
-            // Determine sorting parameters
-            $sortBy = $request->query('sort_by', 'date');
-            $descending = filter_var($request->query('descending', 'false'), FILTER_VALIDATE_BOOLEAN);
-            $transaction = $this->transactionRepo->all($sortBy, $descending);
+            // Collect pagination, sorting, search and filter parameters
+            $params = $request->only([
+                'page', 'per_page', 'sort_by', 'descending',
+                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id'
+            ]);
+            $transaction = $this->transactionRepo->all($params);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -51,10 +53,12 @@ class TransactionController extends Controller
      */
     public function allActive(Request $request) {
         try {
-            // Determine sorting parameters
-            $sortBy = $request->query('sort_by', 'date');
-            $descending = filter_var($request->query('descending', 'false'), FILTER_VALIDATE_BOOLEAN);
-            $transaction = $this->transactionRepo->allActive($sortBy, $descending);
+            // Collect pagination, sorting, search and filter parameters
+            $params = $request->only([
+                'page', 'per_page', 'sort_by', 'descending',
+                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id'
+            ]);
+            $transaction = $this->transactionRepo->allActive($params);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -118,6 +122,7 @@ class TransactionController extends Controller
      * @bodyParam provider_id integer optional The ID of the provider. Example: 1
      * @bodyParam url_file string optional File URL. Example: https://example.com/file.pdf
      * @bodyParam rate_id integer optional The rate id. Example: 1
+     * @bodyParam transaction_type_id integer optional The transaction type id. Example: 1
      * @bodyParam amount_tax number optional The tax amount. Example: 10.00
      */
     public function save(Request $request) {
@@ -129,6 +134,7 @@ class TransactionController extends Controller
             'provider_id' => 'nullable|exists:providers,id',
             'url_file' => 'nullable|string',
             'rate_id' => 'nullable|integer',
+            'transaction_type_id' => 'nullable|exists:transaction_types,id',
             'amount_tax' => 'nullable|numeric',
         ], $this->custom_message());
         if ($validator->fails()) {
@@ -149,8 +155,10 @@ class TransactionController extends Controller
                 'provider_id'=> $request->input('provider_id'),
                 'url_file'=> $request->input('url_file'),
                 'rate_id'=> $request->input('rate_id'),
+                'transaction_type_id'=> $request->input('transaction_type_id'),
                 'amount_tax'=> $request->input('amount_tax'),
                 'account_id'=> $request->input('account_id'),
+                'user_id'=> $request->input('user_id'),
             ];
             $transaction= $this->transactionRepo->store($data);
             $response = [
@@ -188,7 +196,10 @@ class TransactionController extends Controller
             if ($request->has('provider_id')) { $data['provider_id'] = $request->input('provider_id'); }
             if ($request->has('url_file')) { $data['url_file'] = $request->input('url_file'); }
             if ($request->has('rate_id')) { $data['rate_id'] = $request->input('rate_id'); }
+            if ($request->has('transaction_type_id')) { $data['transaction_type_id'] = $request->input('transaction_type_id'); }
             if ($request->has('amount_tax')) { $data['amount_tax'] = $request->input('amount_tax'); }
+            if ($request->has('account_id')) { $data['account_id'] = $request->input('account_id'); }
+            if ($request->has('user_id')) { $data['user_id'] = $request->input('user_id'); }
             $transaction = $this->transactionRepo->update($transaction, $data);
             $response = [
                 'status'  => 'OK',
@@ -283,8 +294,12 @@ class TransactionController extends Controller
      *
      * withTrashed
      */
-     public function withTrashed() {
-        try { $transaction = $this->transactionRepo->withTrashed();
+    public function withTrashed(Request $request) {
+        try {
+            // Determine sorting parameters
+            $sortBy = $request->query('sort_by', 'date');
+            $descending = filter_var($request->query('descending', 'false'), FILTER_VALIDATE_BOOLEAN);
+            $transaction = $this->transactionRepo->withTrashed($sortBy, $descending);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,

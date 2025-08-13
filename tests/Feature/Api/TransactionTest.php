@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\Entities\Transaction;
 use App\Models\Entities\Account;
+use App\Models\Entities\TransactionType;
 
 class TransactionTest extends TestCase
 {
@@ -14,23 +15,25 @@ class TransactionTest extends TestCase
     public function test_transaction_crud_flow()
     {
         $account = Account::factory()->create();
+        $type = TransactionType::factory()->create(['slug' => 'income']);
         $data = [
             'account_id' => $account->id,
             'amount' => 100.00,
             'description' => 'Test Transaction',
             'name' => 'Test Transaction',
             'date' => now()->format('Y-m-d H:i:s'),
+            'transaction_type_id' => $type->id,
         ];
         $createResponse = $this->postJson('/api/v1/transactions/', $data);
         $createResponse->assertStatus(200)
             ->assertJson(['status' => 'OK']);
-        $id = $createResponse->json('data.id') ?? Transaction::where($data)->first()->id;
+        $id = $createResponse->json('data.id') ?? Transaction::where('id', $createResponse->json('data.id'))->first()->id;
 
         $findResponse = $this->getJson('/api/v1/transactions/' . $id);
         $findResponse->assertStatus(200)
             ->assertJson(['data' => ['id' => $id, 'account_id' => $account->id]]);
 
-        $listResponse = $this->getJson('/api/v1/transactions/');
+        $listResponse = $this->getJson('/api/v1/transactions/?transaction_type_id='.$type->id);
         $listResponse->assertStatus(200)
             ->assertJsonStructure([
                 'status', 'code', 'message', 'data' => [['id', 'account_id', 'amount', 'description']]

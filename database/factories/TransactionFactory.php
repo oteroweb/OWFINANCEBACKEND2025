@@ -12,24 +12,17 @@ class TransactionFactory extends Factory
     public function definition(): array
     {
 
-        //   $table->id();
-        //     $table->string('name', 100);
-        //     $table->decimal('amount', 10, 2);
-        //     $table->string('description')->nullable();
-        //     $table->dateTime('date');
-        //     $table->boolean('active')->default(true);
-        //     $table->unsignedBigInteger('provider_id')->nullable();
-        //     $table->string('url_file')->nullable();
-        //     $table->unsignedBigInteger('rate_id')->nullable();
-        //     $table->decimal('amount_tax', 10, 2)->nullable();
-        //     $table->timestamps();
-        //     $table->softDeletes();
-
-        //     $table->foreign('provider_id')->references('id')->on('providers');
         $account = \App\Models\Entities\Account::factory()->create();
         $provider = \App\Models\Entities\Provider::factory()->create();
         $rate = \App\Models\Entities\Rate::factory()->create();
         $user = \App\Models\User::factory()->create();
+
+        // ensure some transaction types exist
+        $typeSlug = $this->faker->randomElement(['income','expense','transfer','payment']);
+        $type = \App\Models\Entities\TransactionType::firstOrCreate(
+            ['slug' => $typeSlug],
+            ['name' => ucfirst($typeSlug), 'active' => 1]
+        );
         return [
             'amount' => $this->faker->randomFloat(2, 10, 1000),
             'description' => $this->faker->sentence(),
@@ -40,7 +33,7 @@ class TransactionFactory extends Factory
             'provider_id' => $provider->id,
             'url_file' => $this->faker->url(),
             'rate_id' => $rate->id,
-            'transaction_type' => $this->faker->randomElement(['income','expense']),
+            'transaction_type_id' => $type->id,
             'user_id' => $user->id,
             'amount_tax' => $this->faker->randomFloat(2, 0, 100),
         ];

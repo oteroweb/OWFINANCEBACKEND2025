@@ -25,7 +25,7 @@ class Transaction extends Model
         'provider_id',
         'url_file',
         'rate_id',
-        'transaction_type',
+        'transaction_type_id',
         'user_id',
         'account_id',
         'amount_tax',
@@ -54,6 +54,12 @@ class Transaction extends Model
     public function account() {
         return $this->belongsTo(Account::class);
     }
+
+    public function transactionType()
+    {
+        return $this->belongsTo(TransactionType::class, 'transaction_type_id');
+    }
+
 
     protected static function newFactory()
     {
