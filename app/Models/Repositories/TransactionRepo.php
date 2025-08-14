@@ -5,6 +5,7 @@ namespace App\Models\Repositories;
 use Illuminate\Support\Facades\Log;
 use App\Models\Entities\Transaction;
 use App\Models\Entities\TransactionType;
+use Carbon\Carbon;
 
 class TransactionRepo {
     /**
@@ -16,7 +17,7 @@ class TransactionRepo {
     public function all($params = [])
     {
         $query = Transaction::whereIn('active', [1,0])
-            ->with(['provider', 'rate', 'user', 'account', 'transactionType']);
+            ->with(['provider','rate','user','account','transactionType']);
 
         // Apply filters
         if (!empty($params['provider_id'])) {
@@ -43,6 +44,24 @@ class TransactionRepo {
                 $query->where('transaction_type_id', $type->id);
             } else {
                 $query->where('transaction_type', $slug);
+            }
+        }
+
+        // date_from & date_to filters
+        if (!empty($params['date_from']) || !empty($params['date_to'])) {
+            $from = !empty($params['date_from'])
+                ? Carbon::parse(str_replace('T', ' ', $params['date_from']))->toDateTimeString()
+                : null;
+            $to   = !empty($params['date_to'])
+                ? Carbon::parse(str_replace('T', ' ', $params['date_to']))->endOfMinute()->toDateTimeString()
+                : null;
+
+            if ($from && $to) {
+                $query->whereBetween('date', [$from, $to]);
+            } elseif ($from) {
+                $query->where('date', '>=', $from);
+            } elseif ($to) {
+                $query->where('date', '<=', $to);
             }
         }
 
@@ -84,8 +103,8 @@ class TransactionRepo {
      */
     public function allActive($params = [])
     {
-        $query = Transaction::where('active', 1)
-            ->with(['provider', 'rate', 'user', 'account', 'transactionType']);
+        $query = Transaction::where('active',1)
+            ->with(['provider','rate','user','account','transactionType']);
 
         // Apply filters
         if (!empty($params['provider_id'])) {
@@ -110,6 +129,24 @@ class TransactionRepo {
                 $query->where('transaction_type_id', $type->id);
             } else {
                 $query->where('transaction_type', $slug);
+            }
+        }
+
+        // date_from & date_to filters
+        if (!empty($params['date_from']) || !empty($params['date_to'])) {
+            $from = !empty($params['date_from'])
+                ? Carbon::parse(str_replace('T', ' ', $params['date_from']))->toDateTimeString()
+                : null;
+            $to   = !empty($params['date_to'])
+                ? Carbon::parse(str_replace('T', ' ', $params['date_to']))->endOfMinute()->toDateTimeString()
+                : null;
+
+            if ($from && $to) {
+                $query->whereBetween('date', [$from, $to]);
+            } elseif ($from) {
+                $query->where('date', '>=', $from);
+            } elseif ($to) {
+                $query->where('date', '<=', $to);
             }
         }
 
