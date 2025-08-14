@@ -25,7 +25,7 @@ class TransactionController extends Controller
             // Collect pagination, sorting, search and filter parameters
             $params = $request->only([
                 'page', 'per_page', 'sort_by', 'descending',
-                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id'
+                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'date_from', 'date_to'
             ]);
             $transaction = $this->transactionRepo->all($params);
             $response = [
