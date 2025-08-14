@@ -106,28 +106,18 @@ class CurrencyController extends Controller
      *
      * save
      * @bodyParam name string required The name of the currency. Example: Currency 1
-     * @bodyParam tax number required The tax rate. Example: 8.25
-     * @bodyParam last_tax number required The last tax rate. Example: 8.00
      * @bodyParam symbol string required The currency symbol. Example: $
-     * @bodyParam symbol_native string required The native currency symbol. Example: $
-     * @bodyParam decimal_digits integer required The number of decimal digits. Example: 2
-     * @bodyParam rounding integer required The rounding factor. Example: 0
-     * @bodyParam name_plural string required The plural name of the currency. Example: US dollars
+     * @bodyParam align string required The alignment of the currency. Example: left
      * @bodyParam code string required The currency code. Example: USD
      * @bodyParam active boolean optional The status of the currency. Defaults to true. Example: true
      */
     public function save(Request $request) {
         $validator = Validator::make($request->all(), [
-            'name' =>'required|max:35|',
-            'tax' =>'required|regex:/^[0-9]+(\.[0-9][0-9]?)?$/',
-            'last_tax' =>'required|regex:/^[0-9]+(\.[0-9][0-9]?)?$/',
-            'symbol' =>'required|max:35|',
-            'symbol_native' =>'required|max:35|',
-            'decimal_digits' =>'required|max:35|',
-            'rounding' =>'required|max:35|',
-            'name_plural' =>'required|max:50|',
-            'code' =>'required|max:35|',
-            
+            'name'   => 'required|string|max:35',
+            'symbol' => 'required|string|max:10',
+            'align'  => 'required|string|in:left,right',
+            'code'   => 'required|string|max:10',
+            'active' => 'boolean',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -139,19 +129,14 @@ class CurrencyController extends Controller
             return response()->json($response);
         }
         try {
-            $data = [ 
-            'name'=> $request->input('name'),
-            'tax'=> $request->input('tax'),
-            'last_tax'=> $request->input('last_tax'),
-            'symbol'=> $request->input('symbol'),
-            'symbol_native'=> $request->input('symbol_native'),
-            'decimal_digits'=> $request->input('decimal_digits'),
-            'rounding'=> $request->input('rounding'),
-            'name_plural'=> $request->input('name_plural'),
-            'code'=> $request->input('code'),
-            
+            $data = [
+                'name'   => $request->input('name'),
+                'symbol' => $request->input('symbol'),
+                'align'  => $request->input('align'),
+                'code'   => $request->input('code'),
+                'active' => $request->input('active', true),
             ];
-            $currency= $this->CurrencyRepo->store($data);
+            $currency = $this->CurrencyRepo->store($data);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -176,32 +161,33 @@ class CurrencyController extends Controller
      * update
      * @urlParam id integer required The ID of the currency. Example: 1
      * @bodyParam name string optional The name of the currency. Example: Currency 1x
-     * @bodyParam tax number optional The tax rate. Example: 8.50
-     * @bodyParam last_tax number optional The last tax rate. Example: 8.25
      * @bodyParam symbol string optional The currency symbol. Example: $
-     * @bodyParam symbol_native string optional The native currency symbol. Example: $
      * @bodyParam decimal_digits integer optional The number of decimal digits. Example: 2
-     * @bodyParam rounding integer optional The rounding factor. Example: 0
-     * @bodyParam name_plural string optional The plural name of the currency. Example: US dollars
      * @bodyParam code string optional The currency code. Example: USD
      * @bodyParam active boolean optional The status of the currency. Example: true
      */
     public function update(Request $request, $id) {
         $currency = $this->CurrencyRepo->find($id);
         if (isset($currency->id)) {
-            $data= array();
-            if (($request->input('name'))) { 
-                if (($request->input('name'))) { $data += ['name' => $request->input('name')]; };
-                if (($request->input('account_id'))) { $data += ['account_id' => $request->input('account_id')]; };
-                if (($request->input('category_transaction_id'))) { $data += ['category_transaction_id' => $request->input('category_transaction_id')]; };
-                if (($request->input('invoice_id'))) { $data += ['invoice_id' => $request->input('invoice_id')]; };
-                if (($request->input('amount'))) { $data += ['amount' => $request->input('amount')]; };
-                if (($request->input('comission'))) { $data += ['comission' => $request->input('comission')]; };
-                if (($request->input('dolar_tax'))) { $data += ['dolar_tax' => $request->input('dolar_tax')]; };
-                if (($request->input('dolar_tax_acquired'))) { $data += ['dolar_tax_acquired' => $request->input('dolar_tax_acquired')]; };
-                if (($request->input('dolar_amount'))) { $data += ['dolar_amount' => $request->input('dolar_amount')]; };
-                
+            // Only updating core currency fields: name, symbol, align, code, active
+            $data = [];
+            if ($request->has('name')) {
+                $data['name'] = $request->input('name');
             }
+            if ($request->has('symbol')) {
+                $data['symbol'] = $request->input('symbol');
+            }
+            if ($request->has('align')) {
+                $data['align'] = $request->input('align');
+            }
+            if ($request->has('code')) {
+                $data['code'] = $request->input('code');
+            }
+            if ($request->has('active')) {
+                $data['active'] = $request->input('active');
+            }
+            // Other fields are currently commented out
+            // if ($request->has('account_id')) { ... }
             $currency = $this->CurrencyRepo->update($currency, $data);
             $response = [
                 'status'  => 'OK',
@@ -249,22 +235,13 @@ class CurrencyController extends Controller
             }
             
         } catch (\Exception $ex) {
+            // Log and return generic error (detailed foreign constraint parsing removed)
             Log::error($ex);
-            if (strpos($ex->getMessage(), 'SQLSTATE[23000]') !== false) {
-                $errorForeing = $this->get_string_between($ex->errorInfo[2],'CONSTRAINT', 'FOREIGN');
-                $response = [
-                    'status'  => 'FAILED',
-                    'code'    => 500,
-                    'message' => __($errorForeing.'error') . '.',
-                ];
-            }
-            else{
-                $response = [
-                    'status'  => 'FAILED',
-                    'code'    => 500,
-                    'message' => __('An error has occurred') . '.',
-                ];
-            }
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
             return response()->json($response, 500);
         }
     }
