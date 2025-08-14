@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Entities\Transaction;
 use App\Models\Entities\TransactionType;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class TransactionRepo {
     /**
@@ -22,6 +23,12 @@ class TransactionRepo {
         // Apply filters
         if (!empty($params['provider_id'])) {
             $query->where('provider_id', $params['provider_id']);
+        } elseif (!empty($params['provider'])) {
+            // filter by provider name
+            $providerName = $params['provider'];
+            $query->whereHas('provider', function ($q2) use ($providerName) {
+                $q2->where('name', 'like', "%{$providerName}%");
+            });
         }
         if (!empty($params['rate_id'])) {
             $query->where('rate_id', $params['rate_id']);
@@ -65,19 +72,10 @@ class TransactionRepo {
             }
         }
 
-        // Apply global search
+        // Apply global search (reusable loop)
         if (!empty($params['search'])) {
             $searchTerm = $params['search'];
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('description', 'like', "%{$searchTerm}%")
-                  ->orWhereHas('provider', function ($q) use ($searchTerm) {
-                      $q->where('name', 'like', "%{$searchTerm}%");
-                  })
-                  ->orWhereHas('transactionType', function ($q) use ($searchTerm) {
-                      $q->where('name', 'like', "%{$searchTerm}%");
-                  });
-            });
+            $this->applyGlobalSearch($query, $searchTerm, ['name', 'description', 'provider.name', 'transaction_type.name', 'user.name', 'account.name']);
         }
 
         // Apply sorting
@@ -150,19 +148,16 @@ class TransactionRepo {
             }
         }
 
-        // Apply global search
+        // Reusable global search using a loop over fields (supports relations via dot-notation)
+        $searchFields = ['name', 'description', 'provider.name', 'transaction_type.name', 'user.name', 'account.name'];
         if (!empty($params['search'])) {
             $searchTerm = $params['search'];
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('description', 'like', "%{$searchTerm}%")
-                  ->orWhereHas('provider', function ($q) use ($searchTerm) {
-                      $q->where('name', 'like', "%{$searchTerm}%");
-                  })
-                  ->orWhereHas('transactionType', function ($q) use ($searchTerm) {
-                      $q->where('name', 'like', "%{$searchTerm}%");
-                  });
-            });
+            Log::debug('TransactionRepo allActive search', [
+                'searchTerm' => $searchTerm,
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
+            $this->applyGlobalSearch($query, $searchTerm, $searchFields);
         }
 
         // Apply sorting
@@ -201,5 +196,31 @@ class TransactionRepo {
     }
     public function withTrashed() {
         return Transaction::withTrashed()->with(['provider', 'rate', 'user', 'account', 'transactionType'])->get();
+    }
+
+    /**
+     * Apply a global search to a query across simple columns and relations (dot-notation).
+     * Examples: 'name', 'description', 'provider.name', 'transaction_type.name'.
+     * Snake_case relation names will be converted to camelCase (e.g., transaction_type -> transactionType).
+     */
+    private function applyGlobalSearch($query, string $searchTerm, array $searchFields): void
+    {
+        // Optionally escape LIKE wildcards to avoid unintended matches
+        // $searchTerm = str_replace(['%', '_'], ['\%','\_'], $searchTerm);
+
+        $query->where(function ($q) use ($searchTerm, $searchFields) {
+            foreach ($searchFields as $field) {
+                if (strpos($field, '.') !== false) {
+                    [$relation, $column] = explode('.', $field, 2);
+                    // Allow snake_case or camelCase relation names
+                    $relation = Str::camel($relation);
+                    $q->orWhereHas($relation, function ($q2) use ($column, $searchTerm) {
+                        $q2->where($column, 'like', "%{$searchTerm}%");
+                    });
+                } else {
+                    $q->orWhere($field, 'like', "%{$searchTerm}%");
+                }
+            }
+        });
     }
 }
