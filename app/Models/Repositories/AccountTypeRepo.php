@@ -4,17 +4,36 @@
     
     use Illuminate\Support\Facades\Log;
     use App\Models\Entities\AccountType;
+    use Illuminate\Support\Str;
     
     class AccountTypeRepo {
-        public function all() {
-            $accounttype = AccountType::whereIn('active', [1,0])->with([])
-            ->get();            
-            return $accounttype;
+        public function all(array $params = []) {
+            $query = AccountType::whereIn('active', [1,0])->with([]);
+            if (!empty($params['search'])) {
+                $this->applyGlobalSearch($query, $params['search'], ['name', 'description', 'icon']);
+            }
+            $sortBy = $params['sort_by'] ?? 'name';
+            $descending = filter_var($params['descending'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $query->orderBy($sortBy, $descending ? 'desc' : 'asc');
+            if (!empty($params['page'])) {
+                $perPage = $params['per_page'] ?? 15;
+                return $query->paginate($perPage);
+            }
+            return $query->get();
         }
-        public function allActive() {
-            $accounttype = AccountType::whereIn('active', [1])->with([])
-            ->get();            
-            return $accounttype;
+        public function allActive(array $params = []) {
+            $query = AccountType::whereIn('active', [1])->with([]);
+            if (!empty($params['search'])) {
+                $this->applyGlobalSearch($query, $params['search'], ['name', 'description', 'icon']);
+            }
+            $sortBy = $params['sort_by'] ?? 'name';
+            $descending = filter_var($params['descending'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $query->orderBy($sortBy, $descending ? 'desc' : 'asc');
+            if (!empty($params['page'])) {
+                $perPage = $params['per_page'] ?? 15;
+                return $query->paginate($perPage);
+            }
+            return $query->get();
         }
         public function find($id) {
             $accounttype = AccountType::with([])->find($id);
@@ -39,5 +58,14 @@
         public function withTrashed() {
             $accounttype = AccountType::withTrashed()->get();
             return $accounttype;
+        }
+
+        private function applyGlobalSearch($query, string $searchTerm, array $fields): void
+        {
+            $query->where(function ($q) use ($searchTerm, $fields) {
+                foreach ($fields as $field) {
+                    $q->orWhere($field, 'like', "%{$searchTerm}%");
+                }
+            });
         }
     }

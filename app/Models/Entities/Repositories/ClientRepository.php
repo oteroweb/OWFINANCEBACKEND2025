@@ -6,13 +6,45 @@ use App\Models\Entities\Client;
 
 class ClientRepository
 {
-    public function all()
+    public function all(array $params = [])
     {
-        return Client::all();
+        $query = Client::whereIn('active', [1,0]);
+        if (!empty($params['search'])) {
+            $term = $params['search'];
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                  ->orWhere('email', 'like', "%{$term}%")
+                  ->orWhere('phone', 'like', "%{$term}%");
+            });
+        }
+        $sortBy = $params['sort_by'] ?? 'name';
+        $descending = filter_var($params['descending'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $query->orderBy($sortBy, $descending ? 'desc' : 'asc');
+        if (!empty($params['page'])) {
+            $perPage = $params['per_page'] ?? 15;
+            return $query->paginate($perPage);
+        }
+        return $query->get();
     }
-    public function allActive()
+    public function allActive(array $params = [])
     {
-        return Client::where('active', 1)->get();
+        $query = Client::where('active', 1);
+        if (!empty($params['search'])) {
+            $term = $params['search'];
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                  ->orWhere('email', 'like', "%{$term}%")
+                  ->orWhere('phone', 'like', "%{$term}%");
+            });
+        }
+        $sortBy = $params['sort_by'] ?? 'name';
+        $descending = filter_var($params['descending'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $query->orderBy($sortBy, $descending ? 'desc' : 'asc');
+        if (!empty($params['page'])) {
+            $perPage = $params['per_page'] ?? 15;
+            return $query->paginate($perPage);
+        }
+        return $query->get();
     }
     public function withTrashed()
     {
@@ -33,8 +65,10 @@ class ClientRepository
     }
     public function delete(Client $client)
     {
+        $client->active = 0;
+        $client->save();
         $client->delete();
-        return true;
+        return $client;
     }
     public function changeStatus(Client $client)
     {

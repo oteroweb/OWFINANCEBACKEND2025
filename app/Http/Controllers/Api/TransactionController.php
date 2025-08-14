@@ -136,6 +136,7 @@ class TransactionController extends Controller
             'rate_id' => 'nullable|integer',
             'transaction_type_id' => 'nullable|exists:transaction_types,id',
             'amount_tax' => 'nullable|numeric',
+            'active' => 'sometimes|boolean',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -160,6 +161,10 @@ class TransactionController extends Controller
                 'account_id'=> $request->input('account_id'),
                 'user_id'=> $request->input('user_id'),
             ];
+            if ($request->exists('active')) {
+                // Accept 0/1 or true/false inputs
+                $data['active'] = $request->boolean('active');
+            }
             $transaction= $this->transactionRepo->store($data);
             $response = [
                 'status'  => 'OK',
@@ -200,6 +205,7 @@ class TransactionController extends Controller
             if ($request->has('amount_tax')) { $data['amount_tax'] = $request->input('amount_tax'); }
             if ($request->has('account_id')) { $data['account_id'] = $request->input('account_id'); }
             if ($request->has('user_id')) { $data['user_id'] = $request->input('user_id'); }
+            if ($request->exists('active')) { $data['active'] = $request->boolean('active'); }
             $transaction = $this->transactionRepo->update($transaction, $data);
             $response = [
                 'status'  => 'OK',

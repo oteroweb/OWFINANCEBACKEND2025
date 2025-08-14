@@ -10,11 +10,12 @@ class UserController extends Controller
 {
     public function all()
     {
+        $users = User::whereIn('active', [1, 0])->get();
         return response()->json([
             'status' => 'OK',
             'code' => 200,
             'message' => '',
-            'data' => User::all()
+            'data' => $users
         ]);
     }
 
@@ -25,8 +26,8 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required',
         ]);
-        $data['password'] = Hash::make($data['password']);
-        $data['active'] = 1;
+    $data['password'] = Hash::make($data['password']);
+    $data['active'] = $request->boolean('active', true);
         $user = User::create($data);
         return response()->json([
             'status' => 'OK',
@@ -51,6 +52,9 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
         $data = $request->only(['name', 'email', 'password']);
+        if ($request->exists('active')) {
+            $data['active'] = $request->boolean('active');
+        }
         if (isset($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         }
@@ -66,12 +70,14 @@ class UserController extends Controller
     public function delete($id)
     {
         $user = User::findOrFail($id);
+        $user->active = 0;
+        $user->save();
         $user->delete();
         return response()->json([
             'status' => 'OK',
             'code' => 200,
             'message' => '',
-            'data' => null
+            'data' => $user
         ]);
     }
 

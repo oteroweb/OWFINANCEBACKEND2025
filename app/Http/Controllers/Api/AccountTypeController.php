@@ -29,6 +29,7 @@ class AccountTypeController extends Controller
             'name' =>'required|max:35|',
             'icon' =>'required|max:35|',
             'description' => 'required|max:255',
+            'active' => 'sometimes|boolean',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -44,6 +45,7 @@ class AccountTypeController extends Controller
                 'name'=> $request->input('name'),
                 'icon'=> $request->input('icon'),
                 'description'=> $request->input('description', ''),
+                'active' => $request->boolean('active', true),
             ];
             $accounttype= $this->AccountTypeRepo->store($data);
             $response = [
@@ -113,11 +115,10 @@ class AccountTypeController extends Controller
         $accounttype = $this->AccountTypeRepo->find($id);
         if (isset($accounttype->id)) {
             $data= array();
-            if (($request->input('name'))) { 
-                if (($request->input('name'))) { $data += ['name' => $request->input('name')]; };
-                if (($request->input('icon'))) { $data += ['icon' => $request->input('icon')]; };
-                
-            }
+            if ($request->has('name')) { $data['name'] = $request->input('name'); }
+            if ($request->has('icon')) { $data['icon'] = $request->input('icon'); }
+            if ($request->has('description')) { $data['description'] = $request->input('description'); }
+            if ($request->has('active')) { $data['active'] = $request->boolean('active'); }
             $accounttype = $this->AccountTypeRepo->update($accounttype, $data);
             $response = [
                 'status'  => 'OK',
@@ -141,8 +142,8 @@ class AccountTypeController extends Controller
      *
      * all
      */
-    public function all() {
-        try { $accounttype = $this->AccountTypeRepo->all();
+    public function all(Request $request) {
+        try { $accounttype = $this->AccountTypeRepo->all($request->only(['page','per_page','sort_by','descending','search']));
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -166,8 +167,8 @@ class AccountTypeController extends Controller
      *
      * all active
      */
-    public function allActive() {
-        try { $accounttype = $this->AccountTypeRepo->allActive();
+    public function allActive(Request $request) {
+        try { $accounttype = $this->AccountTypeRepo->allActive($request->only(['page','per_page','sort_by','descending','search']));
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -250,22 +251,13 @@ class AccountTypeController extends Controller
             }
             
         } catch (\Exception $ex) {
+            // Simplified generic error handling (no custom SQL parsing)
             Log::error($ex);
-            if (strpos($ex->getMessage(), 'SQLSTATE[23000]') !== false) {
-                $errorForeing = $this->get_string_between($ex->errorInfo[2],'CONSTRAINT', 'FOREIGN');
-                $response = [
-                    'status'  => 'FAILED',
-                    'code'    => 500,
-                    'message' => __($errorForeing.'error') . '.',
-                ];
-            }
-            else{
-                $response = [
-                    'status'  => 'FAILED',
-                    'code'    => 500,
-                    'message' => __('An error has occurred') . '.',
-                ];
-            }
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
             return response()->json($response, 500);
         }
     }

@@ -16,22 +16,22 @@ class ClientController extends Controller
         $this->repo = $repo;
     }
 
-    public function all()
+    public function all(Request $request)
     {
         return response()->json([
             'status' => 'OK',
             'code' => 200,
             'message' => '',
-            'data' => $this->repo->all()
+        'data' => $this->repo->all($request->only(['page','per_page','sort_by','descending','search']))
         ]);
     }
-    public function allActive()
+    public function allActive(Request $request)
     {
         return response()->json([
             'status' => 'OK',
             'code' => 200,
             'message' => '',
-            'data' => $this->repo->allActive()
+        'data' => $this->repo->allActive($request->only(['page','per_page','sort_by','descending','search']))
         ]);
     }
     public function withTrashed()
@@ -60,7 +60,7 @@ class ClientController extends Controller
             'email' => 'required|email|unique:clients,email',
             'phone' => 'nullable',
         ]);
-        $data['active'] = 1;
+    $data['active'] = $request->boolean('active', true);
         $client = $this->repo->create($data);
         return response()->json([
             'status' => 'OK',
@@ -73,6 +73,9 @@ class ClientController extends Controller
     {
         $client = $this->repo->find($id);
         $data = $request->only(['name', 'email', 'phone']);
+        if ($request->has('active')) {
+            $data['active'] = $request->boolean('active');
+        }
         $client = $this->repo->update($client, $data);
         return response()->json([
             'status' => 'OK',
@@ -84,12 +87,12 @@ class ClientController extends Controller
     public function delete($id)
     {
         $client = $this->repo->find($id);
-        $this->repo->delete($client);
+        $client = $this->repo->delete($client);
         return response()->json([
             'status' => 'OK',
             'code' => 200,
             'message' => '',
-            'data' => null
+            'data' => $client
         ]);
     }
     public function change_status($id)

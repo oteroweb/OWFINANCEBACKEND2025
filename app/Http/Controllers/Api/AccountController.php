@@ -21,10 +21,11 @@ class AccountController extends Controller
      * @group Account
      * Get all accounts
      */
-    public function all()
+    public function all(Request $request)
     {
         try {
-            $accounts = $this->accountRepo->all();
+            $params = $request->only(['page','per_page','sort_by','descending','search','currency_id','account_type_id','user_id']);
+            $accounts = $this->accountRepo->all($params);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -47,10 +48,11 @@ class AccountController extends Controller
      * @group Account
      * Get all active accounts
      */
-    public function allActive()
+    public function allActive(Request $request)
     {
         try {
-            $accounts = $this->accountRepo->allActive();
+            $params = $request->only(['page','per_page','sort_by','descending','search','currency_id','account_type_id','user_id']);
+            $accounts = $this->accountRepo->allActive($params);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -113,11 +115,12 @@ class AccountController extends Controller
      */
     public function save(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+    $validator = Validator::make($request->all(), [
             'name' => 'required|max:35',
             'currency_id' => 'required|exists:currencies,id',
             'initial' => 'required|numeric',
             'account_type_id' => 'required|exists:account_types,id',
+            'active' => 'sometimes|boolean',
         ], $this->custom_message());
 
         if ($validator->fails()) {
@@ -132,6 +135,9 @@ class AccountController extends Controller
 
         try {
             $data = $request->only(['name', 'currency_id', 'initial', 'account_type_id']);
+            if ($request->exists('active')) {
+                $data['active'] = $request->boolean('active');
+            }
             $account = $this->accountRepo->store($data);
             $response = [
                 'status'  => 'OK',
@@ -165,6 +171,9 @@ class AccountController extends Controller
         $account = $this->accountRepo->find($id);
         if (isset($account->id)) {
             $data = $request->only(['name', 'currency_id', 'initial', 'account_type_id']);
+            if ($request->exists('active')) {
+                $data['active'] = $request->boolean('active');
+            }
             $account = $this->accountRepo->update($account, $data);
             $response = [
                 'status'  => 'OK',
@@ -192,11 +201,12 @@ class AccountController extends Controller
         try {
             $account = $this->accountRepo->find($id);
             if ($account) {
-                $this->accountRepo->delete($account);
+                $account = $this->accountRepo->delete($account);
                 $response = [
                     'status'  => 'OK',
                     'code'    => 200,
                     'message' => __('Account Deleted Successfully'),
+                    'data'    => $account,
                 ];
                 return response()->json($response, 200);
             } else {

@@ -21,8 +21,8 @@ class CurrencyController extends Controller
      *
      * all
      */
-    public function all() {
-        try { $currency = $this->CurrencyRepo->all();
+    public function all(Request $request) {
+        try { $currency = $this->CurrencyRepo->all($request->only(['page','per_page','sort_by','descending','search']));
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -46,9 +46,9 @@ class CurrencyController extends Controller
      *
      * all Active
      */
-    public function allActive() {
+    public function allActive(Request $request) {
         try {
-            $currency = $this->CurrencyRepo->allActive();
+            $currency = $this->CurrencyRepo->allActive($request->only(['page','per_page','sort_by','descending','search']));
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,

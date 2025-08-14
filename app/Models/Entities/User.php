@@ -7,7 +7,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\Entities\Role;
+use App\Models\Role;
 use App\Models\Entities\Account;
 use App\Models\Entities\Transaction;
 
@@ -63,7 +63,7 @@ class User extends Authenticatable
      */
     public function accounts()
     {
-        return $this->belongsToMany(Account::class);
+    return $this->belongsToMany(Account::class)->withTimestamps();
     }
 
     /**

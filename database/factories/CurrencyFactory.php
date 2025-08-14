@@ -14,7 +14,7 @@ class CurrencyFactory extends Factory
         return [
             'code' => $this->faker->currencyCode(),
             'name' => $this->faker->word(),
-            'align' => $this->faker->randomElement(['left', 'right', 'center']),
+            'align' => $this->faker->randomElement(['left', 'right']),
             // 'rounding' => $this->faker->randomFloat(2, 0, 100),
             // 'name_plural' => $this->faker->word() . 's',
             'symbol' => $this->faker->randomElement(['$', '€', '£', '¥', '₹', '₩', '₽', '₪', '₫', '₱']),
