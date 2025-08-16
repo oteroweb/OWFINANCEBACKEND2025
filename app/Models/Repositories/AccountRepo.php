@@ -16,13 +16,33 @@ class AccountRepo
         if (!empty($params['currency_id'])) {
             $query->where('currency_id', $params['currency_id']);
         }
+        if (!empty($params['currency'])) {
+            $needle = $params['currency'];
+            $query->whereHas('currency', function ($q) use ($needle) {
+                $q->where('name', 'like', "%{$needle}%")
+                  ->orWhere('code', 'like', "%{$needle}%");
+            });
+        }
         if (!empty($params['account_type_id'])) {
             $query->where('account_type_id', $params['account_type_id']);
+        }
+        if (!empty($params['account_type'])) {
+            $needle = $params['account_type'];
+            $query->whereHas('accountType', function ($q) use ($needle) {
+                $q->where('name', 'like', "%{$needle}%");
+            });
         }
         if (!empty($params['user_id'])) {
             $userId = $params['user_id'];
             $query->whereHas('users', function ($q) use ($userId) {
                 $q->where('users.id', $userId);
+            });
+        }
+        if (!empty($params['user'])) {
+            $needle = $params['user'];
+            $query->whereHas('users', function ($q) use ($needle) {
+                $q->where('name', 'like', "%{$needle}%")
+                  ->orWhere('email', 'like', "%{$needle}%");
             });
         }
 
@@ -58,13 +78,33 @@ class AccountRepo
         if (!empty($params['currency_id'])) {
             $query->where('currency_id', $params['currency_id']);
         }
+        if (!empty($params['currency'])) {
+            $needle = $params['currency'];
+            $query->whereHas('currency', function ($q) use ($needle) {
+                $q->where('name', 'like', "%{$needle}%")
+                  ->orWhere('code', 'like', "%{$needle}%");
+            });
+        }
         if (!empty($params['account_type_id'])) {
             $query->where('account_type_id', $params['account_type_id']);
+        }
+        if (!empty($params['account_type'])) {
+            $needle = $params['account_type'];
+            $query->whereHas('accountType', function ($q) use ($needle) {
+                $q->where('name', 'like', "%{$needle}%");
+            });
         }
         if (!empty($params['user_id'])) {
             $userId = $params['user_id'];
             $query->whereHas('users', function ($q) use ($userId) {
                 $q->where('users.id', $userId);
+            });
+        }
+        if (!empty($params['user'])) {
+            $needle = $params['user'];
+            $query->whereHas('users', function ($q) use ($needle) {
+                $q->where('name', 'like', "%{$needle}%")
+                  ->orWhere('email', 'like', "%{$needle}%");
             });
         }
         if (!empty($params['search'])) {

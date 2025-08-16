@@ -70,4 +70,13 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     }
+
+    public function client()
+    {
+        return $this->belongsTo(\App\Models\Entities\Client::class);
+    }
+    public function currency()
+    {
+        return $this->belongsTo(\App\Models\Entities\Currency::class);
+    }
 }

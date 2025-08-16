@@ -21,8 +21,10 @@ class ProviderController extends Controller
      *
      * all
      */
-    public function all() {
-        try { $provider = $this->ProviderRepo->all();
+    public function all(Request $request) {
+        try {
+            $params = $request->only(['page','per_page','sort_by','descending','search','user_id','user']);
+            $provider = $this->ProviderRepo->all($params);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -46,8 +48,10 @@ class ProviderController extends Controller
      *
      * all active
      */
-    public function allActive() {
-        try { $provider = $this->ProviderRepo->allActive();
+    public function allActive(Request $request) {
+        try {
+            $params = $request->only(['page','per_page','sort_by','descending','search','user_id','user']);
+            $provider = $this->ProviderRepo->allActive($params);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -213,8 +217,7 @@ class ProviderController extends Controller
         try {
             if ($this->ProviderRepo->find($id)) {
                 $provider = $this->ProviderRepo->find($id);
-                $provider = $this->ProviderRepo->delete($provider, ['active' => 0]);
-                $provider = $provider->delete();
+                $provider = $this->ProviderRepo->delete($provider);
                 $response = [ 
                     'status'  => 'OK',
                     'code'    => 200,
@@ -225,30 +228,20 @@ class ProviderController extends Controller
             }
             else {
                 $response = [
-                    'status'  => 'OK',
+                    'status'  => 'FAILED',
                     'code'    => 404,
                     'message' => __('Provider not Found'),
                 ];
-                return response()->json($response, 200);
+                return response()->json($response, 404);
             }
             
         } catch (\Exception $ex) {
             Log::error($ex);
-            if (strpos($ex->getMessage(), 'SQLSTATE[23000]') !== false) {
-                $errorForeing = $this->get_string_between($ex->errorInfo[2],'CONSTRAINT', 'FOREIGN');
-                $response = [
-                    'status'  => 'FAILED',
-                    'code'    => 500,
-                    'message' => __($errorForeing.'error') . '.',
-                ];
-            }
-            else{
-                $response = [
-                    'status'  => 'FAILED',
-                    'code'    => 500,
-                    'message' => __('An error has occurred') . '.',
-                ];
-            }
+            $response = [
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ];
             return response()->json($response, 500);
         }
     }
