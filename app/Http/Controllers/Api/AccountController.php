@@ -139,6 +139,15 @@ class AccountController extends Controller
                 $data['active'] = $request->boolean('active');
             }
             $account = $this->accountRepo->store($data);
+
+            // Attach user to account with is_owner=1 if user_id is present
+            if ($request->filled('user_id')) {
+                $userId = $request->input('user_id');
+                $account->users()->attach($userId, ['is_owner' => 1]);
+                // Refresh relation for response
+                $account->load(['users']);
+            }
+
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,

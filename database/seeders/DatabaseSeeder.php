@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Entities\Client;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -17,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             AccountTypeSeeder::class,
             CurrencySeeder::class,
+            // ClientSeeder::class,
             UserSeeder::class,
             ProviderSeeder::class,
             RateSeeder::class,

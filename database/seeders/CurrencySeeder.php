@@ -23,6 +23,12 @@ class CurrencySeeder extends Seeder
             [ 'name' => 'Yuan Chino',           'symbol' => '¥',  'align' => 'left', 'code' => 'CNY', 'active' => 1 ],
             [ 'name' => 'Real Brasileño',       'symbol' => 'R$', 'align' => 'left', 'code' => 'BRL', 'active' => 1 ],
             [ 'name' => 'Dólar Canadiense',     'symbol' => 'C$', 'align' => 'left', 'code' => 'CAD', 'active' => 1 ],
+                // Criptomonedas
+                [ 'name' => 'Tether',               'symbol' => '$T',  'align' => 'left', 'code' => 'USDT', 'active' => 1 ],
+                [ 'name' => 'USD Coin',             'symbol' => '$C',  'align' => 'left', 'code' => 'USDC', 'active' => 1 ],
+                [ 'name' => 'Bitcoin',              'symbol' => '₿',  'align' => 'left', 'code' => 'BTC', 'active' => 1 ],
+                [ 'name' => 'Ethereum',             'symbol' => 'Ξ',  'align' => 'left', 'code' => 'ETH', 'active' => 1 ],
+                [ 'name' => 'BNB',                  'symbol' => 'BNB','align' => 'left', 'code' => 'BNB', 'active' => 1 ],
         ];
 
         foreach ($currencies as $data) {
