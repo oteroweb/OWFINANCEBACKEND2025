@@ -14,7 +14,7 @@ class AccountSeeder extends Seeder
     {
         Account::factory()->count(10)->create();
 
-        $user = User::where('email', 'otero@owfinance.online')->first();
+        $user = User::where('email', 'otero@demo.com')->first();
         if (!$user) {
             // If the user doesn't exist, skip seeding accounts to avoid orphan data
             return;

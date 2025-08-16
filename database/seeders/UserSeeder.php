@@ -40,7 +40,7 @@ class UserSeeder extends Seeder
             'role_id' => $guestRole->id,
         ]);
         User::updateOrCreate([
-            'email' => 'otero@owfinance.online',
+            'email' => 'otero@demo.com',
         ], [
             'name' => 'Jose Otero',
             'password' => Hash::make('password'),
