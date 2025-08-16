@@ -20,6 +20,10 @@ class Account extends Model
         'active',
     ];
 
+    protected $hidden = [
+        'pivot',
+    ];
+
     public function currency()
     {
         return $this->belongsTo(Currency::class);
@@ -37,7 +41,8 @@ class Account extends Model
     {
         return $this->belongsToMany(User::class)
             ->withTimestamps()
-            ->withPivot('is_owner');
+            ->withPivot('is_owner')
+            ->select('users.*', 'account_user.is_owner as is_owner');
     }
 
     protected static function newFactory()

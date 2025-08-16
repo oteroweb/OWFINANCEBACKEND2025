@@ -37,7 +37,8 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(\App\Models\Entities\Account::class, 'account_user', 'user_id', 'account_id')
             ->withPivot('is_owner')
-            ->withTimestamps();
+            ->withTimestamps()
+            ->select('accounts.*', 'account_user.is_owner as is_owner');
     }
 
     /**
@@ -48,6 +49,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+    'pivot',
     ];
 
     /**
