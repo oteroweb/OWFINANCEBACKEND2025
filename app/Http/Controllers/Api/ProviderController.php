@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 
 class ProviderController extends Controller
-{   
+{
     private $ProviderRepo;
     public function __construct(ProviderRepo $ProviderRepo) {
         $this->ProviderRepo = $ProviderRepo;
@@ -41,7 +41,7 @@ class ProviderController extends Controller
             ];
             return response()->json($response, 500);
         }
-    }     
+    }
     /**
      * @group Provider
      * Get
@@ -68,7 +68,7 @@ class ProviderController extends Controller
             ];
             return response()->json($response, 500);
         }
-    }  
+    }
     /**
      * @group Provider
      * Get
@@ -137,7 +137,7 @@ class ProviderController extends Controller
             return response()->json($response);
         }
         try {
-            $data = [ 
+            $data = [
                 'name'=> $request->input('name'),
                 'address'=> $request->input('address'),
                 'email'=> $request->input('email', 'provider@example.com'),
@@ -184,11 +184,11 @@ class ProviderController extends Controller
         $provider = $this->ProviderRepo->find($id);
         if (isset($provider->id)) {
             $data= array();
-            if (($request->input('name'))) { 
+            if (($request->input('name'))) {
                 if (($request->input('name'))) { $data += ['name' => $request->input('name')]; };
                 if (($request->input('address'))) { $data += ['address' => $request->input('address')]; };
                 if (($request->input('user_id'))) { $data += ['user_id' => $request->input('user_id')]; };
-                
+
             }
             $provider = $this->ProviderRepo->update($provider, $data);
             $response = [
@@ -218,7 +218,7 @@ class ProviderController extends Controller
             if ($this->ProviderRepo->find($id)) {
                 $provider = $this->ProviderRepo->find($id);
                 $provider = $this->ProviderRepo->delete($provider);
-                $response = [ 
+                $response = [
                     'status'  => 'OK',
                     'code'    => 200,
                     'message' => __('Provider Deleted Successfully'),
@@ -234,7 +234,7 @@ class ProviderController extends Controller
                 ];
                 return response()->json($response, 404);
             }
-            
+
         } catch (\Exception $ex) {
             Log::error($ex);
             $response = [
@@ -253,7 +253,7 @@ class ProviderController extends Controller
      * change_status
      */
     public function change_status(Request $request, $id) {
-        
+
         $provider = $this->ProviderRepo->find($id);
         if (isset($provider->active)) {
             if($provider->active == 0){
@@ -303,7 +303,7 @@ class ProviderController extends Controller
         }
     }
     public function custom_message() {
-        
+
         return [
             'name.required'=> __('The name is required'),
         ];
