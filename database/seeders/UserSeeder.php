@@ -39,6 +39,13 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'role_id' => $guestRole->id,
         ]);
+        User::updateOrCreate([
+            'email' => 'otero@owfinance.online',
+        ], [
+            'name' => 'Jose Otero',
+            'password' => Hash::make('password'),
+            'role_id' => $userRole->id,
+        ]);
         // Create additional users
         User::factory()->count(10)->create()->each(function ($user) use ($userRole) {
             $user->role()->associate($userRole);
