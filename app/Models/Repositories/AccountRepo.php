@@ -12,6 +12,12 @@ class AccountRepo
         $query = Account::whereIn('active', [1, 0])
             ->with(['currency', 'accountType', 'users']);
 
+        // Active filter (overrides base whereIn when provided)
+        if (array_key_exists('active', $params) && $params['active'] !== null && $params['active'] !== '') {
+            $active = (int) filter_var($params['active'], FILTER_VALIDATE_BOOLEAN);
+            $query->where('active', $active);
+        }
+
         // Optional filters
         if (!empty($params['currency_id'])) {
             $query->where('currency_id', $params['currency_id']);
@@ -34,8 +40,12 @@ class AccountRepo
         }
         if (!empty($params['user_id'])) {
             $userId = $params['user_id'];
-            $query->whereHas('users', function ($q) use ($userId) {
+            $isOwner = $params['is_owner'] ?? null;
+            $query->whereHas('users', function ($q) use ($userId, $isOwner) {
                 $q->where('users.id', $userId);
+                if ($isOwner !== null && $isOwner !== '') {
+                    $q->where('account_user.is_owner', (int) filter_var($isOwner, FILTER_VALIDATE_BOOLEAN));
+                }
             });
         }
         if (!empty($params['user'])) {
@@ -96,8 +106,12 @@ class AccountRepo
         }
         if (!empty($params['user_id'])) {
             $userId = $params['user_id'];
-            $query->whereHas('users', function ($q) use ($userId) {
+            $isOwner = $params['is_owner'] ?? null;
+            $query->whereHas('users', function ($q) use ($userId, $isOwner) {
                 $q->where('users.id', $userId);
+                if ($isOwner !== null && $isOwner !== '') {
+                    $q->where('account_user.is_owner', (int) filter_var($isOwner, FILTER_VALIDATE_BOOLEAN));
+                }
             });
         }
         if (!empty($params['user'])) {
@@ -124,7 +138,7 @@ class AccountRepo
 
     public function find($id)
     {
-        return Account::find($id);
+    return Account::with(['currency', 'accountType', 'users'])->find($id);
     }
 
     public function store(array $data)
@@ -149,7 +163,7 @@ class AccountRepo
 
     public function withTrashed()
     {
-        return Account::withTrashed()->get();
+    return Account::withTrashed()->with(['currency', 'accountType', 'users'])->get();
     }
 
     private function applyGlobalSearch($query, string $searchTerm, array $fields): void

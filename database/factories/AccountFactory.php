@@ -11,15 +11,19 @@ class AccountFactory extends Factory
 
     public function definition(): array
     {
-        $accountType = \App\Models\Entities\AccountType::factory()->create();
-        $currency = \App\Models\Entities\Currency::factory()->create();
+        $accountTypeId = \App\Models\Entities\AccountType::query()->inRandomOrder()->value('id');
+        $currencyId = \App\Models\Entities\Currency::query()->inRandomOrder()->value('id');
+
+        if (!$accountTypeId || !$currencyId) {
+            throw new \RuntimeException('AccountFactory requires existing AccountType and Currency records. Seed them first.');
+        }
         return [
             'name' => $this->faker->word(),
             'balance' => $this->faker->randomFloat(2, 100, 10000),
-            'account_type_id' => $accountType->id,
+            'account_type_id' => $accountTypeId,
             'active' => $this->faker->randomElement([1, 0]),
             'initial' => $this->faker->randomFloat(2, 0, 1000),
-            'currency_id' => $currency->id,
+            'currency_id' => $currencyId,
         ];
     }
 }

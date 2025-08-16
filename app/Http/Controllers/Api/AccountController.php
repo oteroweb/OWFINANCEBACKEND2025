@@ -24,7 +24,7 @@ class AccountController extends Controller
     public function all(Request $request)
     {
         try {
-            $params = $request->only(['page','per_page','sort_by','descending','search','currency_id','currency','account_type_id','account_type','user_id','user']);
+            $params = $request->only(['page','per_page','sort_by','descending','search','active','currency_id','currency','account_type_id','account_type','user_id','user','is_owner']);
             $accounts = $this->accountRepo->all($params);
             $response = [
                 'status'  => 'OK',
@@ -51,7 +51,7 @@ class AccountController extends Controller
     public function allActive(Request $request)
     {
         try {
-            $params = $request->only(['page','per_page','sort_by','descending','search','currency_id','currency','account_type_id','account_type','user_id','user']);
+            $params = $request->only(['page','per_page','sort_by','descending','search','active','currency_id','currency','account_type_id','account_type','user_id','user','is_owner']);
             $accounts = $this->accountRepo->allActive($params);
             $response = [
                 'status'  => 'OK',

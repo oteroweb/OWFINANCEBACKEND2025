@@ -15,6 +15,7 @@ class Account extends Model
         'name',
         'currency_id',
         'initial',
+    'balance',
         'account_type_id',
         'active',
     ];
@@ -34,7 +35,9 @@ class Account extends Model
      */
     public function users()
     {
-    return $this->belongsToMany(User::class)->withTimestamps();
+        return $this->belongsToMany(User::class)
+            ->withTimestamps()
+            ->withPivot('is_owner');
     }
 
     protected static function newFactory()

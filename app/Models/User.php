@@ -35,7 +35,9 @@ class User extends Authenticatable
      */
     public function accounts()
     {
-        return $this->belongsToMany(\App\Models\Entities\Account::class, 'account_user', 'user_id', 'account_id');
+        return $this->belongsToMany(\App\Models\Entities\Account::class, 'account_user', 'user_id', 'account_id')
+            ->withPivot('is_owner')
+            ->withTimestamps();
     }
 
     /**

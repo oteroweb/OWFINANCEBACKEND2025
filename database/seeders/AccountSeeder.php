@@ -12,7 +12,7 @@ class AccountSeeder extends Seeder
 {
     public function run(): void
     {
-        // Account::factory()->count(10)->create();
+        Account::factory()->count(10)->create();
 
         $user = User::where('email', 'otero@owfinance.online')->first();
         if (!$user) {
@@ -70,14 +70,16 @@ class AccountSeeder extends Seeder
                 [
                     'currency_id' => $currencyId,
                     'initial' => $amount,
-                    'balance' => $amount,
+                    'balance' => 0,
                     'account_type_id' => $typeId,
                     'active' => 1,
                 ]
             );
 
-            // Attach to user without detaching existing
-            $user->accounts()->syncWithoutDetaching([$account->id]);
+            // Attach to user without detaching existing, mark as owner
+            $user->accounts()->syncWithoutDetaching([
+                $account->id => ['is_owner' => 1],
+            ]);
         }
     }
 }
