@@ -7,6 +7,9 @@ use App\Models\Repositories\TransactionRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use App\Models\Entities\ItemTransaction;
+use App\Models\Entities\PaymentTransaction;
 
 class TransactionController extends Controller
 {
@@ -128,7 +131,8 @@ class TransactionController extends Controller
     public function save(Request $request) {
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:100',
-            'amount' => 'required|numeric',
+            // Amount can be omitted if items are provided; we will derive it
+            'amount' => 'nullable|numeric',
             'description' => 'max:255',
             'date' => 'required|date',
             'provider_id' => 'nullable|exists:providers,id',
@@ -137,6 +141,24 @@ class TransactionController extends Controller
             'transaction_type_id' => 'nullable|exists:transaction_types,id',
             'amount_tax' => 'nullable|numeric',
             'active' => 'sometimes|boolean',
+            // Nested: items and payments
+            'items' => 'nullable|array',
+            'items.*.item_id' => 'nullable|exists:items,id',
+            'items.*.name' => 'nullable|string|max:150',
+            'items.*.quantity' => 'nullable|numeric',
+            'items.*.amount' => 'required_with:items|numeric',
+            'items.*.tax_id' => 'nullable|exists:taxes,id',
+            'items.*.rate_id' => 'nullable|exists:rates,id',
+            'items.*.description' => 'nullable|string|max:255',
+            'items.*.jar_id' => 'nullable|exists:jars,id',
+            'items.*.date' => 'nullable|date',
+            'items.*.category_id' => 'nullable|exists:categories,id',
+            'items.*.user_id' => 'nullable|exists:users,id',
+            'items.*.custom_name' => 'nullable|string|max:150',
+            // Payments
+            'payments' => 'required|array|min:1',
+            'payments.*.account_id' => 'required|exists:accounts,id',
+            'payments.*.amount' => 'required|numeric|min:0',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -148,9 +170,49 @@ class TransactionController extends Controller
             return response()->json($response);
         }
         try {
+            $items = $request->input('items', []);
+            $payments = $request->input('payments', []);
+
+            // Derive transaction amount from items if provided
+            $derivedAmount = null;
+            if (!empty($items)) {
+                $sum = 0.0;
+                foreach ($items as $it) {
+                    $qty = isset($it['quantity']) ? (float) $it['quantity'] : 1.0;
+                    $amt = isset($it['amount']) ? (float) $it['amount'] : 0.0;
+                    $sum += ($amt * $qty);
+                }
+                $derivedAmount = round($sum, 2);
+            }
+
+            // If no items provided, amount is required
+            $providedAmount = $request->input('amount');
+            if (empty($items) && $providedAmount === null) {
+                return response()->json([
+                    'status' => 'FAILED',
+                    'code' => 422,
+                    'message' => __('Amount is required when items are not provided'),
+                ], 422);
+            }
+            // If both provided amount and derived amount exist, they must match
+            if (!empty($items) && $providedAmount !== null && $derivedAmount !== null) {
+                if (abs((float)$providedAmount - (float)$derivedAmount) > 0.01) {
+                    return response()->json([
+                        'status' => 'FAILED',
+                        'code' => 422,
+                        'message' => __('Provided amount must equal items total'),
+                        'data' => [
+                            'provided_amount' => round((float)$providedAmount, 2),
+                            'items_total' => $derivedAmount,
+                        ],
+                    ], 422);
+                }
+            }
+
             $data = [
                 'name'=> $request->input('name'),
-                'amount'=> $request->input('amount'),
+                // Final amount: prefer derived if present, otherwise provided
+                'amount'=> $derivedAmount ?? $providedAmount,
                 'description'=> $request->input('description'),
                 'date'=> $request->input('date'),
                 'provider_id'=> $request->input('provider_id'),
@@ -162,10 +224,69 @@ class TransactionController extends Controller
                 'user_id'=> $request->input('user_id'),
             ];
             if ($request->exists('active')) {
-                // Accept 0/1 or true/false inputs
                 $data['active'] = $request->boolean('active');
             }
+
+            // If payments are provided, validate that their sum equals the transaction amount (with 2-decimal tolerance)
+            if (!empty($payments)) {
+                $paymentsSum = 0.0;
+                foreach ($payments as $pm) {
+                    $paymentsSum += isset($pm['amount']) ? (float) $pm['amount'] : 0.0;
+                }
+                $paymentsSum = round($paymentsSum, 2);
+                $finalAmount = isset($data['amount']) ? round((float) $data['amount'], 2) : 0.0;
+                if (abs($paymentsSum - $finalAmount) > 0.01) {
+                    return response()->json([
+                        'status' => 'FAILED',
+                        'code' => 422,
+                        'message' => __('Payments total must equal transaction amount'),
+                        'data' => [
+                            'amount' => $finalAmount,
+                            'payments_sum' => $paymentsSum,
+                        ],
+                    ], 422);
+                }
+            }
+
+            DB::beginTransaction();
             $transaction= $this->transactionRepo->store($data);
+
+            // Create Item Transactions
+            foreach ($items as $it) {
+                $payload = [
+                    'transaction_id' => $transaction->id,
+                    'item_id' => $it['item_id'] ?? null,
+                    'quantity' => $it['quantity'] ?? 1,
+                    'name' => $it['name'] ?? null,
+                    'amount' => $it['amount'] ?? 0,
+                    'tax_id' => $it['tax_id'] ?? null,
+                    'rate_id' => $it['rate_id'] ?? null,
+                    'description' => $it['description'] ?? null,
+                    'jar_id' => $it['jar_id'] ?? null,
+                    'date' => $it['date'] ?? $transaction->date,
+                    'category_id' => $it['category_id'] ?? null,
+                    'user_id' => $it['user_id'] ?? $transaction->user_id,
+                    'custom_name' => $it['custom_name'] ?? null,
+                    'active' => 1,
+                ];
+                ItemTransaction::create($payload);
+            }
+
+            // Create Payment Transactions
+            foreach ($payments as $pm) {
+                $payload = [
+                    'transaction_id' => $transaction->id,
+                    'account_id' => $pm['account_id'],
+                    'amount' => $pm['amount'],
+                    'active' => 1,
+                ];
+                PaymentTransaction::create($payload);
+            }
+
+            // Reload with relations
+            $transaction->load(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
+            DB::commit();
+
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -174,6 +295,7 @@ class TransactionController extends Controller
             ];
             return response()->json($response, 200);
         } catch (\Exception $ex) {
+            DB::rollBack();
             Log::error($ex);
             $response = [
                 'status'  => 'FAILED',
