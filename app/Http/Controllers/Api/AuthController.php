@@ -13,7 +13,7 @@ class AuthController extends Controller
 {
     /**
      * Iniciar sesión y crear token
-     * 
+     *
      * @group Autenticación
      * @bodyParam email string required El email del usuario. Ejemplo: admin@demo.com
      * @bodyParam password string required La contraseña del usuario. Ejemplo: password
@@ -39,17 +39,18 @@ class AuthController extends Controller
             'password' => 'required',
             'device_name' => 'required',
         ]);
-    
+
         $user = User::where('email', $request->email)->first();
-    
+
         if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Las credenciales proporcionadas son incorrectas.'],
             ]);
         }
-    
+
         $token = $user->createToken($request->device_name)->plainTextToken;
         $user->load('role');
+        $user->load('currency'); // Cargar la relación de moneda si es necesario
         return response()->json([
             'token' => $token,
             'user' => $user,
@@ -66,7 +67,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        
+
         return response()->json([
             'message' => 'Sesión cerrada correctamente'
         ]);

@@ -18,7 +18,7 @@ class TransactionRepo {
     public function all($params = [])
     {
         $query = Transaction::whereIn('active', [1,0])
-            ->with(['provider','rate','user','account','transactionType']);
+            ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
 
         // Apply filters
         if (!empty($params['provider_id'])) {
@@ -39,7 +39,7 @@ class TransactionRepo {
         if (!empty($params['account_id'])) {
             $query->where('account_id', $params['account_id']);
         }
-        
+
         // transaction_type filters (new FK takes precedence)
         if (!empty($params['transaction_type_id'])) {
             $query->where('transaction_type_id', $params['transaction_type_id']);
@@ -102,7 +102,7 @@ class TransactionRepo {
     public function allActive($params = [])
     {
         $query = Transaction::where('active',1)
-            ->with(['provider','rate','user','account','transactionType']);
+            ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
 
         // Apply filters
         if (!empty($params['provider_id'])) {
@@ -176,7 +176,7 @@ class TransactionRepo {
     }
 
     public function find($id) {
-        return Transaction::with(['provider', 'rate', 'user', 'account', 'transactionType'])->find($id);
+    return Transaction::with(['provider', 'rate', 'user', 'account', 'transactionType','itemTransactions','paymentTransactions'])->find($id);
     }
     public function store($data) {
         $transaction = new Transaction();

@@ -39,4 +39,39 @@ class ItemTransaction extends Model
     {
         return \Database\Factories\ItemTransactionFactory::new();
     }
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class);
+    }
+
+    public function item()
+    {
+        return $this->belongsTo(Item::class);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function tax()
+    {
+        return $this->belongsTo(Tax::class);
+    }
+
+    public function rate()
+    {
+        return $this->belongsTo(Rate::class);
+    }
+
+    public function jar()
+    {
+        return $this->belongsTo(Jar::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

@@ -10,6 +10,8 @@ use App\Models\Entities\Provider;
 use App\Models\Entities\Rate;
 use App\Models\Entities\User;
 use App\Models\Entities\Account;
+use App\Models\Entities\ItemTransaction;
+use App\Models\Entities\PaymentTransaction;
 
 class Transaction extends Model
 {
@@ -58,6 +60,18 @@ class Transaction extends Model
     public function transactionType()
     {
         return $this->belongsTo(TransactionType::class, 'transaction_type_id');
+    }
+
+    // Relationship: a transaction has many item transactions (invoice lines)
+    public function itemTransactions()
+    {
+        return $this->hasMany(ItemTransaction::class);
+    }
+
+    // Relationship: a transaction can be paid with multiple payment transactions (split payments)
+    public function paymentTransactions()
+    {
+        return $this->hasMany(PaymentTransaction::class);
     }
 
 
