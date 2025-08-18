@@ -9,6 +9,6 @@ class ItemTaxSeeder extends Seeder
 {
     public function run(): void
     {
-        ItemTax::factory()->count(10)->create();
+        // ItemTax::factory()->count(10)->create();
     }
 }

@@ -11,9 +11,13 @@ class ItemTaxFactory extends Factory
 
     public function definition(): array
     {
+        $itemTransactionId = \App\Models\Entities\ItemTransaction::inRandomOrder()->value('id')
+            ?? \App\Models\Entities\ItemTransaction::factory()->create()->id;
+        $taxId = \App\Models\Entities\Tax::inRandomOrder()->value('id')
+            ?? \App\Models\Entities\Tax::factory()->create()->id;
         return [
-            'item_transaction_id' => \App\Models\Entities\ItemTransaction::factory(),
-            'tax_id' => \App\Models\Entities\Tax::factory(),
+            'item_transaction_id' => $itemTransactionId,
+            'tax_id' => $taxId,
             'amount' => $this->faker->randomFloat(2, 1, 100),
             'percent' => $this->faker->randomFloat(2, 0, 100),
             'active' => 1,

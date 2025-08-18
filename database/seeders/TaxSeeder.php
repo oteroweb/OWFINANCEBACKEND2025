@@ -24,6 +24,6 @@ class TaxSeeder extends Seeder
             ['percent' => 16.00, 'active' => true]
         );
 
-        Tax::factory()->count(10)->create();
+        // Tax::factory()->count(10)->create();
     }
 }
