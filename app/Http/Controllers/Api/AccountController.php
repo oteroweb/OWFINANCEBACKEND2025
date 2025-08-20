@@ -7,6 +7,8 @@ use App\Models\Repositories\AccountRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Models\Entities\AccountFolder;
+use Illuminate\Support\Facades\DB;
 
 class AccountController extends Controller
 {
@@ -140,13 +142,16 @@ class AccountController extends Controller
             }
             $account = $this->accountRepo->store($data);
 
-            // Attach user to account with is_owner=1 if user_id is present
-            if ($request->filled('user_id')) {
-                $userId = $request->input('user_id');
-                $account->users()->attach($userId, ['is_owner' => 1]);
-                // Refresh relation for response
-                $account->load(['users']);
-            }
+            // Attach to user pivot with folder and sort order
+            $userId = $request->user()->id;
+            $folderId = $request->input('folder_id');
+            $sortOrder = $request->input('sort_order', 0);
+            $account->users()->attach($userId, [
+                'is_owner' => 1,
+                'folder_id' => $folderId,
+                'sort_order' => $sortOrder,
+            ]);
+            $account->load(['users']);
 
             $response = [
                 'status'  => 'OK',
@@ -262,6 +267,106 @@ class AccountController extends Controller
             'message' => __('Account does not exist') . '.',
         ];
         return response()->json($response, 404);
+    }
+
+    /**
+     * @group Account
+     * Move an account to a folder
+     * @urlParam id integer required The ID of the account. Example: 1
+     * @bodyParam folder_id integer|null Folder ID to move to. Example: 2
+     * @bodyParam sort_order integer optional Sort order within folder. Example: 10
+     */
+    public function move(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'folder_id' => 'nullable|exists:account_folders,id',
+            'sort_order' => 'nullable|integer',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 400,
+                'message' => __('Incorrect Params'),
+                'errors' => $validator->errors(),
+            ], 400);
+        }
+        try {
+            $userId = $request->user()->id;
+            $folderId = $request->input('folder_id');
+            $sortOrder = $request->input('sort_order', 0);
+            // Update pivot table
+            DB::table('account_user')
+                ->where('user_id', $userId)
+                ->where('account_id', $id)
+                ->update(['folder_id' => $folderId, 'sort_order' => $sortOrder]);
+            return response()->json([
+                'status' => 'OK',
+                'code' => 200,
+                'data' => ['id' => (int)$id, 'folder_id' => $folderId],
+            ], 200);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 500,
+                'message' => __('An error has occurred'),
+            ], 500);
+        }
+    }
+
+    /**
+     * @group Account
+     * Get account tree for current user
+     */
+    public function tree(Request $request)
+    {
+        // Ensure user is authenticated
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 401,
+                'message' => __('Unauthenticated'),
+            ], 401);
+        }
+        $userId = $user->id;
+        // Load folders and accounts
+        $folders = AccountFolder::where('user_id', $userId)->get();
+        $accounts = DB::table('account_user')
+            ->where('user_id', $userId)
+            ->join('accounts', 'account_user.account_id', '=', 'accounts.id')
+            ->select('accounts.id', 'accounts.name as label', 'account_user.folder_id', 'account_user.sort_order')
+            ->whereNull('accounts.deleted_at')
+            ->orderBy('account_user.sort_order')
+            ->get();
+        // Build folder map
+        $folderMap = [];
+        foreach ($folders as $f) {
+            $folderMap[$f->id] = ['id' => $f->id, 'label' => $f->name, 'type' => 'folder', 'children' => []];
+        }
+        // Assign folder children
+        $tree = [];
+        foreach ($folders as $f) {
+            if ($f->parent_id && isset($folderMap[$f->parent_id])) {
+                $folderMap[$f->parent_id]['children'][] =& $folderMap[$f->id];
+            } else {
+                $tree[] =& $folderMap[$f->id];
+            }
+        }
+        // Attach accounts
+        foreach ($accounts as $acct) {
+            $node = ['id' => $acct->id, 'label' => $acct->label, 'type' => 'account'];
+            if ($acct->folder_id && isset($folderMap[$acct->folder_id])) {
+                $folderMap[$acct->folder_id]['children'][] = $node;
+            } else {
+                $tree[] = $node;
+            }
+        }
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'data' => ['nodes' => $tree],
+        ], 200);
     }
 
     /**

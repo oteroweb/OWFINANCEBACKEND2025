@@ -63,7 +63,17 @@ class User extends Authenticatable
      */
     public function accounts()
     {
-    return $this->belongsToMany(Account::class)->withTimestamps();
+    return $this->belongsToMany(Account::class)
+        ->withTimestamps()
+        ->withPivot('is_owner', 'folder_id', 'sort_order');
+    }
+
+    /**
+     * Folders belonging to the user.
+     */
+    public function accountFolders()
+    {
+        return $this->hasMany(AccountFolder::class);
     }
 
     /**

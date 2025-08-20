@@ -11,19 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('account_user', function (Blueprint $table) {
+        Schema::create('account_folders', function (Blueprint $table) {
             $table->id();
+            $table->string('name', 100);
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('account_id');
-            $table->tinyInteger('is_owner')->default(1);
-            $table->unsignedBigInteger('folder_id')->nullable();
-            $table->integer('sort_order')->default(0);
-
+            $table->unsignedBigInteger('parent_id')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('account_id')->references('id')->on('accounts')->onDelete('cascade');
-            $table->unique(['user_id', 'account_id']);
+            $table->foreign('parent_id')->references('id')->on('account_folders')->onDelete('cascade');
+            $table->index('parent_id');
         });
     }
 
@@ -32,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('account_user');
+        Schema::dropIfExists('account_folders');
     }
 };
