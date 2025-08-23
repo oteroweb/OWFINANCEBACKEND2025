@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             TaxSeeder::class,
             CategorySeeder::class,
             JarSeeder::class,
+            JarTemplateSeeder::class,
+            CategoryTemplateSeeder::class,
             ItemCategorySeeder::class,
             ItemTransactionSeeder::class,
             ItemSeeder::class,

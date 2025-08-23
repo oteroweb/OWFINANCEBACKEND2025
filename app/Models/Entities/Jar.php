@@ -16,9 +16,14 @@ class Jar extends Model
         'is_active',
         'percent',
         'type',
+    'fixed_amount',
+    'base_scope',
         'active',
         'deleted_at',
         'date',
+    'user_id',
+    'sort_order',
+    'color',
     ];
 
     protected $casts = [
@@ -27,6 +32,21 @@ class Jar extends Model
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class, 'jar_category')->withTimestamps();
+    }
+
+    public function baseCategories()
+    {
+        return $this->belongsToMany(Category::class, 'jar_base_category')->withTimestamps();
+    }
 
     protected static function newFactory()
     {

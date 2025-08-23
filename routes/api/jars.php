@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\JarController;
 
 Route::group([
-    'middleware' => ['api'],
+    'middleware' => ['api','auth:sanctum'],
     'prefix'     => 'jars',
 ], function () {
     //Jar ROUTES
@@ -15,5 +15,7 @@ Route::group([
     Route::get('/{id}', [JarController::class, 'find']);
     Route::put('/{id}', [JarController::class, 'update']);
     Route::patch('/{id}/status', [JarController::class, 'change_status']);
+    Route::post('/{id}/categories', [JarController::class, 'setCategories']);
+    Route::post('/{id}/base-categories', [JarController::class, 'setBaseCategories']);
     Route::delete('/{id}', [JarController::class, 'delete']);
 });

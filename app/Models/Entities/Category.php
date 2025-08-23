@@ -16,6 +16,7 @@ class Category extends Model
         'active',
         'date',
         'parent_id',
+    'user_id',
     ];
 
     protected $casts = [

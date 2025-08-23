@@ -113,6 +113,25 @@ class ItemTransactionController extends Controller
                 'user_id'        => $request->input('user_id'),
                 'custom_name'    => $request->input('custom_name'),
             ];
+            // Auto-assign jar if missing and we have category and user
+            if (empty($data['jar_id']) && !empty($data['category_id']) && !empty($data['user_id'])) {
+                $userId = (int) $data['user_id'];
+                $catId = (int) $data['category_id'];
+                // Find first active jar of user linked to this category
+                $jarId = \App\Models\Entities\Jar::where('user_id', $userId)
+                    ->where('active', 1)
+                    ->whereHas('categories', function($q) use ($catId) { $q->where('categories.id', $catId); })
+                    ->orderBy('sort_order')
+                    ->value('id');
+                if (!$jarId) {
+                    // Fallback: first active jar percent with base_scope=all_income
+                    $jarId = \App\Models\Entities\Jar::where('user_id', $userId)
+                        ->where('active', 1)
+                        ->orderBy('sort_order')
+                        ->value('id');
+                }
+                if ($jarId) { $data['jar_id'] = $jarId; }
+            }
             $itemTransaction = $this->ItemTransactionRepo->store($data);
             $response = [
                 'status'  => 'OK',

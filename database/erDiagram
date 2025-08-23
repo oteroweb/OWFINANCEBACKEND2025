@@ -1,0 +1,510 @@
+erDiagram
+  USERS {
+    bigint id PK
+    varchar name
+    varchar phone
+    varchar email
+    timestamp email_verified_at
+    varchar password
+    decimal balance
+    bigint currency_id FK
+    bigint client_id FK
+    boolean active
+    datetime deleted_at
+    varchar remember_token
+    datetime created_at
+    datetime updated_at
+    bigint role_id FK
+  }
+
+  ROLES {
+    bigint id PK
+    varchar name
+    varchar slug
+    datetime created_at
+    datetime updated_at
+  }
+
+  CLIENTS {
+    bigint id PK
+    varchar name
+    varchar email
+    varchar phone
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  CURRENCIES {
+    bigint id PK
+    varchar name
+    varchar symbol
+    varchar align
+    varchar code
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  ACCOUNT_TYPES {
+    bigint id PK
+    varchar name
+    varchar description
+    varchar icon
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  ACCOUNTS {
+    bigint id PK
+    varchar name
+    bigint currency_id FK
+    decimal initial
+    decimal balance
+    bigint account_type_id FK
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  ACCOUNT_FOLDERS {
+    bigint id PK
+    varchar name
+    bigint user_id FK
+    bigint parent_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  ACCOUNT_USER {
+    bigint id PK
+    bigint user_id FK
+    bigint account_id FK
+    tinyint is_owner
+    bigint folder_id FK
+    int sort_order
+    datetime created_at
+    datetime updated_at
+  }
+
+  PROVIDERS {
+    bigint id PK
+    varchar name
+    varchar description
+    varchar address
+    varchar email
+    varchar phone
+    varchar website
+    varchar logo
+    varchar country
+    varchar city
+    varchar postal_code
+    varchar state
+    bigint user_id FK
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  TAXES {
+    bigint id PK
+    varchar name
+    decimal percent
+    boolean active
+    date date
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  RATES {
+    bigint id PK
+    varchar name
+    date date
+    decimal value
+    boolean active
+    datetime deleted_at
+    datetime created_at
+    datetime updated_at
+  }
+
+  ITEM_CATEGORIES {
+    bigint id PK
+    varchar name
+    boolean active
+    date date
+    datetime deleted_at
+    datetime created_at
+    datetime updated_at
+  }
+
+  ITEMS {
+    bigint id PK
+    varchar name
+    decimal last_price
+    bigint tax_id FK
+    boolean active
+    date date
+    datetime deleted_at
+    datetime created_at
+    datetime updated_at
+    varchar custom_name
+    bigint item_category_id FK
+  }
+
+  CATEGORIES {
+    bigint id PK
+    varchar name
+    boolean active
+    date date
+    bigint parent_id FK
+    bigint user_id FK
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  JARS {
+    bigint id PK
+    varchar name
+    boolean is_active
+    decimal percent
+    varchar type
+    decimal fixed_amount
+    enum base_scope
+    boolean active
+    int sort_order
+    varchar color
+    date date
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+    bigint user_id FK
+  }
+
+  JAR_CATEGORY {
+    bigint id PK
+    bigint jar_id FK
+    bigint category_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  JAR_BASE_CATEGORY {
+    bigint id PK
+    bigint jar_id FK
+    bigint category_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  TRANSACTION_TYPES {
+    bigint id PK
+    varchar name
+    varchar slug
+    varchar description
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  TRANSACTIONS {
+    bigint id PK
+    varchar name
+    decimal amount
+    varchar description
+    datetime date
+    boolean active
+    bigint provider_id FK
+    varchar url_file
+    bigint rate_id FK
+    bigint transaction_type_id FK
+    bigint user_id FK
+    bigint account_id FK
+    decimal amount_tax
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  PAYMENT_TRANSACTIONS {
+    bigint id PK
+    bigint transaction_id FK
+    bigint account_id FK
+    decimal amount
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  PAYMENT_TRANSACTION_TAXES {
+    bigint id PK
+    bigint payment_transaction_id FK
+    bigint tax_id FK
+    decimal amount
+    decimal percent
+    boolean active
+    datetime deleted_at
+    datetime created_at
+    datetime updated_at
+  }
+
+  ITEM_TRANSACTIONS {
+    bigint id PK
+    bigint item_id FK
+    bigint transaction_id FK
+    varchar name
+    decimal amount
+    bigint tax_id FK
+    bigint rate_id FK
+    varchar description
+    bigint jar_id FK
+    boolean active
+    datetime deleted_at
+    datetime date
+    bigint category_id FK
+    bigint user_id FK
+    varchar custom_name
+    int quantity
+    datetime created_at
+    datetime updated_at
+  }
+
+  ITEM_TAXES {
+    bigint id PK
+    bigint item_transaction_id FK
+    bigint tax_id FK
+    decimal amount
+    decimal percent
+    boolean active
+    datetime deleted_at
+    date date
+    bigint item_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  ACCOUNTS_TAXES {
+    bigint id PK
+    bigint account_id FK
+    bigint tax_id FK
+    decimal amount
+    decimal percent
+    boolean active
+    datetime deleted_at
+    datetime created_at
+    datetime updated_at
+  }
+
+  JAR_TEMPLATES {
+    bigint id PK
+    varchar name
+    varchar slug
+    varchar description
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  }
+
+  JAR_TEMPLATE_JARS {
+    bigint id PK
+    bigint jar_template_id FK
+    varchar name
+    enum type
+    decimal percent
+    decimal fixed_amount
+    enum base_scope
+    varchar color
+    int sort_order
+    datetime created_at
+    datetime updated_at
+  }
+
+  JAR_TEMPLATE_JAR_CATEGORIES {
+    bigint id PK
+    bigint jar_template_jar_id FK
+    bigint category_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  JAR_TEMPLATE_JAR_BASE_CATEGORIES {
+    bigint id PK
+    bigint jar_template_jar_id FK
+    bigint category_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  CATEGORY_TEMPLATES {
+    bigint id PK
+    varchar name
+    varchar slug
+    varchar parent_slug
+    int sort_order
+    datetime created_at
+    datetime updated_at
+  }
+
+  JAR_TPLJAR_CAT_TPL {
+    bigint id PK
+    bigint jar_template_jar_id FK
+    bigint category_template_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  JAR_TPLJAR_BASE_CAT_TPL {
+    bigint id PK
+    bigint jar_template_jar_id FK
+    bigint category_template_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  PASSWORD_RESET_TOKENS {
+    varchar email PK
+    varchar token
+    timestamp created_at
+  }
+
+  SESSIONS {
+    varchar id PK
+    bigint user_id FK
+    varchar ip_address
+    text user_agent
+    longtext payload
+    int last_activity
+  }
+
+  PERSONAL_ACCESS_TOKENS {
+    bigint id PK
+    varchar tokenable_type
+    bigint tokenable_id
+    text name
+    varchar token
+    text abilities
+    timestamp last_used_at
+    timestamp expires_at
+    datetime created_at
+    datetime updated_at
+  }
+
+  CACHE {
+    varchar key PK
+    mediumtext value
+    int expiration
+  }
+
+  CACHE_LOCKS {
+    varchar key PK
+    varchar owner
+    int expiration
+  }
+
+  JOBS {
+    bigint id PK
+    varchar queue
+    longtext payload
+    tinyint attempts
+    int reserved_at
+    int available_at
+    int created_at
+  }
+
+  JOB_BATCHES {
+    varchar id PK
+    varchar name
+    int total_jobs
+    int pending_jobs
+    int failed_jobs
+    longtext failed_job_ids
+    mediumtext options
+    int cancelled_at
+    int created_at
+    int finished_at
+  }
+
+  FAILED_JOBS {
+    bigint id PK
+    varchar uuid
+    text connection
+    text queue
+    longtext payload
+    longtext exception
+    timestamp failed_at
+  }
+
+  ROLES ||--o{ USERS : has
+  CURRENCIES ||--o{ USERS : default_currency
+  CLIENTS ||--o{ USERS : belongs_to
+  USERS ||--o{ SESSIONS : has
+
+  CURRENCIES ||--o{ ACCOUNTS : uses
+  ACCOUNT_TYPES ||--o{ ACCOUNTS : typed_as
+
+  USERS ||--o{ ACCOUNT_FOLDERS : owns
+  ACCOUNT_FOLDERS ||--o{ ACCOUNT_FOLDERS : parent_of
+  USERS ||--o{ ACCOUNT_USER : links
+  ACCOUNTS ||--o{ ACCOUNT_USER : links
+  ACCOUNT_FOLDERS ||--o{ ACCOUNT_USER : in_folder
+
+  USERS ||--o{ PROVIDERS : created_by
+
+  TAXES ||--o{ ITEMS : taxed_by
+  ITEM_CATEGORIES ||--o{ ITEMS : in_category
+
+  CATEGORIES ||--o{ CATEGORIES : parent_of
+  USERS ||--o{ CATEGORIES : owned_by_user
+
+  USERS ||--o{ JARS : owned_by
+  JARS ||--o{ JAR_CATEGORY : maps
+  CATEGORIES ||--o{ JAR_CATEGORY : maps
+  JARS ||--o{ JAR_BASE_CATEGORY : base_of
+  CATEGORIES ||--o{ JAR_BASE_CATEGORY : base_in
+
+  PROVIDERS ||--o{ TRANSACTIONS : paid_to
+  RATES ||--o{ TRANSACTIONS : rate_used
+  USERS ||--o{ TRANSACTIONS : created_by
+  ACCOUNTS ||--o{ TRANSACTIONS : from_account
+  TRANSACTION_TYPES ||--o{ TRANSACTIONS : typed_as
+
+  TRANSACTIONS ||--o{ PAYMENT_TRANSACTIONS : settles
+  ACCOUNTS ||--o{ PAYMENT_TRANSACTIONS : with_account
+  PAYMENT_TRANSACTIONS ||--o{ PAYMENT_TRANSACTION_TAXES : has_tax
+  TAXES ||--o{ PAYMENT_TRANSACTION_TAXES : tax
+
+  TRANSACTIONS ||--o{ ITEM_TRANSACTIONS : contains
+  ITEMS ||--o{ ITEM_TRANSACTIONS : item
+  TAXES ||--o{ ITEM_TRANSACTIONS : tax
+  RATES ||--o{ ITEM_TRANSACTIONS : rate
+  JARS ||--o{ ITEM_TRANSACTIONS : assigned_to
+  CATEGORIES ||--o{ ITEM_TRANSACTIONS : classified_as
+  USERS ||--o{ ITEM_TRANSACTIONS : user
+
+  ITEM_TRANSACTIONS ||--o{ ITEM_TAXES : has_taxes
+  TAXES ||--o{ ITEM_TAXES : tax
+  ITEMS ||--o{ ITEM_TAXES : for_item
+
+  ACCOUNTS ||--o{ ACCOUNTS_TAXES : has
+  TAXES ||--o{ ACCOUNTS_TAXES : tax
+
+  JAR_TEMPLATES ||--o{ JAR_TEMPLATE_JARS : has
+  JAR_TEMPLATE_JARS ||--o{ JAR_TEMPLATE_JAR_CATEGORIES : maps
+  JAR_TEMPLATE_JAR_CATEGORIES }o--|| CATEGORIES : belongs_to
+  JAR_TEMPLATE_JARS ||--o{ JAR_TEMPLATE_JAR_BASE_CATEGORIES : base_maps
+  CATEGORIES ||--o{ JAR_TEMPLATE_JAR_BASE_CATEGORIES : base_to
+
+  JAR_TEMPLATE_JARS ||--o{ JAR_TPLJAR_CAT_TPL : maps
+  CATEGORY_TEMPLATES ||--o{ JAR_TPLJAR_CAT_TPL : maps
+  JAR_TEMPLATE_JARS ||--o{ JAR_TPLJAR_BASE_CAT_TPL : base_maps
+  CATEGORY_TEMPLATES ||--o{ JAR_TPLJAR_BASE_CAT_TPL : base_maps
