@@ -29,7 +29,7 @@ class ItemTransactionFactory extends Factory
             'tax_id'         => $taxId,
             'rate_id'        => $rateId,
             'description'    => $this->faker->sentence(),
-            'jar_id'         => \App\Models\Entities\Jar::factory(),
+            // 'jar_id'         => \App\Models\Entities\Jar::factory(),
             'active'         => $this->faker->boolean(),
             'date'           => $this->faker->dateTimeThisYear(),
             'category_id'    => null,

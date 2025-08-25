@@ -109,8 +109,10 @@ class CategoryController extends Controller
      */
     public function save(Request $request)
     {
+        $user = $request->user();
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:100',
+            'parent_id' => 'nullable|exists:categories,id',
         ], $this->custom_message());
 
         if ($validator->fails()) {
@@ -124,6 +126,23 @@ class CategoryController extends Controller
         }
         try {
             $data = $request->only(['name', 'active', 'date', 'parent_id']);
+            // Scope parent_id to current user if provided
+            if (!empty($data['parent_id'])) {
+                $parent = \App\Models\Entities\Category::where('id', $data['parent_id'])
+                    ->where(function($q) use ($user) { $q->whereNull('user_id')->orWhere('user_id', optional($user)->id); })
+                    ->first();
+                if (!$parent) {
+                    return response()->json([
+                        'status' => 'FAILED',
+                        'code' => 400,
+                        'message' => __('Incorrect Params'),
+                        'errors' => ['parent_id' => [__('Invalid parent for this user')]],
+                    ], 400);
+                }
+            }
+            if ($user) {
+                $data['user_id'] = $user->id;
+            }
             $category = $this->categoryRepo->store($data);
             $response = [
                 'status'  => 'OK',
@@ -153,6 +172,21 @@ class CategoryController extends Controller
         $category = $this->categoryRepo->find($id);
         if (isset($category->id)) {
             $data = $request->only(['name', 'active', 'date', 'parent_id']);
+            // If changing parent, ensure same user scope
+            if (!empty($data['parent_id'])) {
+                $user = $request->user();
+                $parent = \App\Models\Entities\Category::where('id', $data['parent_id'])
+                    ->where(function($q) use ($user) { $q->whereNull('user_id')->orWhere('user_id', optional($user)->id); })
+                    ->first();
+                if (!$parent) {
+                    return response()->json([
+                        'status' => 'FAILED',
+                        'code' => 400,
+                        'message' => __('Incorrect Params'),
+                        'errors' => ['parent_id' => [__('Invalid parent for this user')]],
+                    ], 400);
+                }
+            }
             $category = $this->categoryRepo->update($category, $data);
             $response = [
                 'status'  => 'OK',
@@ -264,5 +298,104 @@ class CategoryController extends Controller
         return [
             'name.required' => __('The name is required'),
         ];
+    }
+
+    /**
+     * @group Category
+     * Get category tree for current user
+     */
+    public function tree(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 401,
+                'message' => __('Unauthenticated'),
+            ], 401);
+        }
+        // Load user categories (including globals with null user_id)
+        $cats = \App\Models\Entities\Category::where(function($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            })
+            ->orderBy('name')
+            ->get(['id','name as label','parent_id']);
+        $map = [];
+        foreach ($cats as $c) {
+            $map[$c->id] = ['id' => $c->id, 'label' => $c->label, 'type' => 'category', 'children' => []];
+        }
+        $forest = [];
+        foreach ($cats as $c) {
+            if ($c->parent_id && isset($map[$c->parent_id])) {
+                $map[$c->parent_id]['children'][] =& $map[$c->id];
+            } else {
+                $forest[] =& $map[$c->id];
+            }
+        }
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'data' => ['nodes' => $forest],
+        ], 200);
+    }
+
+    /**
+     * @group Category
+     * Move a category within the tree (validates cycles)
+     * @urlParam id integer required The ID of the category
+     * @bodyParam parent_id integer|null New parent category ID
+     */
+    public function move(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['status' => 'FAILED', 'code' => 401, 'message' => __('Unauthenticated')], 401);
+        }
+        $validator = Validator::make($request->all(), [
+            'parent_id' => 'nullable|exists:categories,id',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => __('Incorrect Params'), 'errors' => $validator->errors()], 400);
+        }
+        $category = \App\Models\Entities\Category::where('id', $id)
+            ->where(function($q) use ($user) { $q->whereNull('user_id')->orWhere('user_id', $user->id); })
+            ->first();
+        if (!$category) {
+            return response()->json(['status' => 'FAILED', 'code' => 404, 'message' => __('Category not found')], 404);
+        }
+        $newParentId = $request->input('parent_id');
+        if (!empty($newParentId)) {
+            $parent = \App\Models\Entities\Category::where('id', $newParentId)
+                ->where(function($q) use ($user) { $q->whereNull('user_id')->orWhere('user_id', $user->id); })
+                ->first();
+            if (!$parent) {
+                return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => __('Invalid parent for this user')], 400);
+            }
+            if ((int)$newParentId === (int)$category->id) {
+                return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => __('A category cannot be its own parent')], 400);
+            }
+            // Prevent cycles
+            $desc = self::collectCategoryDescendants($category);
+            if (in_array((int)$newParentId, $desc, true)) {
+                return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => __('Cannot move a category inside its descendant')], 400);
+            }
+        }
+        $category->update(['parent_id' => $newParentId]);
+        return response()->json(['status' => 'OK', 'code' => 200, 'data' => ['id' => (int)$category->id, 'parent_id' => $category->parent_id]], 200);
+    }
+
+    private static function collectCategoryDescendants(\App\Models\Entities\Category $category): array
+    {
+        $ids = [];
+        $stack = [$category->id];
+        while (!empty($stack)) {
+            $current = array_pop($stack);
+            $children = \App\Models\Entities\Category::where('parent_id', $current)->pluck('id')->all();
+            foreach ($children as $cid) {
+                $ids[] = (int)$cid;
+                $stack[] = $cid;
+            }
+        }
+        return $ids;
     }
 }

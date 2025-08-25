@@ -9,6 +9,6 @@ class JarSeeder extends Seeder
 {
     public function run(): void
     {
-        Jar::factory()->count(10)->create();
+        // Jar::factory()->count(10)->create();
     }
 }
