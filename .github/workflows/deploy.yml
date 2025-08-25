@@ -1,0 +1,78 @@
+name: Deploy OWFINANCE (main)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # ajusta a tu versión
+          extensions: mbstring, intl, pdo_mysql, bcmath, gd, zip, curl, xml
+          coverage: none
+
+      - name: Copy example env for build (no secrets)
+        run: cp .env.example .env
+
+      - name: Install PHP deps (composer install --no-dev)
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+      # Si necesitas construir assets con Vite/NPM, descomenta:
+      # - name: Setup Node
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      # - name: Build assets
+      #   run: |
+      #     npm ci
+      #     npm run build
+
+      - name: Prepare upload folder
+        run: |
+          mkdir -p ./__upload__
+          rsync -a --delete --exclude ".git" --exclude ".github" --exclude "__upload__" ./ ./__upload__/
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add known_hosts
+        run: ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Create upload dir on server
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
+            mkdir -p '${{ secrets.DEPLOY_PATH }}/releases/_upload'"
+
+      - name: Rsync build to server
+        run: |
+          rsync -az --delete -e "ssh -p ${{ secrets.SSH_PORT }}" \
+            ./__upload__/ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/releases/_upload/
+
+      - name: Run remote deploy script
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
+            bash -lc 'cd ${DEPLOY_PATH} && ./repo/deploy/remote_deploy.sh \"${DEPLOY_PATH}\" php'"
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
+      - name: Ensure public_html symlink (first time only needed)
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "\
+            if [ ! -L '${{ secrets.PUBLIC_HTML }}' ]; then \
+              if [ -d '${{ secrets.PUBLIC_HTML }}' ]; then mv '${{ secrets.PUBLIC_HTML }}' '${{ secrets.PUBLIC_HTML }}.bak'; fi; \
+              ln -s '${{ secrets.DEPLOY_PATH }}/current/public' '${{ secrets.PUBLIC_HTML }}'; \
+            fi"
