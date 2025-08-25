@@ -1,0 +1,71 @@
+name: Debug Deploy Vars
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Contexto GitHub
+        run: |
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "event=${{ github.event_name }}"
+
+      - name: Echo directo (se verá *** por el mask de GitHub)
+        run: |
+          echo "SSH_HOST='${{ secrets.SSH_HOST }}'"
+          echo "SSH_PORT='${{ secrets.SSH_PORT }}'"
+          echo "SSH_USER='${{ secrets.SSH_USER }}'"
+          echo "DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}'"
+          echo "PUBLIC_HTML='${{ secrets.PUBLIC_HTML }}'"
+
+      - name: Mostrar longitud / primero-último / HEX (evita el mask)
+        shell: bash
+        run: |
+          show() {
+            local name="$1"; local val="$2";
+            echo "== $name =="
+            echo "len=${#val}"
+            printf "first5=<%s>\n" "${val::5}"
+            printf "last5=<%s>\n"  "${val: -5}"
+            printf "hex=<"; echo -n "$val" | od -An -t x1 | tr -d ' \n'; echo ">"
+            echo
+          }
+          show SSH_HOST    "${{ secrets.SSH_HOST }}"
+          show SSH_PORT    "${{ secrets.SSH_PORT }}"
+          show SSH_USER    "${{ secrets.SSH_USER }}"
+          show DEPLOY_PATH "${{ secrets.DEPLOY_PATH }}"
+          show PUBLIC_HTML "${{ secrets.PUBLIC_HTML }}"
+
+      - name: SSH KEY sanity (sin mostrar la llave cruda)
+        run: |
+          python3 - <<'PY'
+          import os, base64, hashlib
+          key=os.environ.get("SSH_KEY","")
+          print("SSH_KEY_len", len(key))
+          if key:
+              lines=key.splitlines()
+              print("SSH_KEY_lines", len(lines))
+              print("SSH_KEY_head", lines[0])
+              print("SSH_KEY_tail", lines[-1])
+              print("SSH_KEY_sha256_16", hashlib.sha256(key.encode()).hexdigest()[:16])
+              print("SSH_KEY_b64_head", base64.b64encode(key.encode()).decode()[:40])
+          PY
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+
+      - name: Probar SSH y crear carpetas remotas
+        run: |
+          set -x
+          ssh -o StrictHostKeyChecking=no -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "\
+              echo 'REMOTE whoami:'; whoami; \
+              echo 'REMOTE HOME:' \$HOME; \
+              echo 'REMOTE id:'; id; \
+              echo 'REMOTE ls -ld /home /home/${{ secrets.SSH_USER }}:'; ls -ld /home /home/${{ secrets.SSH_USER }} || true; \
+              echo 'REMOTE ls ~:'; ls -la ~; \
+              echo 'REMOTE mkdir:'; mkdir -p '${{ secrets.DEPLOY_PATH }}/releases/_upload'; \
+              echo 'REMOTE check:'; ls -ld '${{ secrets.DEPLOY_PATH }}' '${{ secrets.DEPLOY_PATH }}/releases' '${{ secrets.DEPLOY_PATH }}/releases/_upload' \
+            "
