@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             TransactionTypeSeeder::class,
             TransactionSeeder::class,
             TaxSeeder::class,
-            CategorySeeder::class,
+            // CategorySeeder::class,
             JarSeeder::class,
             JarTemplateSeeder::class,
             CategoryTemplateSeeder::class,

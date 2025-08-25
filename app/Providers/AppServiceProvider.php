@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Models\User;
+use App\Services\CategoryTreeInitializer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,8 +21,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
-        // Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+        // Auto-seed default category tree for new users
+        User::created(function (User $user) {
+            try {
+                app(CategoryTreeInitializer::class)->seedForUser($user->id);
+            } catch (\Throwable $e) {
+                // Swallow errors to not block user creation; consider logging
+                logger()->error($e);
+            }
+        });
 
     }
 }

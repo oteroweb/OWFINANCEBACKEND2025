@@ -10,6 +10,7 @@ Route::group([
     Route::post('/', [CategoryController::class, 'save']);
     Route::get('/active', [CategoryController::class, 'allActive']);
     Route::get('/all', [CategoryController::class, 'withTrashed']);
+    Route::post('/reset', [CategoryController::class, 'reset']);
     Route::get('/tree', [CategoryController::class, 'tree']);
     Route::get('/', [CategoryController::class, 'all']);
     Route::patch('/{id}/status', [CategoryController::class, 'change_status']);

@@ -7,6 +7,7 @@ use App\Models\Repositories\CategoryRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Services\CategoryTreeInitializer;
 
 class CategoryController extends Controller
 {
@@ -290,6 +291,26 @@ class CategoryController extends Controller
                 'message' => __('An error has occurred') . '.',
             ];
             return response()->json($response, 500);
+        }
+    }
+
+    /**
+     * @group Category
+     * Reset categories: remove all personal categories and reseed defaults for current user
+     */
+    public function reset(Request $request, CategoryTreeInitializer $initializer)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['status' => 'FAILED', 'code' => 401, 'message' => __('Unauthenticated')], 401);
+        }
+        try {
+            $initializer->resetForUser($user->id);
+            // Return freshly built tree
+            return $this->tree($request);
+        } catch (\Throwable $e) {
+            Log::error($e);
+            return response()->json(['status' => 'FAILED', 'code' => 500, 'message' => __('An error has occurred')], 500);
         }
     }
 
