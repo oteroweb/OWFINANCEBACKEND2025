@@ -140,3 +140,9 @@ jobs:
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             "ls -la '${{ secrets.PUBLIC_HTML }}' | head -n 50"
+
+      - name: Chequear permisos en directorio HOME
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "echo 'Permisos en /home:'; ls -ld /home; echo 'Permisos en /home/${{ secrets.SSH_USER }}:'; ls -ld /home/${{ secrets.SSH_USER }}"
