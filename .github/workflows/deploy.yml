@@ -59,38 +59,67 @@ jobs:
       - name: Añadir known_hosts
         run: ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Chequear permisos en directorio HOME
+      - name: Chequear permisos y directorios
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "echo 'Permisos en /home:'; ls -ld /home; echo 'Permisos en /home/${{ secrets.SSH_USER }}:'; ls -ld /home/${{ secrets.SSH_USER }}"
+            "echo 'Permisos en /home:'; ls -ld /home; 
+             echo 'Directorio actual:'; pwd; 
+             echo 'Usuario actual:'; whoami;
+             echo 'Verificando directorios disponibles:'; 
+             ls -la .; 
+             echo 'Verificando si PUBLIC_HTML existe:'; 
+             if [ -d '${{ secrets.PUBLIC_HTML }}' ]; then echo 'PUBLIC_HTML existe'; else echo 'PUBLIC_HTML NO existe'; fi"
 
       - name: Crear carpeta app_upload en public_html
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "mkdir -p '${{ secrets.PUBLIC_HTML }}/app_upload'"
+            "mkdir -p '${{ secrets.PUBLIC_HTML }}/app_upload' || echo 'No se pudo crear el directorio, usando directorio actual';
+             if [ ! -d '${{ secrets.PUBLIC_HTML }}/app_upload' ]; then mkdir -p './app_upload'; fi"
 
-      - name: Subir bundle a public_html/app_upload
+      - name: Subir bundle a app_upload
         run: |
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "if [ -d '${{ secrets.PUBLIC_HTML }}/app_upload' ]; then echo 'Usando PUBLIC_HTML/app_upload'; TARGET_DIR='${{ secrets.PUBLIC_HTML }}/app_upload'; else echo 'Usando directorio local app_upload'; TARGET_DIR='./app_upload'; fi; echo \"TARGET_DIR=$TARGET_DIR\" > /tmp/target_dir.txt"
+          
+          TARGET_DIR=$(ssh -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "cat /tmp/target_dir.txt | grep TARGET_DIR | cut -d'=' -f2")
+          echo "Uploading to: $TARGET_DIR"
+          
           rsync -az --delete \
             -e "ssh -p ${{ secrets.SSH_PORT }}" \
             ./__upload__/ \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PUBLIC_HTML }}/app_upload/"
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$TARGET_DIR/"
 
       - name: Instalar/actualizar app en public_html (todo dentro de public_html)
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "PUBLIC_HTML='${{ secrets.PUBLIC_HTML }}' PHP_CLI='php' bash -s" <<'REMOTE'
+            "if [ -d '${{ secrets.PUBLIC_HTML }}' ]; then 
+               PUBLIC_HTML='${{ secrets.PUBLIC_HTML }}'; 
+             else 
+               PUBLIC_HTML=\$(pwd); 
+             fi; 
+             PHP_CLI='php' bash -s" <<'REMOTE'
           set -euo pipefail
 
           # Vars de entorno inyectadas por SSH:
-          PUBLIC_HTML="${PUBLIC_HTML:?PUBLIC_HTML requerido}"
+          PUBLIC_HTML="${PUBLIC_HTML:-$(pwd)}"
           PHP_CLI="${PHP_CLI:-php}"
-
-          APP_DIR="$PUBLIC_HTML/app"
-          UPLOAD_DIR="$PUBLIC_HTML/app_upload"
+          
+          echo "Usando PUBLIC_HTML=$PUBLIC_HTML"
+          
+          # Detectar si estamos usando PUBLIC_HTML o directorio local
+          if [ -d "$PUBLIC_HTML/app_upload" ]; then
+            APP_DIR="$PUBLIC_HTML/app"
+            UPLOAD_DIR="$PUBLIC_HTML/app_upload"
+          else
+            APP_DIR="./app"
+            UPLOAD_DIR="./app_upload"
+          fi
+          
+          echo "Usando APP_DIR=$APP_DIR y UPLOAD_DIR=$UPLOAD_DIR"
 
           # 1) Preservar .env si ya existía
           if [ -f "$APP_DIR/.env" ]; then
@@ -145,4 +174,10 @@ jobs:
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "ls -la '${{ secrets.PUBLIC_HTML }}' | head -n 50"
+            "if [ -d '${{ secrets.PUBLIC_HTML }}' ]; then 
+               echo 'Listando archivos en PUBLIC_HTML:';
+               ls -la '${{ secrets.PUBLIC_HTML }}' | head -n 50; 
+             else 
+               echo 'PUBLIC_HTML no existe, listando directorio actual:';
+               ls -la . | head -n 50; 
+             fi"
