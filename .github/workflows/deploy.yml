@@ -59,19 +59,53 @@ jobs:
       - name: Añadir known_hosts
         run: ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Chequear permisos y directorios
+      - name: Verificar SSH y mostrar clave pública
         run: |
-          ssh -p "${{ secrets.SSH_PORT }}" \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "echo 'Directorio actual:'; pwd; 
+          # Mostrar clave pública para verificarla contra lo autorizado en el servidor
+          echo "Clave SSH pública en uso (debe estar en el authorized_keys del servidor):"
+          ssh-add -L | head -1
+
+          # Probar conexión SSH básica
+          echo "Probando conexión SSH básica (solo autenticación):"
+          ssh -p "${{ secrets.SSH_PORT }}" -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "echo 'Conexión SSH exitosa'"
+
+      - name: Configurar credenciales SSH
+        run: |
+          # Configurar SSH con más opciones
+          mkdir -p ~/.ssh
+          cat > ~/.ssh/config << EOF
+          Host deploy_target
+            HostName ${{ secrets.SSH_HOST }}
+            User ${{ secrets.SSH_USER }}
+            Port ${{ secrets.SSH_PORT }}
+            IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+            StrictHostKeyChecking accept-new
+            BatchMode yes
+            ConnectTimeout 30
+          EOF
+          chmod 600 ~/.ssh/config
+          echo "Configuración SSH:"
+          cat ~/.ssh/config
+
+      - name: Chequear permisos y directorios (con depuración)
+        run: |
+          # Intento con opciones detalladas para depuración
+          echo "Probando conexión SSH en modo verboso:"
+          ssh -vvv deploy_target "echo 'Prueba conexión'"
+
+          echo "Chequeando directorios y permisos:"
+          ssh deploy_target \
+            "echo 'Directorio actual:'; pwd;
              echo 'Usuario actual:'; whoami;
-             echo 'Verificando directorios disponibles:'; 
-             ls -la .; 
-             echo 'Verificando estructura de owfinance:';
-             if [ -d './owfinance' ]; then ls -la ./owfinance; fi;
+             echo 'Verificando directorios disponibles:';
+             ls -la .;
+             echo 'Verificando estructura de directorio home:';
+             ls -ld /home/ || echo 'No se puede acceder a /home';
              echo 'Verificando directorio public_html:';
-             if [ -L 'public_html' ]; then 
-               echo 'public_html es un symlink que apunta a:'; 
+             if [ -L 'public_html' ]; then
+               echo 'public_html es un symlink que apunta a:';
                readlink -f public_html;
              elif [ -d 'public_html' ]; then
                echo 'public_html es un directorio normal';
@@ -79,45 +113,104 @@ jobs:
                echo 'public_html no existe';
              fi"
 
-      - name: Crear carpeta app_upload en directorio owfinance
+      - name: Crear carpeta app_upload (con alternativa)
         run: |
-          ssh -p "${{ secrets.SSH_PORT }}" \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "mkdir -p './owfinance/app_upload' || echo 'No se pudo crear el directorio, usando directorio temporal';
-             if [ ! -d './owfinance/app_upload' ]; then mkdir -p '/tmp/app_upload'; fi"
+          ssh deploy_target \
+            "echo 'Intentando crear directorios...';
+             if [ -d './owfinance' ]; then
+               echo 'Directorio owfinance encontrado, creando app_upload dentro';
+               mkdir -p './owfinance/app_upload' || echo 'No se pudo crear directorio en owfinance';
+             fi;
+
+             # Siempre creamos un directorio de respaldo en /tmp
+             echo 'Creando directorio de respaldo en /tmp';
+             mkdir -p '/tmp/app_upload';
+
+             # Verificar qué directorios se crearon
+             echo 'Directorios disponibles:';
+             if [ -d './owfinance/app_upload' ]; then
+               echo '- ./owfinance/app_upload (OK)';
+               UPLOAD_PATH='./owfinance/app_upload';
+             else
+               echo '- ./owfinance/app_upload (NO DISPONIBLE)';
+             fi;
+
+             if [ -d '/tmp/app_upload' ]; then
+               echo '- /tmp/app_upload (OK)';
+               UPLOAD_PATH='/tmp/app_upload';
+             fi;
+
+             # Guardar el path para el siguiente paso
+             echo \"UPLOAD_PATH=\$UPLOAD_PATH\" > /tmp/upload_path.txt;
+             echo \"Usando directorio: \$UPLOAD_PATH\";"
 
       - name: Subir bundle a app_upload
         run: |
-          ssh -p "${{ secrets.SSH_PORT }}" \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "if [ -d './owfinance/app_upload' ]; then 
-               echo 'Usando owfinance/app_upload'; 
-               TARGET_DIR='./owfinance/app_upload'; 
-             else 
-               echo 'Usando directorio temporal'; 
-               TARGET_DIR='/tmp/app_upload'; 
-             fi; 
-             echo \"TARGET_DIR=$TARGET_DIR\" > /tmp/target_dir.txt"
-          
-          TARGET_DIR=$(ssh -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "cat /tmp/target_dir.txt | grep TARGET_DIR | cut -d'=' -f2")
-          echo "Uploading to: $TARGET_DIR"
-          
-          rsync -az --delete \
-            -e "ssh -p ${{ secrets.SSH_PORT }}" \
-            ./__upload__/ \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$TARGET_DIR/"
+          # Obtener el directorio donde se subiran los archivos
+          UPLOAD_PATH=$(ssh deploy_target "cat /tmp/upload_path.txt 2>/dev/null | grep UPLOAD_PATH | cut -d'=' -f2 || echo '/tmp/app_upload'")
+          echo "Subiendo archivos a: $UPLOAD_PATH"
 
-      - name: Instalar/actualizar app en public_html
+          # Primero probamos subir un archivo pequeño para verificar
+          echo "Probando subida de archivo pequeño:"
+          echo "test" > test_upload.txt
+          scp -F ~/.ssh/config test_upload.txt deploy_target:"$UPLOAD_PATH/test_upload.txt"
+
+          # Si la prueba fue exitosa, subimos todo
+          echo "Subiendo todos los archivos:"
+          rsync -az --delete \
+            -e "ssh -F ~/.ssh/config" \
+            ./__upload__/ \
+            deploy_target:"$UPLOAD_PATH/"
+
+          # Verificar la subida
+          echo "Verificando archivos subidos:"
+          ssh deploy_target "ls -la $UPLOAD_PATH | head -n 10"
+
+      - name: Instalar/actualizar app
         run: |
-          ssh -p "${{ secrets.SSH_PORT }}" \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "PHP_CLI='php' bash -s" <<'REMOTE'
+          # Obtener el directorio donde se subieron los archivos
+          UPLOAD_PATH=$(ssh deploy_target "cat /tmp/upload_path.txt 2>/dev/null | grep UPLOAD_PATH | cut -d'=' -f2 || echo '/tmp/app_upload'")
+
+          echo "Instalando aplicación desde: $UPLOAD_PATH"
+
+          # Transferir script de deploy para tener más control
+          cat > deploy_script.sh <<'DEPLOY_SCRIPT'
+          #!/bin/bash
+          set -eo pipefail
+
+          UPLOAD_PATH="$1"
+          echo "Iniciando instalación desde $UPLOAD_PATH"
+
+          # Detectar PHP CLI
+          PHP_CLI=$(which php 2>/dev/null || echo "php")
+          echo "Usando PHP CLI: $PHP_CLI"
+
+          # Determinando directorios
+          CURRENT_DIR=$(pwd)
+          APP_BASE="$CURRENT_DIR"
+
+          echo "Directorio base: $APP_BASE"
+
+          # Crear estructura si no existe
+          mkdir -p "$APP_BASE/owfinance/releases"
+          mkdir -p "$APP_BASE/owfinance/shared"
+
+          # La instalación sigue en el script remoto
+          DEPLOY_SCRIPT
+
+          chmod +x deploy_script.sh
+          scp -F ~/.ssh/config deploy_script.sh deploy_target:/tmp/deploy_script.sh
+
+          ssh deploy_target "bash /tmp/deploy_script.sh '$UPLOAD_PATH'" || {
+            echo "Error durante la instalación. Mostrando logs:"
+            ssh deploy_target "ls -la /tmp/"
+          }
           set -euo pipefail
 
           # Establecer rutas según la estructura del servidor
           SITE_ROOT=$(pwd)
           PHP_CLI="${PHP_CLI:-php}"
-          
+
           # Detectar ubicación del directorio app_upload
           if [ -d "./owfinance/app_upload" ]; then
             UPLOAD_DIR="$SITE_ROOT/owfinance/app_upload"
@@ -129,72 +222,72 @@ jobs:
             echo "ERROR: No se encuentra directorio de carga"
             exit 1
           fi
-          
+
           # Establecer directorio de la aplicación
           APP_DIR="$SITE_ROOT/owfinance/current"
           PUBLIC_DIR="$APP_DIR/public"
-          
+
           echo "Directorio de aplicación: $APP_DIR"
           echo "Directorio público: $PUBLIC_DIR"
 
           # 1) Crear estructura de directorios si no existe
           mkdir -p "$SITE_ROOT/owfinance/releases"
           mkdir -p "$SITE_ROOT/owfinance/shared"
-          
+
           # 2) Preservar .env si ya existe
           if [ -f "$APP_DIR/.env" ]; then
             mkdir -p "$SITE_ROOT/owfinance/shared"
             cp "$APP_DIR/.env" "$SITE_ROOT/owfinance/shared/.env"
           fi
-          
+
           # 3) Crear nuevo release
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
           RELEASE_DIR="$SITE_ROOT/owfinance/releases/$TIMESTAMP"
-          
+
           echo "Creando nuevo release en: $RELEASE_DIR"
           mkdir -p "$RELEASE_DIR"
-          
+
           # 4) Mover archivos del upload al release
           echo "Copiando archivos de $UPLOAD_DIR a $RELEASE_DIR"
           rsync -a --delete "$UPLOAD_DIR/" "$RELEASE_DIR/"
-          
+
           # 5) Configurar .env desde shared si existe
           if [ -f "$SITE_ROOT/owfinance/shared/.env" ]; then
             echo "Usando .env compartido"
             cp "$SITE_ROOT/owfinance/shared/.env" "$RELEASE_DIR/.env"
           fi
-          
+
           # 6) Establecer permisos
           mkdir -p "$RELEASE_DIR/storage" "$RELEASE_DIR/bootstrap/cache"
           chmod -R ug+rwX "$RELEASE_DIR/storage" "$RELEASE_DIR/bootstrap/cache" || true
-          
+
           # 7) Ejecutar comandos de Laravel
           cd "$RELEASE_DIR"
           $PHP_CLI artisan key:generate --force || true
           $PHP_CLI artisan config:cache
           $PHP_CLI artisan route:cache || true
           $PHP_CLI artisan view:cache || true
-          
+
           # 8) Migrar base de datos
           echo "Ejecutando migraciones..."
           $PHP_CLI artisan migrate --force || echo "Error en migraciones, continuando..."
-          
+
           # 9) Crear symlinks para storage
           rm -rf "$RELEASE_DIR/public/storage" || true
           if [ ! -d "$SITE_ROOT/owfinance/shared/storage" ]; then
             mkdir -p "$SITE_ROOT/owfinance/shared/storage/app/public"
             cp -a "$RELEASE_DIR/storage/." "$SITE_ROOT/owfinance/shared/storage/"
           fi
-          
+
           rm -rf "$RELEASE_DIR/storage"
           ln -sfn "$SITE_ROOT/owfinance/shared/storage" "$RELEASE_DIR/storage"
-          
+
           ln -sfn "$RELEASE_DIR/storage/app/public" "$RELEASE_DIR/public/storage" || {
             echo "Symlink denegado; copiando storage público…"
             mkdir -p "$RELEASE_DIR/public/storage"
             rsync -a "$SITE_ROOT/owfinance/shared/storage/app/public/" "$RELEASE_DIR/public/storage/"
           }
-          
+
           # 10) Proteger de acceso web
           cat > "$RELEASE_DIR/.htaccess" <<'HTX'
           <IfModule mod_authz_core.c>
@@ -204,7 +297,7 @@ jobs:
             Deny from all
           </IfModule>
           HTX
-          
+
           # 11) Actualizar enlace current a nuevo release
           if [ -d "$APP_DIR" ] && [ ! -L "$APP_DIR" ]; then
             # Si current es un directorio y no un symlink, moverlo a backup
@@ -213,31 +306,55 @@ jobs:
             # Si es un symlink, eliminarlo
             rm "$APP_DIR"
           fi
-          
+
           # Crear symlink del nuevo release
           ln -sfn "$RELEASE_DIR" "$APP_DIR"
-          
+
           # 12) Actualizar symlink de public_html si no existe
           if [ ! -L "$SITE_ROOT/public_html" ] || [ ! -e "$SITE_ROOT/public_html" ]; then
             echo "Creando symlink public_html -> $PUBLIC_DIR"
             ln -sfn "$PUBLIC_DIR" "$SITE_ROOT/public_html"
           fi
-          
+
           # 13) Limpieza: mantener solo los 3 releases más recientes
           cd "$SITE_ROOT/owfinance/releases"
           ls -t | tail -n +4 | xargs -r rm -rf
-          
+
           echo "Deploy completado exitosamente en $RELEASE_DIR"
           REMOTE
 
-      - name: Verificar archivos publicados
+      - name: Verificar estado final
         run: |
-          ssh -p "${{ secrets.SSH_PORT }}" \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "echo 'Estructura final:';
-             echo '- Directorio actual:'; pwd;
-             echo '- Directorio owfinance:'; ls -la ./owfinance;
-             echo '- Releases:'; ls -la ./owfinance/releases;
-             echo '- Current symlink apunta a:'; readlink -f ./owfinance/current;
-             echo '- Public_html symlink apunta a:'; readlink -f ./public_html;
-             echo '- Contenido de public_html:'; ls -la ./public_html | head -n 20;"
+          echo "Verificando estado final del deploy:"
+
+          ssh deploy_target "echo 'Estructura final:';
+            echo '- Directorio actual:'; pwd;
+            echo '- Archivos en directorio actual:'; ls -la . | head -n 15;
+            echo '- Directorio owfinance (si existe):';
+            if [ -d './owfinance' ]; then
+              ls -la ./owfinance;
+              if [ -d './owfinance/releases' ]; then
+                echo '- Releases:'; ls -la ./owfinance/releases;
+              fi
+              if [ -L './owfinance/current' ]; then
+                echo '- Current symlink apunta a:'; readlink -f ./owfinance/current;
+              fi
+            else
+              echo 'No existe directorio owfinance';
+            fi;
+
+            echo '- Public_html:';
+            if [ -L 'public_html' ]; then
+              echo '  Es un symlink que apunta a:'; readlink -f ./public_html;
+              if [ -d 'public_html' ]; then
+                echo '- Contenido de public_html:'; ls -la ./public_html | head -n 10;
+              fi
+            elif [ -d 'public_html' ]; then
+              echo '  Es un directorio normal';
+              ls -la ./public_html | head -n 10;
+            else
+              echo '  No existe';
+            fi;
+
+            echo '- Directorio temporal:';
+            ls -la /tmp/app_upload 2>/dev/null || echo 'No existe directorio temporal';"
