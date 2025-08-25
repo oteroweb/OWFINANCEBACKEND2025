@@ -107,70 +107,96 @@ jobs:
             ./__upload__/ \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$TARGET_DIR/"
 
-      - name: Instalar/actualizar app en public_html (todo dentro de public_html)
+      - name: Instalar/actualizar app en public_html
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "if [ -d '${{ secrets.PUBLIC_HTML }}' ]; then 
-               PUBLIC_HTML='${{ secrets.PUBLIC_HTML }}'; 
-             else 
-               PUBLIC_HTML=\$(pwd); 
-             fi; 
-             PHP_CLI='php' bash -s" <<'REMOTE'
+            "PHP_CLI='php' bash -s" <<'REMOTE'
           set -euo pipefail
 
-          # Vars de entorno inyectadas por SSH:
-          PUBLIC_HTML="${PUBLIC_HTML:-$(pwd)}"
+          # Establecer rutas según la estructura del servidor
+          SITE_ROOT=$(pwd)
           PHP_CLI="${PHP_CLI:-php}"
           
-          echo "Usando PUBLIC_HTML=$PUBLIC_HTML"
-          
-          # Detectar si estamos usando PUBLIC_HTML o directorio local
-          if [ -d "$PUBLIC_HTML/app_upload" ]; then
-            APP_DIR="$PUBLIC_HTML/app"
-            UPLOAD_DIR="$PUBLIC_HTML/app_upload"
+          # Detectar ubicación del directorio app_upload
+          if [ -d "./owfinance/app_upload" ]; then
+            UPLOAD_DIR="$SITE_ROOT/owfinance/app_upload"
+            echo "Usando directorio de carga: $UPLOAD_DIR"
+          elif [ -d "/tmp/app_upload" ]; then
+            UPLOAD_DIR="/tmp/app_upload"
+            echo "Usando directorio temporal: $UPLOAD_DIR"
           else
-            APP_DIR="./app"
-            UPLOAD_DIR="./app_upload"
+            echo "ERROR: No se encuentra directorio de carga"
+            exit 1
           fi
           
-          echo "Usando APP_DIR=$APP_DIR y UPLOAD_DIR=$UPLOAD_DIR"
+          # Establecer directorio de la aplicación
+          APP_DIR="$SITE_ROOT/owfinance/current"
+          PUBLIC_DIR="$APP_DIR/public"
+          
+          echo "Directorio de aplicación: $APP_DIR"
+          echo "Directorio público: $PUBLIC_DIR"
 
-          # 1) Preservar .env si ya existía
+          # 1) Crear estructura de directorios si no existe
+          mkdir -p "$SITE_ROOT/owfinance/releases"
+          mkdir -p "$SITE_ROOT/owfinance/shared"
+          
+          # 2) Preservar .env si ya existe
           if [ -f "$APP_DIR/.env" ]; then
-            cp "$APP_DIR/.env" "$UPLOAD_DIR/.env"
+            mkdir -p "$SITE_ROOT/owfinance/shared"
+            cp "$APP_DIR/.env" "$SITE_ROOT/owfinance/shared/.env"
           fi
-
-          # 2) Swap atómico: app -> app.bak, app_upload -> app
-          rm -rf "$APP_DIR.bak" || true
-          if [ -d "$APP_DIR" ]; then mv "$APP_DIR" "$APP_DIR.bak"; fi
-          mv "$UPLOAD_DIR" "$APP_DIR"
-
-          # 3) Permisos mínimos
-          mkdir -p "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
-          chmod -R ug+rwX "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" || true
-
-          # 4) Artisan con vendor traído desde CI
-          cd "$APP_DIR"
+          
+          # 3) Crear nuevo release
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          RELEASE_DIR="$SITE_ROOT/owfinance/releases/$TIMESTAMP"
+          
+          echo "Creando nuevo release en: $RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"
+          
+          # 4) Mover archivos del upload al release
+          echo "Copiando archivos de $UPLOAD_DIR a $RELEASE_DIR"
+          rsync -a --delete "$UPLOAD_DIR/" "$RELEASE_DIR/"
+          
+          # 5) Configurar .env desde shared si existe
+          if [ -f "$SITE_ROOT/owfinance/shared/.env" ]; then
+            echo "Usando .env compartido"
+            cp "$SITE_ROOT/owfinance/shared/.env" "$RELEASE_DIR/.env"
+          fi
+          
+          # 6) Establecer permisos
+          mkdir -p "$RELEASE_DIR/storage" "$RELEASE_DIR/bootstrap/cache"
+          chmod -R ug+rwX "$RELEASE_DIR/storage" "$RELEASE_DIR/bootstrap/cache" || true
+          
+          # 7) Ejecutar comandos de Laravel
+          cd "$RELEASE_DIR"
           $PHP_CLI artisan key:generate --force || true
           $PHP_CLI artisan config:cache
           $PHP_CLI artisan route:cache || true
           $PHP_CLI artisan view:cache || true
-          $PHP_CLI artisan migrate --force || true
-
-          # 5) storage:link con fallback si el hosting no permite symlinks
-          if ! $PHP_CLI artisan storage:link; then
-            echo "Symlink denegado; copiando storage público…"
-            rm -rf "$APP_DIR/public/storage"
-            mkdir -p "$APP_DIR/public/storage"
-            rsync -a "$APP_DIR/storage/app/public/" "$APP_DIR/public/storage/" || true
+          
+          # 8) Migrar base de datos
+          echo "Ejecutando migraciones..."
+          $PHP_CLI artisan migrate --force || echo "Error en migraciones, continuando..."
+          
+          # 9) Crear symlinks para storage
+          rm -rf "$RELEASE_DIR/public/storage" || true
+          if [ ! -d "$SITE_ROOT/owfinance/shared/storage" ]; then
+            mkdir -p "$SITE_ROOT/owfinance/shared/storage/app/public"
+            cp -a "$RELEASE_DIR/storage/." "$SITE_ROOT/owfinance/shared/storage/"
           fi
-
-          # 6) Publicar la carpeta public/ en la raíz de public_html
-          rsync -a --delete "$APP_DIR/public/" "$PUBLIC_HTML/"
-
-          # 7) Proteger app/ de accesos web (Apache 2.4/2.2)
-          cat > "$APP_DIR/.htaccess" <<'HTX'
+          
+          rm -rf "$RELEASE_DIR/storage"
+          ln -sfn "$SITE_ROOT/owfinance/shared/storage" "$RELEASE_DIR/storage"
+          
+          ln -sfn "$RELEASE_DIR/storage/app/public" "$RELEASE_DIR/public/storage" || {
+            echo "Symlink denegado; copiando storage público…"
+            mkdir -p "$RELEASE_DIR/public/storage"
+            rsync -a "$SITE_ROOT/owfinance/shared/storage/app/public/" "$RELEASE_DIR/public/storage/"
+          }
+          
+          # 10) Proteger de acceso web
+          cat > "$RELEASE_DIR/.htaccess" <<'HTX'
           <IfModule mod_authz_core.c>
             Require all denied
           </IfModule>
@@ -178,21 +204,40 @@ jobs:
             Deny from all
           </IfModule>
           HTX
-
-          # 8) Limpieza de backup
-          rm -rf "$APP_DIR.bak" || true
-
-          echo "Deploy OK dentro de $PUBLIC_HTML"
+          
+          # 11) Actualizar enlace current a nuevo release
+          if [ -d "$APP_DIR" ] && [ ! -L "$APP_DIR" ]; then
+            # Si current es un directorio y no un symlink, moverlo a backup
+            mv "$APP_DIR" "$APP_DIR.bak"
+          elif [ -L "$APP_DIR" ]; then
+            # Si es un symlink, eliminarlo
+            rm "$APP_DIR"
+          fi
+          
+          # Crear symlink del nuevo release
+          ln -sfn "$RELEASE_DIR" "$APP_DIR"
+          
+          # 12) Actualizar symlink de public_html si no existe
+          if [ ! -L "$SITE_ROOT/public_html" ] || [ ! -e "$SITE_ROOT/public_html" ]; then
+            echo "Creando symlink public_html -> $PUBLIC_DIR"
+            ln -sfn "$PUBLIC_DIR" "$SITE_ROOT/public_html"
+          fi
+          
+          # 13) Limpieza: mantener solo los 3 releases más recientes
+          cd "$SITE_ROOT/owfinance/releases"
+          ls -t | tail -n +4 | xargs -r rm -rf
+          
+          echo "Deploy completado exitosamente en $RELEASE_DIR"
           REMOTE
 
       - name: Verificar archivos publicados
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "if [ -d '${{ secrets.PUBLIC_HTML }}' ]; then 
-               echo 'Listando archivos en PUBLIC_HTML:';
-               ls -la '${{ secrets.PUBLIC_HTML }}' | head -n 50; 
-             else 
-               echo 'PUBLIC_HTML no existe, listando directorio actual:';
-               ls -la . | head -n 50; 
-             fi"
+            "echo 'Estructura final:';
+             echo '- Directorio actual:'; pwd;
+             echo '- Directorio owfinance:'; ls -la ./owfinance;
+             echo '- Releases:'; ls -la ./owfinance/releases;
+             echo '- Current symlink apunta a:'; readlink -f ./owfinance/current;
+             echo '- Public_html symlink apunta a:'; readlink -f ./public_html;
+             echo '- Contenido de public_html:'; ls -la ./public_html | head -n 20;"
