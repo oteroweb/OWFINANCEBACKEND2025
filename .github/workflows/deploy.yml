@@ -18,21 +18,21 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'           # AJUSTA si tu app requiere otra versión
+          php-version: '8.2'  # ajusta si tu proyecto requiere otra
           extensions: mbstring, intl, pdo_mysql, bcmath, gd, zip, curl, xml
           coverage: none
 
-      - name: Copy example env for build (no secrets)
+      - name: Copiar .env.example local (solo para build)
         run: cp .env.example .env
 
-      - name: Composer install (build vendor en CI)
+      - name: Instalar dependencias (Composer en CI)
         env:
           COMPOSER_PROCESS_TIMEOUT: 0
           COMPOSER_NO_INTERACTION: 1
           COMPOSER_NO_AUDIT: 1
         run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
-      # Si necesitas assets (Vite), descomenta:
+      # Si compilas assets con Vite, descomenta:
       # - name: Setup Node
       #   uses: actions/setup-node@v4
       #   with:
@@ -42,7 +42,7 @@ jobs:
       #     npm ci
       #     npm run build
 
-      - name: Preparar bundle para subir
+      - name: Preparar bundle a subir
         run: |
           mkdir -p __upload__
           rsync -a --delete \
@@ -51,15 +51,15 @@ jobs:
             --exclude "node_modules" \
             ./ __upload__/
 
-      - name: Start SSH agent
+      - name: Iniciar SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Add known_hosts
+      - name: Añadir known_hosts
         run: ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Crear carpeta temporal de subida en public_html
+      - name: Crear carpeta app_upload en public_html
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
@@ -72,57 +72,71 @@ jobs:
             ./__upload__/ \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.PUBLIC_HTML }}/app_upload/"
 
-      - name: Instalar/actualizar app en public_html (sin salir de ahí)
+      - name: Instalar/actualizar app en public_html (todo dentro de public_html)
         run: |
-          ssh -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" "bash -lc '
-            set -euo pipefail
-            APP_DIR=\"${{ secrets.PUBLIC_HTML }}/app\"
-            UPLOAD_DIR=\"${{ secrets.PUBLIC_HTML }}/app_upload\"
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "PUBLIC_HTML='${{ secrets.PUBLIC_HTML }}' PHP_CLI='${{ secrets.PHP_CLI }}' bash -s" <<'REMOTE'
+          set -euo pipefail
 
-            # 1) Preservar .env si ya existía
-            if [ -f \"$APP_DIR/.env\" ]; then
-              cp \"$APP_DIR/.env\" \"$UPLOAD_DIR/.env\"
-            fi
+          # Vars de entorno inyectadas por SSH:
+          PUBLIC_HTML="${PUBLIC_HTML:?PUBLIC_HTML requerido}"
+          PHP_CLI="${PHP_CLI:-php}"
 
-            # 2) Swap atómico: reemplazar app por lo subido
-            rm -rf \"$APP_DIR.bak\" || true
-            if [ -d \"$APP_DIR\" ]; then mv \"$APP_DIR\" \"$APP_DIR.bak\"; fi
-            mv \"$UPLOAD_DIR\" \"$APP_DIR\"
+          APP_DIR="$PUBLIC_HTML/app"
+          UPLOAD_DIR="$PUBLIC_HTML/app_upload"
 
-            # 3) Permisos mínimos para cache
-            chmod -R ug+rwX \"$APP_DIR/storage\" \"$APP_DIR/bootstrap/cache\" || true
+          # 1) Preservar .env si ya existía
+          if [ -f "$APP_DIR/.env" ]; then
+            cp "$APP_DIR/.env" "$UPLOAD_DIR/.env"
+          fi
 
-            # 4) Comandos artisan (usando vendor subido desde CI)
-            cd \"$APP_DIR\"
-            php artisan key:generate --force || true
-            php artisan config:cache
-            php artisan route:cache || true
-            php artisan view:cache || true
-            php artisan migrate --force || true
+          # 2) Swap atómico: app -> app.bak, app_upload -> app
+          rm -rf "$APP_DIR.bak" || true
+          if [ -d "$APP_DIR" ]; then mv "$APP_DIR" "$APP_DIR.bak"; fi
+          mv "$UPLOAD_DIR" "$APP_DIR"
 
-            # 5) storage:link con fallback si no permiten symlinks
-            if ! php artisan storage:link; then
-              echo \"Symlink no permitido; copiando archivos públicos de storage...\"
-              rm -rf \"$APP_DIR/public/storage\"
-              mkdir -p \"$APP_DIR/public/storage\"
-              rsync -a \"$APP_DIR/storage/app/public/\" \"$APP_DIR/public/storage/\"
-            fi
+          # 3) Permisos mínimos
+          mkdir -p "$APP_DIR/storage" "$APP_DIR/bootstrap/cache"
+          chmod -R ug+rwX "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" || true
 
-            # 6) Publicar contenido de public/ en la raiz de public_html
-            rsync -a --delete \"$APP_DIR/public/\" \"${{ secrets.PUBLIC_HTML }}/\"
+          # 4) Artisan con vendor traído desde CI
+          cd "$APP_DIR"
+          $PHP_CLI artisan key:generate --force || true
+          $PHP_CLI artisan config:cache
+          $PHP_CLI artisan route:cache || true
+          $PHP_CLI artisan view:cache || true
+          $PHP_CLI artisan migrate --force || true
 
-            # 7) Proteger carpeta app/ de accesos web (Apache 2.4 y 2.2)
-            cat > \"$APP_DIR/.htaccess\" <<\"HTX\"
-<IfModule mod_authz_core.c>
-  Require all denied
-</IfModule>
-<IfModule !mod_authz_core.c>
-  Deny from all
-</IfModule>
-HTX
+          # 5) storage:link con fallback si el hosting no permite symlinks
+          if ! $PHP_CLI artisan storage:link; then
+            echo "Symlink denegado; copiando storage público…"
+            rm -rf "$APP_DIR/public/storage"
+            mkdir -p "$APP_DIR/public/storage"
+            rsync -a "$APP_DIR/storage/app/public/" "$APP_DIR/public/storage/" || true
+          fi
 
-            # 8) Limpieza
-            rm -rf \"$APP_DIR.bak\" || true
+          # 6) Publicar la carpeta public/ en la raíz de public_html
+          rsync -a --delete "$APP_DIR/public/" "$PUBLIC_HTML/"
 
-            echo \"Deploy OK en ${${{ secrets.PUBLIC_HTML }}#/home/}\"
-          '"
+          # 7) Proteger app/ de accesos web (Apache 2.4/2.2)
+          cat > "$APP_DIR/.htaccess" <<'HTX'
+          <IfModule mod_authz_core.c>
+            Require all denied
+          </IfModule>
+          <IfModule !mod_authz_core.c>
+            Deny from all
+          </IfModule>
+          HTX
+
+          # 8) Limpieza de backup
+          rm -rf "$APP_DIR.bak" || true
+
+          echo "Deploy OK dentro de $PUBLIC_HTML"
+          REMOTE
+
+      - name: Verificar archivos publicados
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "ls -la '${{ secrets.PUBLIC_HTML }}' | head -n 50"
