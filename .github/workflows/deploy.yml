@@ -59,6 +59,12 @@ jobs:
       - name: Añadir known_hosts
         run: ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
+      - name: Chequear permisos en directorio HOME
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "echo 'Permisos en /home:'; ls -ld /home; echo 'Permisos en /home/${{ secrets.SSH_USER }}:'; ls -ld /home/${{ secrets.SSH_USER }}"
+
       - name: Crear carpeta app_upload en public_html
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
@@ -76,7 +82,7 @@ jobs:
         run: |
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "PUBLIC_HTML='${{ secrets.PUBLIC_HTML }}' PHP_CLI='${{ secrets.PHP_CLI }}' bash -s" <<'REMOTE'
+            "PUBLIC_HTML='${{ secrets.PUBLIC_HTML }}' PHP_CLI='php' bash -s" <<'REMOTE'
           set -euo pipefail
 
           # Vars de entorno inyectadas por SSH:
@@ -140,9 +146,3 @@ jobs:
           ssh -p "${{ secrets.SSH_PORT }}" \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             "ls -la '${{ secrets.PUBLIC_HTML }}' | head -n 50"
-
-      - name: Chequear permisos en directorio HOME
-        run: |
-          ssh -p "${{ secrets.SSH_PORT }}" \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "echo 'Permisos en /home:'; ls -ld /home; echo 'Permisos en /home/${{ secrets.SSH_USER }}:'; ls -ld /home/${{ secrets.SSH_USER }}"
