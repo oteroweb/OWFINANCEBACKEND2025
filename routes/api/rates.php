@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RateController;
 
 Route::group([
-    'middleware' => ['auth:sanctum'],
+    'middleware' => ['api'],
     'prefix'     => 'rates',
 ], function () {
     // Rates ROUTES

@@ -13,13 +13,11 @@ class Jar extends Model
 
     protected $fillable = [
         'name',
-        'is_active',
         'percent',
         'type',
     'fixed_amount',
     'base_scope',
-        'active',
-        'deleted_at',
+    'active',
         'date',
     'user_id',
     'sort_order',
@@ -40,12 +38,20 @@ class Jar extends Model
 
     public function categories()
     {
-        return $this->belongsToMany(Category::class, 'jar_category')->withTimestamps();
+        return $this->belongsToMany(Category::class, 'jar_category')
+            ->using(\App\Models\Entities\Pivots\JarCategory::class)
+            ->withPivot(['active', 'deleted_at'])
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
     }
 
     public function baseCategories()
     {
-        return $this->belongsToMany(Category::class, 'jar_base_category')->withTimestamps();
+        return $this->belongsToMany(Category::class, 'jar_base_category')
+            ->using(\App\Models\Entities\Pivots\JarBaseCategory::class)
+            ->withPivot(['active', 'deleted_at'])
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
     }
 
     protected static function newFactory()

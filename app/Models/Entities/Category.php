@@ -17,6 +17,11 @@ class Category extends Model
         'date',
         'parent_id',
     'user_id',
+    'icon',
+    'transaction_type_id',
+    'include_in_balance',
+    'type',
+    'sort_order',
     ];
 
     protected $casts = [
@@ -24,6 +29,7 @@ class Category extends Model
         'created_at' => 'datetime:Y-m-d',
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',
+    'include_in_balance' => 'boolean',
     ];
 
     public function parent()
@@ -39,6 +45,11 @@ class Category extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function transactionType()
+    {
+        return $this->belongsTo(TransactionType::class, 'transaction_type_id');
     }
 
     protected static function newFactory()

@@ -32,6 +32,19 @@ class JarTemplateSeeder extends Seeder
                 ],
             ],
             [
+                'name' => 'Avanzado', 'slug' => 'avanzado', 'description' => 'Más categorías, coche 5% y reparto detallado', 'active' => 1,
+                'jars' => [
+                    ['name' => 'Necesidades básicas', 'type' => 'percent', 'percent' => 50, 'base_scope' => 'all_income', 'color' => '#6B7280', 'sort_order' => 1],
+                    ['name' => 'Salud', 'type' => 'percent', 'percent' => 10, 'base_scope' => 'all_income', 'color' => '#EF4444', 'sort_order' => 2],
+                    ['name' => 'Educación', 'type' => 'percent', 'percent' => 10, 'base_scope' => 'all_income', 'color' => '#3B82F6', 'sort_order' => 3],
+                    ['name' => 'Empresa', 'type' => 'percent', 'percent' => 10, 'base_scope' => 'all_income', 'color' => '#8B5CF6', 'sort_order' => 4],
+                    ['name' => 'Coche / Auto y transporte', 'type' => 'percent', 'percent' => 5, 'base_scope' => 'all_income', 'color' => '#F59E0B', 'sort_order' => 5],
+                    ['name' => 'Hogar cómodo', 'type' => 'percent', 'percent' => 5, 'base_scope' => 'all_income', 'color' => '#10B981', 'sort_order' => 6],
+                    ['name' => 'Ocio / Diversión', 'type' => 'percent', 'percent' => 5, 'base_scope' => 'all_income', 'color' => '#FCD34D', 'sort_order' => 7],
+                    ['name' => 'Viajes', 'type' => 'percent', 'percent' => 5, 'base_scope' => 'all_income', 'color' => '#60A5FA', 'sort_order' => 8],
+                ],
+            ],
+            [
                 'name' => 'Conservador', 'slug' => 'conservador', 'description' => 'Más peso a necesidades y ahorro', 'active' => 1,
                 'jars' => [
                     ['name' => 'Necesidades básicas', 'type' => 'percent', 'percent' => 60, 'base_scope' => 'all_income', 'color' => '#6B7280', 'sort_order' => 1],

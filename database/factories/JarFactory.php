@@ -13,9 +13,8 @@ class JarFactory extends Factory
     {
         return [
             'name'       => $this->faker->word(),
-            'is_active'  => $this->faker->boolean(90),
             'percent'    => $this->faker->randomFloat(2, 0, 100),
-            'type'       => $this->faker->word(),
+            'type'       => $this->faker->randomElement(['fixed','percent']),
             'active'     => $this->faker->boolean(90),
             'date'       => $this->faker->date(),
         ];

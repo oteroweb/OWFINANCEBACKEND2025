@@ -16,6 +16,11 @@ class CategoryFactory extends Factory
             'active'=> $this->faker->boolean(90),
             'date'  => $this->faker->date(),
             'parent_id' => null,
+            'icon' => $this->faker->optional()->randomElement(['wallet','shopping-cart','home','utensils','car','gift']),
+            'transaction_type_id' => null,
+            'include_in_balance' => true,
+            'type' => 'category',
+            'sort_order' => 0,
         ];
     }
 }

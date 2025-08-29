@@ -9,7 +9,11 @@ class JarRepo
 {
     public function all(array $params = [])
     {
-        $query = Jar::with(['user','categories','baseCategories'])
+    $query = Jar::with([
+        'user',
+        'categories' => function ($q) { $q->wherePivotNull('deleted_at'); },
+        'baseCategories' => function ($q) { $q->wherePivotNull('deleted_at'); },
+        ])
             ->whereIn('active', [0,1]);
 
     // #todo(admin): If/when admin roles exist, allow overriding user_id scoping here.

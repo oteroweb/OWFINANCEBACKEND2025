@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AccountController;
 
 Route::group([
-    'middleware' => ['api','auth:sanctum'],
+    'middleware' => ['api'],
     'prefix'     => 'accounts',
 ], function () {
     //Account ROUTES

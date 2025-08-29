@@ -114,6 +114,11 @@ class CategoryController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:100',
             'parent_id' => 'nullable|exists:categories,id',
+            'icon' => 'nullable|string|max:64',
+            'transaction_type_id' => 'nullable|exists:transaction_types,id',
+            'include_in_balance' => 'nullable|boolean',
+            'type' => 'nullable|in:folder,category',
+            'sort_order' => 'nullable|integer',
         ], $this->custom_message());
 
         if ($validator->fails()) {
@@ -126,7 +131,7 @@ class CategoryController extends Controller
             return response()->json($response, 400);
         }
         try {
-            $data = $request->only(['name', 'active', 'date', 'parent_id']);
+            $data = $request->only(['name', 'active', 'date', 'parent_id', 'icon', 'transaction_type_id', 'include_in_balance', 'type', 'sort_order']);
             // Scope parent_id to current user if provided
             if (!empty($data['parent_id'])) {
                 $parent = \App\Models\Entities\Category::where('id', $data['parent_id'])
@@ -141,6 +146,17 @@ class CategoryController extends Controller
                     ], 400);
                 }
             }
+            // Defaults and type rules
+            if (!array_key_exists('type', $data) || empty($data['type'])) {
+                $data['type'] = 'category';
+            }
+            if (!array_key_exists('include_in_balance', $data)) {
+                $data['include_in_balance'] = true;
+            }
+            if (($data['type'] ?? 'category') === 'folder') {
+                // Ignore category-specific linkage for folders
+                $data['transaction_type_id'] = null;
+            }
             if ($user) {
                 $data['user_id'] = $user->id;
             }
@@ -149,7 +165,15 @@ class CategoryController extends Controller
                 'status'  => 'OK',
                 'code'    => 200,
                 'message' => __('Category saved correctly'),
-                'data'    => $category,
+                'data'    => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'parent_id' => $category->parent_id,
+                    'type' => $category->type,
+                    'icon' => $category->icon,
+                    'transaction_type_id' => $category->transaction_type_id,
+                    'include_in_balance' => (bool)$category->include_in_balance,
+                ],
             ];
             return response()->json($response, 200);
         } catch (\Exception $ex) {
@@ -172,7 +196,19 @@ class CategoryController extends Controller
     {
         $category = $this->categoryRepo->find($id);
         if (isset($category->id)) {
-            $data = $request->only(['name', 'active', 'date', 'parent_id']);
+            $validator = Validator::make($request->all(), [
+                'name' => 'sometimes|required|max:100',
+                'parent_id' => 'nullable|exists:categories,id',
+                'icon' => 'nullable|string|max:64',
+                'transaction_type_id' => 'nullable|exists:transaction_types,id',
+                'include_in_balance' => 'nullable|boolean',
+                'type' => 'nullable|in:folder,category',
+                'sort_order' => 'nullable|integer',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => __('Incorrect Params'), 'errors' => $validator->errors()], 400);
+            }
+            $data = $request->only(['name', 'active', 'date', 'parent_id', 'icon', 'transaction_type_id', 'include_in_balance', 'type', 'sort_order']);
             // If changing parent, ensure same user scope
             if (!empty($data['parent_id'])) {
                 $user = $request->user();
@@ -188,12 +224,23 @@ class CategoryController extends Controller
                     ], 400);
                 }
             }
+            if (($data['type'] ?? $category->type) === 'folder') {
+                $data['transaction_type_id'] = null; // folders don't carry tx type
+            }
             $category = $this->categoryRepo->update($category, $data);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
                 'message' => __('Category updated'),
-                'data'    => $category,
+                'data'    => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'parent_id' => $category->parent_id,
+                    'type' => $category->type,
+                    'icon' => $category->icon,
+                    'transaction_type_id' => $category->transaction_type_id,
+                    'include_in_balance' => (bool)$category->include_in_balance,
+                ],
             ];
             return response()->json($response, 200);
         }
@@ -339,11 +386,18 @@ class CategoryController extends Controller
         $cats = \App\Models\Entities\Category::where(function($q) use ($user) {
                 $q->whereNull('user_id')->orWhere('user_id', $user->id);
             })
+            ->orderBy('sort_order')
             ->orderBy('name')
-            ->get(['id','name as label','parent_id']);
+            ->get(['id','name as label','parent_id','type','icon']);
         $map = [];
         foreach ($cats as $c) {
-            $map[$c->id] = ['id' => $c->id, 'label' => $c->label, 'type' => 'category', 'children' => []];
+            $map[$c->id] = [
+                'id' => $c->id,
+                'label' => $c->label,
+                'type' => $c->type ?? 'category',
+                'icon' => $c->icon,
+                'children' => [],
+            ];
         }
         $forest = [];
         foreach ($cats as $c) {
@@ -352,6 +406,10 @@ class CategoryController extends Controller
             } else {
                 $forest[] =& $map[$c->id];
             }
+        }
+        // Optionally infer folder type if node has children and no explicit type
+        foreach ($forest as &$node) {
+            self::inferTypesRecursively($node);
         }
         return response()->json([
             'status' => 'OK',
@@ -418,5 +476,21 @@ class CategoryController extends Controller
             }
         }
         return $ids;
+    }
+
+    private static function inferTypesRecursively(array &$node): void
+    {
+        if (!empty($node['children'])) {
+            foreach ($node['children'] as &$child) {
+                self::inferTypesRecursively($child);
+            }
+            if (empty($node['type'])) {
+                $node['type'] = 'folder';
+            }
+        } else {
+            if (empty($node['type'])) {
+                $node['type'] = 'category';
+            }
+        }
     }
 }

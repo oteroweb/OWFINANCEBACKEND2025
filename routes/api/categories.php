@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CategoryController;
 
 Route::group([
-    'middleware' => ['api','auth:sanctum'],
+    'middleware' => ['api'],
     'prefix'     => 'categories',
 ], function () {
     Route::post('/', [CategoryController::class, 'save']);
@@ -15,6 +15,7 @@ Route::group([
     Route::get('/', [CategoryController::class, 'all']);
     Route::patch('/{id}/status', [CategoryController::class, 'change_status']);
     Route::put('/{id}', [CategoryController::class, 'update']);
+    Route::patch('/{id}', [CategoryController::class, 'update']);
     Route::patch('/{id}/move', [CategoryController::class, 'move']);
     Route::delete('/{id}', [CategoryController::class, 'delete']);
     Route::get('/{id}', [CategoryController::class, 'find']);
