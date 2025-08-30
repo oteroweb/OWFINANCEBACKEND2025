@@ -6,6 +6,16 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 use Illuminate\Support\Facades\Gate;
 use App\Models\Entities\Jar;
 use App\Policies\JarPolicy;
+use App\Models\Entities\Category;
+use App\Policies\CategoryPolicy;
+use App\Models\Entities\Transaction;
+use App\Policies\TransactionPolicy;
+use App\Models\Entities\ItemTransaction;
+use App\Policies\ItemTransactionPolicy;
+use App\Models\Entities\Provider;
+use App\Policies\ProviderPolicy;
+use App\Models\Entities\AccountFolder;
+use App\Policies\AccountFolderPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -16,6 +26,11 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         Jar::class => JarPolicy::class,
+        Category::class => CategoryPolicy::class,
+        Transaction::class => TransactionPolicy::class,
+        ItemTransaction::class => ItemTransactionPolicy::class,
+        Provider::class => ProviderPolicy::class,
+        AccountFolder::class => AccountFolderPolicy::class,
     ];
 
     /**

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CategoryController;
 
 Route::group([
-    'middleware' => ['api'],
+    'middleware' => ['api', 'auth:sanctum'],
     'prefix'     => 'categories',
 ], function () {
     Route::post('/', [CategoryController::class, 'save']);

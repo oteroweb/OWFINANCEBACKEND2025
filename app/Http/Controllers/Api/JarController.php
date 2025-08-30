@@ -7,6 +7,7 @@ use App\Models\Repositories\JarRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class JarController extends Controller
 {
@@ -383,8 +384,57 @@ class JarController extends Controller
         if ($validator->fails()) {
             return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()], 400);
         }
-        $jar->categories()->sync($request->input('category_ids', []));
-        $jar->load('categories');
+        // Soft-delete aware sync with exclusivity per user
+        $targetIds = collect($request->input('category_ids', []))->unique()->values()->all();
+        $currentIds = $jar->categories()->pluck('categories.id')->all();
+        $toAttach = array_values(array_diff($targetIds, $currentIds));
+        $toDetach = array_values(array_diff($currentIds, $targetIds));
+
+        // Exclusivity: ensure a category belongs to at most one jar for this user
+        if (!empty($toAttach) && $jar->user_id) {
+            $conflicts = DB::table('jar_category as jc')
+                ->join('jars as j', 'j.id', '=', 'jc.jar_id')
+                ->whereNull('jc.deleted_at')
+                ->where('j.user_id', $jar->user_id)
+                ->whereIn('jc.category_id', $toAttach)
+                ->where('jc.jar_id', '!=', $jar->id)
+                ->get(['jc.id','jc.category_id']);
+            if ($conflicts->count() > 0) {
+                $conflictIds = $conflicts->pluck('category_id')->unique()->all();
+                // Soft-detach from other jars
+                \App\Models\Entities\Pivots\JarCategory::whereIn('category_id', $conflictIds)
+                    ->whereNull('deleted_at')
+                    ->whereIn('jar_id', function ($q) use ($jar) {
+                        $q->select('id')->from('jars')->where('user_id', $jar->user_id);
+                    })
+                    ->update(['active' => 0, 'deleted_at' => now()]);
+            }
+        }
+
+        // Attach (restore soft-deleted if exists)
+        foreach ($toAttach as $catId) {
+            $pivot = \App\Models\Entities\Pivots\JarCategory::withTrashed()
+                ->where('jar_id', $jar->id)
+                ->where('category_id', $catId)
+                ->first();
+            if ($pivot) {
+                $pivot->active = 1;
+                $pivot->deleted_at = null;
+                $pivot->save();
+            } else {
+                $jar->categories()->attach($catId, ['active' => 1]);
+            }
+        }
+
+        // Soft-delete detaches
+        if (!empty($toDetach)) {
+            \App\Models\Entities\Pivots\JarCategory::where('jar_id', $jar->id)
+                ->whereIn('category_id', $toDetach)
+                ->whereNull('deleted_at')
+                ->update(['active' => 0, 'deleted_at' => now()]);
+        }
+
+        $jar->load(['categories' => function ($q) { $q->wherePivotNull('deleted_at'); }]);
         return response()->json(['status'=>'OK','code'=>200,'message'=>__('Jar categories updated'),'data'=>$jar], 200);
     }
 
@@ -415,8 +465,34 @@ class JarController extends Controller
         if ($validator->fails()) {
             return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()], 400);
         }
-        $jar->baseCategories()->sync($request->input('category_ids', []));
-        $jar->load('baseCategories');
+        // Soft-delete aware sync (no exclusivity for base categories)
+        $targetIds = collect($request->input('category_ids', []))->unique()->values()->all();
+        $currentIds = $jar->baseCategories()->pluck('categories.id')->all();
+        $toAttach = array_values(array_diff($targetIds, $currentIds));
+        $toDetach = array_values(array_diff($currentIds, $targetIds));
+
+        foreach ($toAttach as $catId) {
+            $pivot = \App\Models\Entities\Pivots\JarBaseCategory::withTrashed()
+                ->where('jar_id', $jar->id)
+                ->where('category_id', $catId)
+                ->first();
+            if ($pivot) {
+                $pivot->active = 1;
+                $pivot->deleted_at = null;
+                $pivot->save();
+            } else {
+                $jar->baseCategories()->attach($catId, ['active' => 1]);
+            }
+        }
+
+        if (!empty($toDetach)) {
+            \App\Models\Entities\Pivots\JarBaseCategory::where('jar_id', $jar->id)
+                ->whereIn('category_id', $toDetach)
+                ->whereNull('deleted_at')
+                ->update(['active' => 0, 'deleted_at' => now()]);
+        }
+
+        $jar->load(['baseCategories' => function ($q) { $q->wherePivotNull('deleted_at'); }]);
         return response()->json(['status'=>'OK','code'=>200,'message'=>__('Jar base categories updated'),'data'=>$jar], 200);
     }
 }

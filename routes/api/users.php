@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Api\UserJarController;
 
 Route::group([
     'prefix' => 'users',
@@ -14,4 +15,19 @@ Route::group([
     Route::put('/{id}', [UserController::class, 'update']);
     Route::delete('/{id}', [UserController::class, 'delete']);
     Route::get('/{id}', [UserController::class, 'find']);
+
+    // User-scoped jar utilities (protected)
+    Route::group(['middleware' => ['auth:sanctum']], function () {
+        Route::get('/{userId}/jars', [UserJarController::class, 'listJars']);
+        Route::get('/{userId}/jars/summary', [UserJarController::class, 'summary']);
+        Route::get('/{userId}/jars/{jarId}/items', [UserJarController::class, 'jarItems']);
+    Route::put('/{userId}/jars/bulk', [UserJarController::class, 'bulkUpsertJars']);
+        Route::post('/{userId}/jars', [UserJarController::class, 'createJar']);
+        Route::put('/{userId}/jars/{id}', [UserJarController::class, 'updateJar']);
+        Route::delete('/{userId}/jars/{id}', [UserJarController::class, 'deleteJar']);
+        Route::put('/{userId}/jars/{id}/categories', [UserJarController::class, 'replaceJarCategories']);
+        Route::post('/{userId}/jars/{id}/categories', [UserJarController::class, 'replaceJarCategories']);
+        Route::get('/{userId}/categories/unassigned', [UserJarController::class, 'unassignedCategories']);
+        Route::patch('/{userId}/item-transactions/{id}', [UserJarController::class, 'updateItemTransactionJar']);
+    });
 });

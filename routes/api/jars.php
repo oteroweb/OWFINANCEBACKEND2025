@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\JarController;
 
 Route::group([
-    'middleware' => ['api'],
+    'middleware' => ['api', 'auth:sanctum'],
     'prefix'     => 'jars',
 ], function () {
     //Jar ROUTES

@@ -374,17 +374,16 @@ class CategoryController extends Controller
      */
     public function tree(Request $request)
     {
+        // Accept user_id via query for non-auth use; otherwise require auth
+        $userId = $request->query('user_id');
         $user = $request->user();
-        if (!$user) {
-            return response()->json([
-                'status' => 'FAILED',
-                'code' => 401,
-                'message' => __('Unauthenticated'),
-            ], 401);
+        if (!$user && empty($userId)) {
+            return response()->json(['status' => 'FAILED', 'code' => 401, 'message' => __('Unauthenticated')], 401);
         }
+        $effectiveUserId = $user?->id ?? (int)$userId;
         // Load user categories (including globals with null user_id)
-        $cats = \App\Models\Entities\Category::where(function($q) use ($user) {
-                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+    $cats = \App\Models\Entities\Category::where(function($q) use ($effectiveUserId) {
+        $q->whereNull('user_id')->orWhere('user_id', $effectiveUserId);
             })
             ->orderBy('sort_order')
             ->orderBy('name')
