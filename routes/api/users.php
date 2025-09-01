@@ -21,6 +21,7 @@ Route::group([
         Route::get('/{userId}/jars', [UserJarController::class, 'listJars']);
         Route::get('/{userId}/jars/summary', [UserJarController::class, 'summary']);
         Route::get('/{userId}/jars/{jarId}/items', [UserJarController::class, 'jarItems']);
+    Route::post('/{userId}/jars/save', [UserJarController::class, 'saveJar']);
     Route::put('/{userId}/jars/bulk', [UserJarController::class, 'bulkUpsertJars']);
         Route::post('/{userId}/jars', [UserJarController::class, 'createJar']);
         Route::put('/{userId}/jars/{id}', [UserJarController::class, 'updateJar']);
