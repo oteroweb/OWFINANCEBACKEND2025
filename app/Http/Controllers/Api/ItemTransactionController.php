@@ -7,6 +7,7 @@ use App\Models\Repositories\ItemTransactionRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Models\Entities\Tax;
 
 class ItemTransactionController extends Controller
 {
@@ -132,6 +133,22 @@ class ItemTransactionController extends Controller
                 }
                 if ($jarId) { $data['jar_id'] = $jarId; }
             }
+            // Validate that provided tax_id (if any) applies to items
+            if (!empty($data['tax_id'])) {
+                $tax = Tax::find($data['tax_id']);
+                if (!$tax) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 422,'message' => __('Invalid tax')
+                    ], 422);
+                }
+                if (!in_array($tax->applies_to ?? 'item', ['item','both'], true)) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 422,
+                        'message' => __('Selected tax does not apply to items')
+                    ], 422);
+                }
+            }
+
             $itemTransaction = $this->ItemTransactionRepo->store($data);
             $response = [
                 'status'  => 'OK',
@@ -177,6 +194,22 @@ class ItemTransactionController extends Controller
             if ($request->has('user_id')) { $data['user_id'] = $request->input('user_id'); }
             if ($request->has('custom_name')) { $data['custom_name'] = $request->input('custom_name'); }
             if ($request->has('active')) { $data['active'] = $request->input('active'); }
+            // Validate that provided tax_id (if any) applies to items
+            if (array_key_exists('tax_id', $data) && !empty($data['tax_id'])) {
+                $tax = Tax::find($data['tax_id']);
+                if (!$tax) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 422,'message' => __('Invalid tax')
+                    ], 422);
+                }
+                if (!in_array($tax->applies_to ?? 'item', ['item','both'], true)) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 422,
+                        'message' => __('Selected tax does not apply to items')
+                    ], 422);
+                }
+            }
+
             $itemTransaction = $this->ItemTransactionRepo->update($itemTransaction, $data);
             $response = [
                 'status'  => 'OK',

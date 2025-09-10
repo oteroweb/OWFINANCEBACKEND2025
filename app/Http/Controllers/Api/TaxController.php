@@ -124,6 +124,7 @@ class TaxController extends Controller
         $validator = Validator::make($request->all(), [
             'name'    => 'required|max:35',
             'percent' => 'required|regex:/^[0-9]+(\.[0-9][0-9]?)?$/',
+            'applies_to' => 'sometimes|in:item,payment,both',
             'date'    => 'sometimes|date',
         ], $this->custom_message());
 
@@ -140,6 +141,7 @@ class TaxController extends Controller
             $data = [
                 'name'    => $request->input('name'),
                 'percent' => $request->input('percent'),
+                'applies_to' => $request->input('applies_to', 'item'),
                 'date'    => $request->input('date'),
             ];
             $tax = $this->TaxRepo->store($data);
@@ -179,6 +181,7 @@ class TaxController extends Controller
             $data = [];
             if ($request->input('name')) { $data['name'] = $request->input('name'); }
             if ($request->input('percent')) { $data['percent'] = $request->input('percent'); }
+            if ($request->has('applies_to')) { $data['applies_to'] = $request->input('applies_to'); }
             if ($request->input('date')) { $data['date'] = $request->input('date'); }
             if ($request->has('active')) { $data['active'] = $request->input('active'); }
             $tax = $this->TaxRepo->update($tax, $data);

@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             CategoryTemplateSeeder::class,
             ItemCategorySeeder::class,
             ItemTransactionSeeder::class,
+            ItemTaxSeeder::class,
             ItemSeeder::class,
             PaymentTransactionSeeder::class,
             PaymentTransactionTaxSeeder::class,

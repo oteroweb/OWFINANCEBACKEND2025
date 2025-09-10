@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\Entities\ItemTransaction;
 use App\Models\Entities\PaymentTransaction;
+use App\Models\Entities\Tax;
 
 class TransactionController extends Controller
 {
@@ -253,6 +254,17 @@ class TransactionController extends Controller
 
             // Create Item Transactions
             foreach ($items as $it) {
+                // applies_to validation for item taxes
+                if (!empty($it['tax_id'])) {
+                    $tax = Tax::find($it['tax_id']);
+                    if (!$tax || !in_array($tax->applies_to ?? 'item', ['item','both'], true)) {
+                        DB::rollBack();
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Selected tax does not apply to items')
+                        ], 422);
+                    }
+                }
                 $payload = [
                     'transaction_id' => $transaction->id,
                     'item_id' => $it['item_id'] ?? null,

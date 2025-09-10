@@ -11,10 +11,11 @@ class Tax extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name',
-        'percent',
-        'active',
-        'date',
+    'name',
+    'percent',
+    'applies_to', // item|payment|both
+    'active',
+    'date',
     ];
 
     protected $casts = [
