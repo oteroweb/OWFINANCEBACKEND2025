@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Repositories\PaymentTransactionTaxRepo;
 use App\Models\Entities\PaymentTransactionTax;
+use App\Models\Entities\Tax;
 
 class PaymentTransactionTaxController extends Controller
 {
@@ -58,6 +59,16 @@ class PaymentTransactionTaxController extends Controller
     }
     public function save(Request $request)
     {
+        // applies_to validation for payment taxes
+        if ($request->filled('tax_id')) {
+            $tax = Tax::find($request->input('tax_id'));
+            if (!$tax || !in_array($tax->applies_to ?? 'item', ['payment','both'], true)) {
+                return response()->json([
+                    'status' => 'FAILED','code' => 422,
+                    'message' => __('Selected tax does not apply to payments')
+                ], 422);
+            }
+        }
         $ptt = $this->repo->store($request->all());
         return response()->json([
             'status' => 'OK',
@@ -69,6 +80,15 @@ class PaymentTransactionTaxController extends Controller
     public function update(Request $request, $id)
     {
         $ptt = $this->repo->find($id);
+        if ($request->filled('tax_id')) {
+            $tax = Tax::find($request->input('tax_id'));
+            if (!$tax || !in_array($tax->applies_to ?? 'item', ['payment','both'], true)) {
+                return response()->json([
+                    'status' => 'FAILED','code' => 422,
+                    'message' => __('Selected tax does not apply to payments')
+                ], 422);
+            }
+        }
         $ptt = $this->repo->update($ptt, $request->all());
         return response()->json([
             'status' => 'OK',

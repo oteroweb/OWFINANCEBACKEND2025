@@ -116,6 +116,7 @@ erDiagram
     bigint id PK
     varchar name
     decimal percent
+    enum applies_to
     boolean active
     date date
     datetime created_at
@@ -137,6 +138,7 @@ erDiagram
   ITEM_CATEGORIES {
     bigint id PK
     varchar name
+  bigint parent_id FK
     boolean active
     date date
     datetime deleted_at
@@ -462,6 +464,7 @@ erDiagram
 
   TAXES ||--o{ ITEMS : taxed_by
   ITEM_CATEGORIES ||--o{ ITEMS : in_category
+  ITEM_CATEGORIES ||--o{ ITEM_CATEGORIES : parent_of
 
   CATEGORIES ||--o{ CATEGORIES : parent_of
   USERS ||--o{ CATEGORIES : owned_by_user

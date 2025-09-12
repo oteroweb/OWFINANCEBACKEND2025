@@ -74,10 +74,30 @@ class AccountRepo
         // Pagination
         if (!empty($params['page'])) {
             $perPage = $params['per_page'] ?? 15;
-            return $query->paginate($perPage);
+            $result = $query->paginate($perPage);
+            foreach ($result as $account) {
+                $account->balance_calculado = $this->calculateBalance($account->id);
+            }
+            return $result;
         }
 
-        return $query->get();
+        $accounts = $query->get();
+        foreach ($accounts as $account) {
+            $account->balance_calculado = $this->calculateBalance($account->id);
+        }
+        return $accounts;
+    }
+
+    /**
+     * Suma todas las transacciones activas asociadas a la cuenta para calcular el balance.
+     */
+    public function calculateBalance($accountId)
+    {
+        // Suma los montos de transacciones activas (active=1) asociadas a la cuenta
+        return (float) \App\Models\Entities\Transaction::where('account_id', $accountId)
+            ->where('active', 1)
+            ->where('include_in_balance', 1)
+            ->sum('amount');
     }
 
     public function allActive(array $params = [])
@@ -131,9 +151,17 @@ class AccountRepo
         $query->orderBy($sortBy, $descending ? 'desc' : 'asc');
         if (!empty($params['page'])) {
             $perPage = $params['per_page'] ?? 15;
-            return $query->paginate($perPage);
+            $result = $query->paginate($perPage);
+            foreach ($result as $account) {
+                $account->balance_calculado = $this->calculateBalance($account->id);
+            }
+            return $result;
         }
-        return $query->get();
+        $accounts = $query->get();
+        foreach ($accounts as $account) {
+            $account->balance_calculado = $this->calculateBalance($account->id);
+        }
+        return $accounts;
     }
 
     public function find($id)
