@@ -4,7 +4,7 @@
   use App\Http\Controllers\Api\TransactionController;
 
   Route::group([
-    'middleware' => ['api'],
+    'middleware' => ['api', 'auth:sanctum'],
     'prefix'     => 'transactions',
 ], function () {
   //Transaction ROUTES

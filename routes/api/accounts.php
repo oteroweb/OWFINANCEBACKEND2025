@@ -24,6 +24,8 @@ Route::group([
     Route::get('/tree', [AccountController::class, 'tree']);
     Route::get('/folders/tree', [\App\Http\Controllers\Api\AccountFolderController::class, 'tree']);
     Route::patch('/{id}/status', [AccountController::class, 'change_status']);
+    // Adjust account balance
+    Route::post('/{id}/adjust-balance', [AccountController::class, 'adjustBalance']);
     Route::put('/{id}', [AccountController::class, 'update']);
     Route::delete('/{id}', [AccountController::class, 'delete']);
     Route::get('/{id}', [AccountController::class, 'find']);

@@ -117,7 +117,7 @@ class AccountController extends Controller
      */
     public function save(Request $request)
     {
-    $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => 'required|max:35',
             'currency_id' => 'required|exists:currencies,id',
             'initial' => 'required|numeric',
@@ -205,6 +205,89 @@ class AccountController extends Controller
             'message' => __('Account does not exist') . '.',
         ];
         return response()->json($response, 404);
+    }
+
+    /**
+     * @group Account
+     * Adjust account balance by creating an adjustment transaction
+     * @urlParam id integer required The ID of the account. Example: 1
+     * @bodyParam target_balance number required The desired balance. Example: 1000.00
+     * @bodyParam include_in_balance boolean required Whether to include the adjustment in balance. Example: true
+     * @bodyParam description string optional Description for the adjustment. Example: "Ajuste manual"
+     */
+    public function adjustBalance(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'target_balance' => 'required|numeric',
+            'include_in_balance' => 'required|boolean',
+            'description' => 'nullable|string|max:255',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 400,
+                'message' => __('Incorrect Params'),
+                'data' => $validator->errors()->getMessages(),
+            ], 400);
+        }
+
+        $account = $this->accountRepo->find($id);
+        if (!$account) {
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 404,
+                'message' => __('Account not found'),
+            ], 404);
+        }
+
+        $currentBalance = $this->accountRepo->calculateBalance($account->id);
+        $targetBalance = (float) $request->input('target_balance');
+        $diff = round($targetBalance - $currentBalance, 2);
+        if (abs($diff) < 0.01) {
+            return response()->json([
+                'status' => 'OK',
+                'code' => 200,
+                'message' => __('No adjustment needed'),
+                'data' => [
+                    'account' => $account,
+                    'current_balance' => $currentBalance,
+                    'target_balance' => $targetBalance,
+                    'adjustment' => 0,
+                ],
+            ], 200);
+        }
+
+        // Get transaction_type_id for "ajuste"
+        $ajusteType = DB::table('transaction_types')->where('slug', 'ajuste')->first();
+        $transactionTypeId = $ajusteType ? $ajusteType->id : null;
+
+        $txn = new \App\Models\Entities\Transaction();
+        $txn->name = 'Ajuste de saldo';
+        $txn->amount = $diff;
+        $txn->description = $request->input('description') ?? 'Ajuste manual de saldo';
+        $txn->date = now();
+        $txn->active = 1;
+        $txn->account_id = $account->id;
+        $txn->user_id = $request->user() ? $request->user()->id : null;
+        $txn->transaction_type_id = $transactionTypeId;
+        $txn->amount_tax = 0;
+        $txn->include_in_balance = $request->boolean('include_in_balance');
+        $txn->save();
+
+        $newBalance = $this->accountRepo->calculateBalance($account->id);
+        $account->balance_calculado = $newBalance;
+
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => __('Balance adjusted'),
+            'data' => [
+                'account' => $account,
+                'adjustment_transaction' => $txn,
+                'previous_balance' => $currentBalance,
+                'new_balance' => $newBalance,
+            ],
+        ], 200);
     }
 
     /**

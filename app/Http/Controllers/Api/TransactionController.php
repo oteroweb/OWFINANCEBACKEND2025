@@ -157,9 +157,10 @@ class TransactionController extends Controller
             'items.*.user_id' => 'nullable|exists:users,id',
             'items.*.custom_name' => 'nullable|string|max:150',
             // Payments
-            'payments' => 'required|array|min:1',
-            'payments.*.account_id' => 'required|exists:accounts,id',
-            'payments.*.amount' => 'required|numeric|min:0',
+            'payments' => 'nullable|array|min:1',
+            'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
+            'payments.*.amount' => 'required_with:payments|numeric',
+            'payments.*.rate' => 'nullable|numeric',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -171,8 +172,44 @@ class TransactionController extends Controller
             return response()->json($response);
         }
         try {
+            // Authenticated user (via Sanctum). Required to bind ownership and authorize accounts.
+            $user = $request->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'FAILED', 'code' => 401,
+                    'message' => __('Unauthenticated')
+                ], 401);
+            }
+
             $items = $request->input('items', []);
             $payments = $request->input('payments', []);
+
+            // Authorization: ensure the user can operate on the target account(s)
+            $accountsToCheck = [];
+            if (!empty($payments)) {
+                foreach ($payments as $pm) {
+                    if (isset($pm['account_id'])) {
+                        $accountsToCheck[] = (int) $pm['account_id'];
+                    }
+                }
+            } elseif ($request->filled('account_id')) {
+                $accountsToCheck[] = (int) $request->input('account_id');
+            }
+            $accountsToCheck = array_values(array_unique(array_filter($accountsToCheck)));
+            if (!empty($accountsToCheck) && !$user->isAdmin()) {
+                $allowed = $user->accounts()
+                    ->whereIn('accounts.id', $accountsToCheck)
+                    ->pluck('accounts.id')
+                    ->all();
+                $denied = array_values(array_diff($accountsToCheck, $allowed));
+                if (!empty($denied)) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 403,
+                        'message' => __('You do not have permission to operate on one or more accounts'),
+                        'data' => ['denied_account_ids' => $denied]
+                    ], 403);
+                }
+            }
 
             // Derive transaction amount from items if provided
             $derivedAmount = null;
@@ -195,15 +232,15 @@ class TransactionController extends Controller
                     'message' => __('Amount is required when items are not provided'),
                 ], 422);
             }
-            // If both provided amount and derived amount exist, they must match
+            // If both provided amount and derived amount exist, they must match (compare absolute to support negative expenses)
             if (!empty($items) && $providedAmount !== null && $derivedAmount !== null) {
-                if (abs((float)$providedAmount - (float)$derivedAmount) > 0.01) {
+                if (abs(abs((float)$providedAmount) - (float)$derivedAmount) > 0.01) {
                     return response()->json([
                         'status' => 'FAILED',
                         'code' => 422,
                         'message' => __('Provided amount must equal items total'),
                         'data' => [
-                            'provided_amount' => round((float)$providedAmount, 2),
+                            'provided_amount' => round(abs((float)$providedAmount), 2),
                             'items_total' => $derivedAmount,
                         ],
                     ], 422);
@@ -222,28 +259,45 @@ class TransactionController extends Controller
                 'transaction_type_id'=> $request->input('transaction_type_id'),
                 'amount_tax'=> $request->input('amount_tax'),
                 'account_id'=> $request->input('account_id'),
-                'user_id'=> $request->input('user_id'),
+                'user_id'=> $user->id,
             ];
             if ($request->exists('active')) {
                 $data['active'] = $request->boolean('active');
             }
 
-            // If payments are provided, validate that their sum equals the transaction amount (with 2-decimal tolerance)
+            // If payments are provided, validate that their sum equals the transaction amount using currency conversion
             if (!empty($payments)) {
-                $paymentsSum = 0.0;
+                $sumUser = 0.0;
+                $hasPos = false; $hasNeg = false;
                 foreach ($payments as $pm) {
-                    $paymentsSum += isset($pm['amount']) ? (float) $pm['amount'] : 0.0;
+                    $accAmt = isset($pm['amount']) ? (float) $pm['amount'] : 0.0;
+                    $rate = isset($pm['rate']) ? (float) $pm['rate'] : 1.0;
+                    if ($rate === 0.0) {
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Rate cannot be zero in payments')
+                        ], 422);
+                    }
+                    $userAmt = $accAmt / $rate; // User→Account conversion inverted
+                    $sumUser += $userAmt;
+                    if ($accAmt > 0) $hasPos = true;
+                    if ($accAmt < 0) $hasNeg = true;
                 }
-                $paymentsSum = round($paymentsSum, 2);
+                $sumUser = round($sumUser, 2);
                 $finalAmount = isset($data['amount']) ? round((float) $data['amount'], 2) : 0.0;
-                if (abs($paymentsSum - $finalAmount) > 0.01) {
+
+                $netMatches = abs($sumUser - $finalAmount) <= 0.01;
+                $absMatches = abs(abs($sumUser) - abs($finalAmount)) <= 0.01;
+
+                // For mixed-sign (e.g., transfer), require net match; otherwise allow absolute match (advanced payments for income/expense)
+                $valid = $hasPos && $hasNeg ? $netMatches : $absMatches;
+                if (!$valid) {
                     return response()->json([
-                        'status' => 'FAILED',
-                        'code' => 422,
+                        'status' => 'FAILED', 'code' => 422,
                         'message' => __('Payments total must equal transaction amount'),
                         'data' => [
                             'amount' => $finalAmount,
-                            'payments_sum' => $paymentsSum,
+                            'payments_sum_user' => $sumUser,
                         ],
                     ], 422);
                 }
