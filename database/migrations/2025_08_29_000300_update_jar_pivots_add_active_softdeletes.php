@@ -15,6 +15,12 @@ return new class extends Migration
             if (!Schema::hasColumn('jar_category', 'deleted_at')) {
                 $table->softDeletes();
             }
+            // IMPORTANT: Before dropping the composite unique, ensure FKs have their own supporting indexes.
+            // MySQL requires an index on FK columns; the old UNIQUE(jar_id,category_id) satisfied it via leftmost prefix.
+            // If we drop it without creating replacement indexes, MySQL will error 1553.
+            try { $table->index('jar_id', 'idx_jar_category_jar_id'); } catch (\Throwable $e) { /* ignore duplicate/driver errors */ }
+            try { $table->index('category_id', 'idx_jar_category_category_id'); } catch (\Throwable $e) { /* ignore */ }
+
             // Drop old unique and add a new composite unique including deleted_at so soft-deleted rows don't block reattach
             try {
                 $table->dropUnique('jar_category_jar_id_category_id_unique');
@@ -32,6 +38,9 @@ return new class extends Migration
             if (!Schema::hasColumn('jar_base_category', 'deleted_at')) {
                 $table->softDeletes();
             }
+            // Ensure FK supporting indexes before dropping composite unique
+            try { $table->index('jar_id', 'idx_jar_base_category_jar_id'); } catch (\Throwable $e) { /* ignore */ }
+            try { $table->index('category_id', 'idx_jar_base_category_category_id'); } catch (\Throwable $e) { /* ignore */ }
             try {
                 $table->dropUnique('jar_base_category_jar_id_category_id_unique');
             } catch (\Throwable $e) {
@@ -51,6 +60,13 @@ return new class extends Migration
                 $table->dropSoftDeletes();
             }
             // restore original unique if needed
+            try {
+                // drop helper indexes if present
+                $table->dropIndex('idx_jar_category_jar_id');
+            } catch (\Throwable $e) { /* ignore */ }
+            try {
+                $table->dropIndex('idx_jar_category_category_id');
+            } catch (\Throwable $e) { /* ignore */ }
             $table->unique(['jar_id', 'category_id']);
         });
 
@@ -61,6 +77,8 @@ return new class extends Migration
             if (Schema::hasColumn('jar_base_category', 'deleted_at')) {
                 $table->dropSoftDeletes();
             }
+            try { $table->dropIndex('idx_jar_base_category_jar_id'); } catch (\Throwable $e) { /* ignore */ }
+            try { $table->dropIndex('idx_jar_base_category_category_id'); } catch (\Throwable $e) { /* ignore */ }
             $table->unique(['jar_id', 'category_id']);
         });
     }
