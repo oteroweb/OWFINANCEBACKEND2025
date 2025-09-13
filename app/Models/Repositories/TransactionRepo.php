@@ -15,10 +15,23 @@ class TransactionRepo {
      * @param bool $descending
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function all($params = [])
+    public function all($params = [], $authUser = null)
     {
         $query = Transaction::whereIn('active', [1,0])
             ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
+
+        // Restricción por usuario autenticado (no admin)
+        if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin()) {
+            $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
+            if (!empty($allowedAccountIds)) {
+                $query->whereIn('account_id', $allowedAccountIds);
+            } else {
+                // No cuentas asociadas => forzar resultado vacío
+                $query->whereRaw('1=0');
+            }
+            // Excluir transacciones sin usuario asignado
+            $query->whereNotNull('user_id');
+        }
 
         // Apply filters
         if (!empty($params['provider_id'])) {
@@ -54,8 +67,94 @@ class TransactionRepo {
             }
         }
 
-        // date_from & date_to filters
-        if (!empty($params['date_from']) || !empty($params['date_to'])) {
+        // account_ids (lista separada por comas) y transaction_ids
+        if (!empty($params['account_ids'])) {
+            $ids = is_array($params['account_ids']) ? $params['account_ids'] : explode(',', $params['account_ids']);
+            $ids = array_filter(array_map('trim', $ids));
+            if (!empty($ids)) {
+                $query->whereIn('account_id', $ids);
+            }
+        }
+        if (!empty($params['transaction_ids'])) {
+            $tids = is_array($params['transaction_ids']) ? $params['transaction_ids'] : explode(',', $params['transaction_ids']);
+            $tids = array_filter(array_map('trim', $tids));
+            if (!empty($tids)) {
+                $query->whereIn('id', $tids);
+            }
+        }
+
+        // period based filters (overrides explicit date_from/date_to if provided period_type)
+        $periodApplied = false;
+        if (!empty($params['period_type'])) {
+            $year = !empty($params['year']) ? (int)$params['year'] : Carbon::now()->year;
+            switch ($params['period_type']) {
+                case 'month':
+                    if (!empty($params['month'])) {
+                        $month = (int)$params['month'];
+                        $from = Carbon::create($year, $month, 1)->startOfDay();
+                        $to   = (clone $from)->endOfMonth();
+                        $query->whereBetween('date', [$from, $to]);
+                        $periodApplied = true;
+                    }
+                    break;
+                case 'quarter':
+                    if (!empty($params['quarter'])) {
+                        $q = (int)$params['quarter'];
+                        if ($q >=1 && $q <=4) {
+                            $startMonth = ($q - 1) * 3 + 1; // 1,4,7,10
+                            $from = Carbon::create($year, $startMonth, 1)->startOfDay();
+                            $to = (clone $from)->addMonths(2)->endOfMonth();
+                            $query->whereBetween('date', [$from, $to]);
+                            $periodApplied = true;
+                        }
+                    }
+                    break;
+                case 'semester':
+                    if (!empty($params['semester'])) {
+                        $s = (int)$params['semester'];
+                        if ($s === 1 || $s === 2) {
+                            $startMonth = $s === 1 ? 1 : 7;
+                            $from = Carbon::create($year, $startMonth, 1)->startOfDay();
+                            $to = (clone $from)->addMonths(5)->endOfMonth();
+                            $query->whereBetween('date', [$from, $to]);
+                            $periodApplied = true;
+                        }
+                    }
+                    break;
+                case 'year':
+                    $from = Carbon::create($year, 1, 1)->startOfDay();
+                    $to   = Carbon::create($year, 12, 31)->endOfDay();
+                    $query->whereBetween('date', [$from, $to]);
+                    $periodApplied = true;
+                    break;
+                case 'week':
+                    // week param (ISO week number 1..53) or derive current week if none
+                    $week = !empty($params['week']) ? (int)$params['week'] : (int)Carbon::now()->isoWeek();
+                    $from = Carbon::now()->setISODate($year, $week)->startOfWeek();
+                    $to = (clone $from)->endOfWeek();
+                    $query->whereBetween('date', [$from, $to]);
+                    $periodApplied = true;
+                    break;
+                case 'fortnight':
+                    // fortnight: 1 or 2 within a given month/year OR compute from provided month+fortnight
+                    // Expect month and fortnight (1 or 2). If not provided, default to current month & fortnight.
+                    $month = !empty($params['month']) ? (int)$params['month'] : Carbon::now()->month;
+                    $fn = !empty($params['fortnight']) ? (int)$params['fortnight'] : (Carbon::now()->day <=15 ? 1 : 2);
+                    if ($fn === 1) {
+                        $from = Carbon::create($year, $month, 1)->startOfDay();
+                        $to = Carbon::create($year, $month, 15)->endOfDay();
+                    } else {
+                        $from = Carbon::create($year, $month, 16)->startOfDay();
+                        $to = Carbon::create($year, $month, 1)->endOfMonth()->endOfDay();
+                    }
+                    $query->whereBetween('date', [$from, $to]);
+                    $periodApplied = true;
+                    break;
+            }
+        }
+
+        // date_from & date_to filters (only if no periodApplied)
+        if (!$periodApplied && (!empty($params['date_from']) || !empty($params['date_to']))) {
             $from = !empty($params['date_from'])
                 ? Carbon::parse(str_replace('T', ' ', $params['date_from']))->toDateTimeString()
                 : null;
@@ -99,10 +198,20 @@ class TransactionRepo {
      * @param bool $descending
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function allActive($params = [])
+    public function allActive($params = [], $authUser = null)
     {
         $query = Transaction::where('active',1)
             ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
+
+        if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin()) {
+            $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
+            if (!empty($allowedAccountIds)) {
+                $query->whereIn('account_id', $allowedAccountIds);
+            } else {
+                $query->whereRaw('1=0');
+            }
+            $query->whereNotNull('user_id');
+        }
 
         // Apply filters
         if (!empty($params['provider_id'])) {
@@ -130,15 +239,96 @@ class TransactionRepo {
             }
         }
 
-        // date_from & date_to filters
-        if (!empty($params['date_from']) || !empty($params['date_to'])) {
+        // account_ids y transaction_ids
+        if (!empty($params['account_ids'])) {
+            $ids = is_array($params['account_ids']) ? $params['account_ids'] : explode(',', $params['account_ids']);
+            $ids = array_filter(array_map('trim', $ids));
+            if (!empty($ids)) {
+                $query->whereIn('account_id', $ids);
+            }
+        }
+        if (!empty($params['transaction_ids'])) {
+            $tids = is_array($params['transaction_ids']) ? $params['transaction_ids'] : explode(',', $params['transaction_ids']);
+            $tids = array_filter(array_map('trim', $tids));
+            if (!empty($tids)) {
+                $query->whereIn('id', $tids);
+            }
+        }
+
+        // period based filters
+        $periodApplied = false;
+        if (!empty($params['period_type'])) {
+            $year = !empty($params['year']) ? (int)$params['year'] : Carbon::now()->year;
+            switch ($params['period_type']) {
+                case 'month':
+                    if (!empty($params['month'])) {
+                        $month = (int)$params['month'];
+                        $from = Carbon::create($year, $month, 1)->startOfDay();
+                        $to   = (clone $from)->endOfMonth();
+                        $query->whereBetween('date', [$from, $to]);
+                        $periodApplied = true;
+                    }
+                    break;
+                case 'quarter':
+                    if (!empty($params['quarter'])) {
+                        $q = (int)$params['quarter'];
+                        if ($q >=1 && $q <=4) {
+                            $startMonth = ($q - 1) * 3 + 1;
+                            $from = Carbon::create($year, $startMonth, 1)->startOfDay();
+                            $to = (clone $from)->addMonths(2)->endOfMonth();
+                            $query->whereBetween('date', [$from, $to]);
+                            $periodApplied = true;
+                        }
+                    }
+                    break;
+                case 'semester':
+                    if (!empty($params['semester'])) {
+                        $s = (int)$params['semester'];
+                        if ($s === 1 || $s === 2) {
+                            $startMonth = $s === 1 ? 1 : 7;
+                            $from = Carbon::create($year, $startMonth, 1)->startOfDay();
+                            $to = (clone $from)->addMonths(5)->endOfMonth();
+                            $query->whereBetween('date', [$from, $to]);
+                            $periodApplied = true;
+                        }
+                    }
+                    break;
+                case 'year':
+                    $from = Carbon::create($year, 1, 1)->startOfDay();
+                    $to   = Carbon::create($year, 12, 31)->endOfDay();
+                    $query->whereBetween('date', [$from, $to]);
+                    $periodApplied = true;
+                    break;
+                case 'week':
+                    $week = !empty($params['week']) ? (int)$params['week'] : (int)Carbon::now()->isoWeek();
+                    $from = Carbon::now()->setISODate($year, $week)->startOfWeek();
+                    $to = (clone $from)->endOfWeek();
+                    $query->whereBetween('date', [$from, $to]);
+                    $periodApplied = true;
+                    break;
+                case 'fortnight':
+                    $month = !empty($params['month']) ? (int)$params['month'] : Carbon::now()->month;
+                    $fn = !empty($params['fortnight']) ? (int)$params['fortnight'] : (Carbon::now()->day <=15 ? 1 : 2);
+                    if ($fn === 1) {
+                        $from = Carbon::create($year, $month, 1)->startOfDay();
+                        $to = Carbon::create($year, $month, 15)->endOfDay();
+                    } else {
+                        $from = Carbon::create($year, $month, 16)->startOfDay();
+                        $to = Carbon::create($year, $month, 1)->endOfMonth()->endOfDay();
+                    }
+                    $query->whereBetween('date', [$from, $to]);
+                    $periodApplied = true;
+                    break;
+            }
+        }
+
+        if (!$periodApplied && (!empty($params['date_from']) || !empty($params['date_to']))) {
             $from = !empty($params['date_from'])
                 ? Carbon::parse(str_replace('T', ' ', $params['date_from']))->toDateTimeString()
                 : null;
             $to   = !empty($params['date_to'])
                 ? Carbon::parse(str_replace('T', ' ', $params['date_to']))->endOfMinute()->toDateTimeString()
                 : null;
-
             if ($from && $to) {
                 $query->whereBetween('date', [$from, $to]);
             } elseif ($from) {

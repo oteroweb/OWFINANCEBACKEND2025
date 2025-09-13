@@ -29,9 +29,24 @@ class TransactionController extends Controller
             // Collect pagination, sorting, search and filter parameters
             $params = $request->only([
                 'page', 'per_page', 'sort_by', 'descending',
-                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'date_from', 'date_to'
+                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'date_from', 'date_to',
+                // nuevos filtros
+                'account_ids', 'transaction_ids',
+                // periodos (extendidos)
+                'period_type', 'month', 'quarter', 'semester', 'year', 'week', 'fortnight'
             ]);
-            $transaction = $this->transactionRepo->all($params);
+            $authUser = $request->user();
+            if ($authUser && !$authUser->isAdmin()) {
+                unset($params['user_id']);
+                $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
+                if (!empty($params['account_ids'])) {
+                    $incoming = is_array($params['account_ids']) ? $params['account_ids'] : explode(',', $params['account_ids']);
+                    $incoming = array_filter(array_map('trim', $incoming));
+                    $filtered = array_values(array_intersect($incoming, $allowedAccountIds));
+                    $params['account_ids'] = $filtered; // si queda vacío no retornará nada
+                }
+            }
+            $transaction = $this->transactionRepo->all($params, $authUser);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -62,7 +77,18 @@ class TransactionController extends Controller
                 'page', 'per_page', 'sort_by', 'descending',
                 'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id'
             ]);
-            $transaction = $this->transactionRepo->allActive($params);
+            $authUser = $request->user();
+            if ($authUser && !$authUser->isAdmin()) {
+                unset($params['user_id']);
+                $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
+                if (!empty($params['account_ids'])) {
+                    $incoming = is_array($params['account_ids']) ? $params['account_ids'] : explode(',', $params['account_ids']);
+                    $incoming = array_filter(array_map('trim', $incoming));
+                    $filtered = array_values(array_intersect($incoming, $allowedAccountIds));
+                    $params['account_ids'] = $filtered;
+                }
+            }
+            $transaction = $this->transactionRepo->allActive($params, $authUser);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,

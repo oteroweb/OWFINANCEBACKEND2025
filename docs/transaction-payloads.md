@@ -211,3 +211,72 @@ Respuesta (200)
 Notas
 - Si la diferencia es menor a 0.01, responde 200 con "No adjustment needed" y sin crear transacción.
 - include_in_balance controla si el ajuste se refleja en el cálculo del balance en tiempo real.
+
+---
+
+## Ejemplos de filtros (GET) con periodos y múltiples cuentas
+
+Base: `GET /api/v1/transactions`
+
+Parámetros existentes que puedes combinar:
+- page, per_page, sort_by, descending
+- search
+- provider_id, rate_id, user_id, account_id
+- account_ids (CSV) ej: `account_ids=27,23,25`
+- transaction_ids (CSV) ej: `transaction_ids=10,12`
+- transaction_type_id | transaction_type (slug)
+- date_from, date_to (rango directo)
+- period_type, month, quarter, semester, year (si configurado en backend)
+
+Reglas:
+- Si usas `period_type` se ignoran `date_from` y `date_to`.
+- `account_ids` filtra por varias cuentas (CSV). 
+
+### 1. Mes específico varias cuentas
+`/api/v1/transactions?page=1&per_page=10&sort_by=date&descending=true&user_id=4&account_ids=27,23,25,17,22&period_type=month&month=8&year=2025`
+
+### 2. Trimestre con tipo y búsqueda
+`/api/v1/transactions?quarter=2&period_type=quarter&year=2025&transaction_type_id=4&search=invoice&account_ids=27,23`
+
+### 3. Semestre + conjunto de transacciones concreto
+`/api/v1/transactions?period_type=semester&semester=1&year=2025&transaction_ids=15,19,33&account_ids=27,23,25`
+
+### 4. Año completo paginado
+`/api/v1/transactions?period_type=year&year=2025&page=1&per_page=50&account_ids=27,23,25`
+
+### 5. Rango manual sin period_type
+`/api/v1/transactions?date_from=2025-08-01 00:00:00&date_to=2025-08-31 23:59:59&account_ids=27,23,25`
+
+### 6. Orden por amount ascendente con búsqueda
+`/api/v1/transactions?search=provider x&date_from=2025-07-01 00:00:00&date_to=2025-07-31 23:59:59&sort_by=amount&descending=false&account_ids=27,23`
+
+### 7. Filtrar por slug de tipo
+`/api/v1/transactions?transaction_type=venta&period_type=month&month=9&year=2025&account_ids=27,23,25`
+
+### 8. Año + intersección account_id y account_ids (si ambos aplican)
+`/api/v1/transactions?period_type=year&year=2025&account_id=27&account_ids=27,23,25`
+
+### 9. Quarter + orden descendente por fecha
+`/api/v1/transactions?period_type=quarter&quarter=3&year=2025&sort_by=date&descending=true&account_ids=27,23,25,17,22`
+
+### 10. Semana ISO (week)
+`/api/v1/transactions?period_type=week&week=37&year=2025&account_ids=27,23`
+
+### 11. Quincena 1 de Septiembre 2025
+`/api/v1/transactions?period_type=fortnight&fortnight=1&month=9&year=2025&account_ids=27,23,25`
+
+### 12. Quincena 2 (segunda mitad) con búsqueda
+`/api/v1/transactions?period_type=fortnight&fortnight=2&month=9&year=2025&search=venta&account_ids=27,23`
+
+Notas extra periodos:
+- week usa semana ISO (startOfWeek lunes). Si no pasas week toma la semana actual.
+- fortnight (quincena): requiere month y `fortnight=1` (1-15) o `fortnight=2` (16-fin de mes). Si no pasas fortnight se asume según el día actual.
+- month/quarter/semester/year siguen la precedencia habitual: al usar `period_type` se ignoran `date_from` y `date_to`.
+
+### 10. Semestre + búsqueda parcial
+`/api/v1/transactions?period_type=semester&semester=2&year=2025&search=cliente&account_ids=27,23`
+
+Notas:
+- `descending=true` o `false` (también acepta 1/0).
+- Formato de fechas: `YYYY-MM-DD HH:mm:ss`.
+- Si envías `transaction_type_id` y `transaction_type`, prevalece el ID.
