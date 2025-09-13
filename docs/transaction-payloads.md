@@ -9,11 +9,31 @@ Resumen rápido:
 - payments[].amount: en moneda de la cuenta; payments[].rate = User→Account; conversión: userAmount = accountAmount / rate
 - amount_tax: 0 (impuestos por línea o por pago, si se envían)
 - items[].tax_id aplica a “item|both”; payments[].tax_id aplica a “payment|both”
+- include_in_balance (boolean, default true): Controla si la transacción afecta el balance calculado y el balance_cached.
+
+## Balance y modos de cálculo
+
+El sistema soporta 3 enfoques simultáneos:
+1. On-demand: `calculateBalance(account_id)` (suma transacciones activas con include_in_balance=1).
+2. Caché persistente: columna `accounts.balance_cached` actualizada por observer de transacciones (creación, actualización, borrado/restauración) aplicando deltas.
+3. Incremental por delta: se calcula la diferencia exacta según cambios (monto, active, include_in_balance, account_id) sin recalcular toda la suma.
+
+Endpoints relevantes:
+- POST `/api/v1/accounts/{id}/adjust-balance`: Crea transacción de ajuste (amount = diferencia). Puedes decidir si el ajuste entra al balance con `include_in_balance`.
+- POST `/api/v1/accounts/{id}/recalc-balance`: Fuerza recomputar balance_cached desde cero (útil si hubo operaciones manuales masivas).
+
+Campo en transacciones:
+- `include_in_balance`: Si false, la transacción se excluye del cálculo de balance (on-demand y caché). Útil para transferencias internas, ajustes informativos, etc.
+
+Notas de integridad:
+- Si cambias manualmente transacciones históricas por script, ejecuta luego `/recalc-balance` para sincronizar caché.
+- Los montos deben venir ya con su signo correcto desde el frontend (ej: egreso negativo, ingreso positivo, transfer destino positivo / origen negativo en payments).
 
 ## Campos comunes
 
 - name: string
 - amount: number (Ingreso + | Egreso - | Transfer +)
+  - Signo gestionado por frontend según tipo; backend no infiere.
 - amount_tax: 0
 - date: 'YYYY-MM-DD HH:mm:ss'
 - provider_id: number|null
@@ -230,7 +250,7 @@ Parámetros existentes que puedes combinar:
 
 Reglas:
 - Si usas `period_type` se ignoran `date_from` y `date_to`.
-- `account_ids` filtra por varias cuentas (CSV). 
+- `account_ids` filtra por varias cuentas (CSV).
 
 ### 1. Mes específico varias cuentas
 `/api/v1/transactions?page=1&per_page=10&sort_by=date&descending=true&user_id=4&account_ids=27,23,25,17,22&period_type=month&month=8&year=2025`

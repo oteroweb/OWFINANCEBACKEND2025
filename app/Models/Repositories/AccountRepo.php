@@ -83,7 +83,8 @@ class AccountRepo
 
         $accounts = $query->get();
         foreach ($accounts as $account) {
-            $account->balance_calculado = $this->calculateBalance($account->id);
+            // Si existe balance_cached usarlo, sino calcular on-demand
+            $account->balance_calculado = $account->balance_cached ?? $this->calculateBalance($account->id);
         }
         return $accounts;
     }
@@ -98,6 +99,16 @@ class AccountRepo
             ->where('active', 1)
             ->where('include_in_balance', 1)
             ->sum('amount');
+    }
+
+    /**
+     * Recalcula y persiste balance_cached.
+     */
+    public function recalcAndStore($accountId): float
+    {
+        $value = $this->calculateBalance($accountId);
+        Account::where('id', $accountId)->update(['balance_cached' => $value]);
+        return $value;
     }
 
     public function allActive(array $params = [])

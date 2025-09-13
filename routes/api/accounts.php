@@ -26,6 +26,8 @@ Route::group([
     Route::patch('/{id}/status', [AccountController::class, 'change_status']);
     // Adjust account balance
     Route::post('/{id}/adjust-balance', [AccountController::class, 'adjustBalance']);
+    // Force recalculation of cached balance
+    Route::post('/{id}/recalc-balance', [AccountController::class, 'recalcBalance']);
     Route::put('/{id}', [AccountController::class, 'update']);
     Route::delete('/{id}', [AccountController::class, 'delete']);
     Route::get('/{id}', [AccountController::class, 'find']);

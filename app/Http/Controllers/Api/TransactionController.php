@@ -168,6 +168,7 @@ class TransactionController extends Controller
             'transaction_type_id' => 'nullable|exists:transaction_types,id',
             'amount_tax' => 'nullable|numeric',
             'active' => 'sometimes|boolean',
+            'include_in_balance' => 'sometimes|boolean',
             // Nested: items and payments
             'items' => 'nullable|array',
             'items.*.item_id' => 'nullable|exists:items,id',
@@ -330,6 +331,9 @@ class TransactionController extends Controller
             }
 
             DB::beginTransaction();
+            if ($request->has('include_in_balance')) {
+                $data['include_in_balance'] = $request->boolean('include_in_balance');
+            }
             $transaction= $this->transactionRepo->store($data);
 
             // Create Item Transactions
@@ -420,6 +424,7 @@ class TransactionController extends Controller
             if ($request->has('account_id')) { $data['account_id'] = $request->input('account_id'); }
             if ($request->has('user_id')) { $data['user_id'] = $request->input('user_id'); }
             if ($request->exists('active')) { $data['active'] = $request->boolean('active'); }
+            if ($request->exists('include_in_balance')) { $data['include_in_balance'] = $request->boolean('include_in_balance'); }
             $transaction = $this->transactionRepo->update($transaction, $data);
             $response = [
                 'status'  => 'OK',

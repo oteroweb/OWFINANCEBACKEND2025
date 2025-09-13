@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Models\User;
 use App\Services\CategoryTreeInitializer;
+use App\Models\Entities\Transaction;
+use App\Observers\TransactionObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
                 logger()->error($e);
             }
         });
+
+    // Observers
+    Transaction::observe(TransactionObserver::class);
 
     }
 }

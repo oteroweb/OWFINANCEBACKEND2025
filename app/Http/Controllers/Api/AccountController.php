@@ -292,6 +292,27 @@ class AccountController extends Controller
 
     /**
      * @group Account
+     * Post
+     * @urlParam id integer required The ID of the account. Example: 1
+     * Force recalculation of cached balance from all active + include_in_balance transactions.
+     */
+    public function recalcBalance($id)
+    {
+        $account = $this->accountRepo->find($id);
+        if (!$account) {
+            return response()->json([
+                'status' => 'FAILED','code'=>404,'message'=>__('Account not found')
+            ],404);
+        }
+        $value = $this->accountRepo->recalcAndStore($account->id);
+        $account->balance_calculado = $value;
+        return response()->json([
+            'status'=>'OK','code'=>200,'message'=>__('Balance recalculated'),'data'=>$account
+        ],200);
+    }
+
+    /**
+     * @group Account
      * Delete an account
      * @urlParam id integer required The ID of the account. Example: 1
      */

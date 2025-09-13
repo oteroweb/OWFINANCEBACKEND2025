@@ -31,6 +31,7 @@ class Transaction extends Model
         'user_id',
         'account_id',
         'amount_tax',
+    'include_in_balance',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class Transaction extends Model
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',
         'date'       => 'datetime:Y-m-d H:i:s',
+    'include_in_balance' => 'boolean',
     ];
 
     public function provider()

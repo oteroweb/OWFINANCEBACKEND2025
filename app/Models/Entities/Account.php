@@ -18,10 +18,16 @@ class Account extends Model
     'balance',
         'account_type_id',
         'active',
+    'balance_cached',
     ];
 
     protected $hidden = [
         'pivot',
+    ];
+
+    protected $casts = [
+        'balance_cached' => 'decimal:2',
+        'initial' => 'decimal:2',
     ];
 
     public function currency()
