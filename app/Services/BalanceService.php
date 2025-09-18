@@ -17,7 +17,11 @@ class BalanceService
             ->where('active', 1)
             ->where('include_in_balance', 1)
             ->sum('amount');
-        Account::where('id', $accountId)->update(['balance_cached' => $sum]);
+        Account::where('id', $accountId)->update([
+            'balance_cached' => $sum,
+            // Mantener balance tradicional sincronizado para compatibilidad
+            'balance' => $sum,
+        ]);
         return $sum;
     }
 
@@ -31,8 +35,9 @@ class BalanceService
         if ($account->balance_cached === null) {
             return $this->recalcAccount($accountId);
         }
-        $new = round(((float)$account->balance_cached) + $delta, 2);
-        $account->balance_cached = $new;
+    $new = round(((float)$account->balance_cached) + $delta, 2);
+    $account->balance_cached = $new;
+    $account->balance = $new; // sincroniza campo balance legacy
         $account->save();
         return $new;
     }

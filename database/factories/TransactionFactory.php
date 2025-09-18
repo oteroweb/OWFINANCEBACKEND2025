@@ -12,15 +12,16 @@ class TransactionFactory extends Factory
     public function definition(): array
     {
         // Use existing records only; do not create related models here
-        $accountId = \App\Models\Entities\Account::query()->inRandomOrder()->value('id');
-        $providerId = \App\Models\Entities\Provider::query()->inRandomOrder()->value('id');
-        $rateId = \App\Models\Entities\Rate::query()->inRandomOrder()->value('id');
-        $userId = \App\Models\User::query()->inRandomOrder()->value('id');
-        $typeId = \App\Models\Entities\TransactionType::query()->inRandomOrder()->value('id');
-
-        if (!$accountId || !$providerId || !$rateId || !$userId || !$typeId) {
-            throw new \RuntimeException('TransactionFactory requires existing Account, Provider, Rate, User, and TransactionType records. Seed them first.');
-        }
+        $accountId = \App\Models\Entities\Account::query()->inRandomOrder()->value('id')
+            ?? \App\Models\Entities\Account::factory()->create()->id;
+        $providerId = \App\Models\Entities\Provider::query()->inRandomOrder()->value('id')
+            ?? \App\Models\Entities\Provider::factory()->create()->id;
+        $rateId = \App\Models\Entities\Rate::query()->inRandomOrder()->value('id')
+            ?? \App\Models\Entities\Rate::factory()->create()->id;
+        $userId = \App\Models\User::query()->inRandomOrder()->value('id')
+            ?? \App\Models\User::factory()->create()->id;
+        $typeId = \App\Models\Entities\TransactionType::query()->inRandomOrder()->value('id')
+            ?? \App\Models\Entities\TransactionType::factory()->create()->id;
         return [
             'amount' => $this->faker->randomFloat(2, 10, 1000),
             'description' => $this->faker->sentence(),

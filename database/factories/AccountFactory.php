@@ -11,12 +11,10 @@ class AccountFactory extends Factory
 
     public function definition(): array
     {
-        $accountTypeId = \App\Models\Entities\AccountType::query()->inRandomOrder()->value('id');
-        $currencyId = \App\Models\Entities\Currency::query()->inRandomOrder()->value('id');
-
-        if (!$accountTypeId || !$currencyId) {
-            throw new \RuntimeException('AccountFactory requires existing AccountType and Currency records. Seed them first.');
-        }
+        $accountTypeId = \App\Models\Entities\AccountType::query()->inRandomOrder()->value('id')
+            ?? \App\Models\Entities\AccountType::factory()->create()->id;
+        $currencyId = \App\Models\Entities\Currency::query()->inRandomOrder()->value('id')
+            ?? \App\Models\Entities\Currency::factory()->create()->id;
         return [
             'name' => $this->faker->word(),
             'balance' => $this->faker->randomFloat(2, 100, 10000),

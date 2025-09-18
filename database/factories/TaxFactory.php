@@ -14,7 +14,8 @@ class TaxFactory extends Factory
         return [
             'name' => $this->faker->word(),
             'percent' => $this->faker->randomFloat(2, 0, 100),
-            'applies_to' => $this->faker->randomElement(['item','payment','both']),
+            // Default to 'both' to keep factories safe for item and payment contexts in tests
+            'applies_to' => 'both',
             'active' => $this->faker->randomElement([1, 0]),
             'date' => $this->faker->date(),
         ];

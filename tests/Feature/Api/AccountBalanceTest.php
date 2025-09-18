@@ -44,7 +44,7 @@ class AccountBalanceTest extends TestCase
         $resp = $this->postJson('/api/v1/transactions/', $payload, $headers);
         $resp->assertStatus(200);
     // Forzar recálculo para garantizar consistencia en entorno de test
-    $this->postJson('/api/v1/accounts/'.$account->id.'/recalc-balance', [], $headers)->assertStatus(200);
+    $this->postJson('/api/v1/accounts/'.$account->id.'/recalculate-account', [], $headers)->assertStatus(200);
     $account->refresh();
     $this->assertEquals(100.00, (float)$account->balance_cached, 'Balance after create (recalc) should be 100');
 
@@ -125,7 +125,7 @@ class AccountBalanceTest extends TestCase
         // Forzar balance_cached desactualizado
         $account->balance_cached = 0; $account->save();
 
-        $resp = $this->postJson('/api/v1/accounts/'.$account->id.'/recalc-balance', [], $headers);
+    $resp = $this->postJson('/api/v1/accounts/'.$account->id.'/recalculate-account', [], $headers);
         $resp->assertStatus(200);
         $account->refresh();
         $this->assertEquals(100.00, (float)$account->balance_cached, 'Recalc should set cached to 100');

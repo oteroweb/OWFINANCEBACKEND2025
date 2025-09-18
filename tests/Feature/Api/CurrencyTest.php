@@ -89,6 +89,7 @@ class CurrencyTest extends TestCase
             'tax' => 10.00,
             'last_tax' => 9.00,
             'symbol' => 'TC',
+            'align' => 'left',
             'symbol_native' => 'TCn',
             'decimal_digits' => 2,
             'rounding' => 0,
