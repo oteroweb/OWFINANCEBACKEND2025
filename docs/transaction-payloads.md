@@ -14,19 +14,19 @@ Resumen rápido:
 ## Balance y modos de cálculo
 
 El sistema soporta 3 enfoques simultáneos:
-1. On-demand: `calculateBalance(account_id)` (suma transacciones activas con include_in_balance=1).
+1. On-demand: `calculateBalance(account_id)` = `initial + ∑(amount)` de transacciones activas con include_in_balance=1.
 2. Caché persistente: columna `accounts.balance_cached` actualizada por observer de transacciones (creación, actualización, borrado/restauración) aplicando deltas.
 3. Incremental por delta: se calcula la diferencia exacta según cambios (monto, active, include_in_balance, account_id) sin recalcular toda la suma.
 
 Endpoints relevantes:
-- POST `/api/v1/accounts/{id}/adjust-balance`: Crea transacción de ajuste (amount = diferencia). Puedes decidir si el ajuste entra al balance con `include_in_balance`.
-- POST `/api/v1/accounts/{id}/recalc-balance`: Fuerza recomputar balance_cached desde cero (útil si hubo operaciones manuales masivas).
+- POST `/api/v1/accounts/{id}/adjust-balance`: Ajusta al saldo objetivo. Si `include_in_balance=true`, crea transacción de ajuste. Si `false`, modifica `initial`.
+- POST `/api/v1/accounts/{id}/recalculate-account`: Fuerza recomputar balance desde `initial` + transacciones incluidas (sincroniza caché).
 
 Campo en transacciones:
 - `include_in_balance`: Si false, la transacción se excluye del cálculo de balance (on-demand y caché). Útil para transferencias internas, ajustes informativos, etc.
 
 Notas de integridad:
-- Si cambias manualmente transacciones históricas por script, ejecuta luego `/recalc-balance` para sincronizar caché.
+- Si cambias manualmente transacciones históricas por script, ejecuta luego `/recalculate-account` para sincronizar caché.
 - Los montos deben venir ya con su signo correcto desde el frontend (ej: egreso negativo, ingreso positivo, transfer destino positivo / origen negativo en payments).
 
 ## Campos comunes
@@ -198,7 +198,7 @@ Notas:
 
 ## Ajuste de saldo (endpoint dedicado)
 
-- Endpoint: POST /api/accounts/{id}/adjust-balance
+- Endpoint: POST /api/v1/accounts/{id}/adjust-balance
 - Auth: Sanctum
 - Crea una transacción tipo "ajuste" por la diferencia entre el saldo objetivo y el saldo actual.
 
@@ -230,7 +230,7 @@ Respuesta (200)
 
 Notas
 - Si la diferencia es menor a 0.01, responde 200 con "No adjustment needed" y sin crear transacción.
-- include_in_balance controla si el ajuste se refleja en el cálculo del balance en tiempo real.
+- include_in_balance=true crea una transacción; include_in_balance=false ajusta `initial`.
 
 ---
 

@@ -64,6 +64,7 @@ erDiagram
     varchar name
     bigint currency_id FK
     decimal initial
+  decimal balance_cached
     decimal balance
     bigint account_type_id FK
     boolean active
@@ -224,6 +225,7 @@ erDiagram
     varchar description
     datetime date
     boolean active
+  boolean include_in_balance
     bigint provider_id FK
     varchar url_file
     bigint rate_id FK

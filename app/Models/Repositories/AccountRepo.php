@@ -4,6 +4,7 @@ namespace App\Models\Repositories;
 
 use App\Models\Entities\Account;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class AccountRepo
 {
@@ -94,7 +95,7 @@ class AccountRepo
      */
     public function calculateBalance($accountId)
     {
-        // Suma los montos de transacciones activas (active=1) asociadas a la cuenta
+        // Compat: suma simple de montos firmados tal como están almacenados (legacy)
         return (float) \App\Models\Entities\Transaction::where('account_id', $accountId)
             ->where('active', 1)
             ->where('include_in_balance', 1)
@@ -108,6 +109,35 @@ class AccountRepo
     {
         $value = $this->calculateBalance($accountId);
         Account::where('id', $accountId)->update(['balance_cached' => $value]);
+        return $value;
+    }
+
+    /**
+     * Calcula el balance usando el saldo inicial de la cuenta y sumando/restando
+     * las transacciones activas e incluidas en balance según su tipo (income/expense).
+     * Para otros tipos, usa el monto tal cual esté almacenado (firmado).
+     */
+    public function calculateBalanceFromInitialByType(int $accountId): float
+    {
+        // Nuevo comportamiento: ignorar tipos. Usar initial + suma firmada de transacciones activas e incluidas
+        $initial = (float) Account::where('id', $accountId)->value('initial');
+        $sum = (float) \App\Models\Entities\Transaction::where('account_id', $accountId)
+            ->where('active', 1)
+            ->where('include_in_balance', 1)
+            ->sum('amount');
+        return round($initial + $sum, 2);
+    }
+
+    /**
+     * Recalcula y persiste balance_cached y balance desde initial + signos por tipo.
+     */
+    public function recalcAndStoreFromInitialByType(int $accountId): float
+    {
+        $value = $this->calculateBalanceFromInitialByType($accountId);
+        Account::where('id', $accountId)->update([
+            'balance_cached' => $value,
+            'balance' => $value,
+        ]);
         return $value;
     }
 

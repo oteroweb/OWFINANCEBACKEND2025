@@ -209,17 +209,22 @@ class AccountController extends Controller
 
     /**
      * @group Account
-     * Adjust account balance by creating an adjustment transaction
+     * Adjust account balance by creating an adjustment transaction.
      * @urlParam id integer required The ID of the account. Example: 1
-     * @bodyParam target_balance number required The desired balance. Example: 1000.00
-     * @bodyParam include_in_balance boolean required Whether to include the adjustment in balance. Example: true
+     * @bodyParam target_balance number The desired balance. Example: 1000.00
+     * @bodyParam amount number An explicit adjustment amount (signed). Example: -50.00
+     * @bodyParam include_in_balance boolean Whether to include the adjustment in balance. Default: true
      * @bodyParam description string optional Description for the adjustment. Example: "Ajuste manual"
+     * Notes: Provide either target_balance or amount. If both are provided, amount takes precedence.
      */
     public function adjustBalance(Request $request, $id)
     {
+        // Support both target_balance and balance (alias). Require one of them.
         $validator = Validator::make($request->all(), [
-            'target_balance' => 'required|numeric',
-            'include_in_balance' => 'required|boolean',
+            'target_balance' => 'required_without:balance|numeric',
+            'balance' => 'required_without:target_balance|numeric',
+            'amount' => 'nullable|numeric',
+            'include_in_balance' => 'nullable|boolean',
             'description' => 'nullable|string|max:255',
         ]);
         if ($validator->fails()) {
@@ -240,9 +245,15 @@ class AccountController extends Controller
             ], 404);
         }
 
-        $currentBalance = $this->accountRepo->calculateBalance($account->id);
-        $targetBalance = (float) $request->input('target_balance');
-        $diff = round($targetBalance - $currentBalance, 2);
+        // Base de cálculo: saldo inicial + suma firmada de transacciones
+        $currentBalance = $this->accountRepo->calculateBalanceFromInitialByType($account->id);
+        // Precedence: amount (explicit) > target_balance > balance (alias)
+        $targetBalance = $request->has('target_balance')
+            ? (float) $request->input('target_balance')
+            : (float) $request->input('balance');
+        $amount = $request->filled('amount') ? (float) $request->input('amount') : null; // opcional
+        // Si amount viene, representa el ajuste deseado explícito; si no, se calcula por diferencia
+        $diff = $amount !== null ? round($amount, 2) : round($targetBalance - $currentBalance, 2);
         if (abs($diff) < 0.01) {
             return response()->json([
                 'status' => 'OK',
@@ -257,24 +268,36 @@ class AccountController extends Controller
             ], 200);
         }
 
-        // Get transaction_type_id for "ajuste"
-        $ajusteType = DB::table('transaction_types')->where('slug', 'ajuste')->first();
-        $transactionTypeId = $ajusteType ? $ajusteType->id : null;
+        $include = $request->has('include_in_balance') ? $request->boolean('include_in_balance') : true;
+        $txn = null;
+        $newBalance = $currentBalance;
+        if ($include === false) {
+            // Ajustar el initial para alcanzar el saldo objetivo: new_initial = target - sum(transacciones)
+            $sumTx = (float) \App\Models\Entities\Transaction::where('account_id', $account->id)
+                ->where('active', 1)
+                ->where('include_in_balance', 1)
+                ->sum('amount');
+            $newInitial = round($targetBalance - $sumTx, 2);
+            $this->accountRepo->update($account, ['initial' => $newInitial]);
+            $newBalance = $this->accountRepo->recalcAndStoreFromInitialByType($account->id);
+        } else {
+            // Generar una transacción para llevar al saldo objetivo
+            $txn = new \App\Models\Entities\Transaction();
+            $txn->name = 'Ajuste de saldo';
+            $txn->amount = $diff; // positivo aumenta balance, negativo disminuye
+            $txn->description = $request->input('description') ?? 'Ajuste manual de saldo';
+            $txn->date = now();
+            $txn->active = 1;
+            $txn->account_id = $account->id;
+            $txn->user_id = $request->user() ? $request->user()->id : null;
+            $txn->transaction_type_id = null; // eliminamos dependencia de tipo
+            $txn->amount_tax = 0;
+            $txn->include_in_balance = true;
+            $txn->save();
 
-        $txn = new \App\Models\Entities\Transaction();
-        $txn->name = 'Ajuste de saldo';
-        $txn->amount = $diff;
-        $txn->description = $request->input('description') ?? 'Ajuste manual de saldo';
-        $txn->date = now();
-        $txn->active = 1;
-        $txn->account_id = $account->id;
-        $txn->user_id = $request->user() ? $request->user()->id : null;
-        $txn->transaction_type_id = $transactionTypeId;
-        $txn->amount_tax = 0;
-        $txn->include_in_balance = $request->boolean('include_in_balance');
-        $txn->save();
+            $newBalance = $this->accountRepo->recalcAndStoreFromInitialByType($account->id);
+        }
 
-        $newBalance = $this->accountRepo->calculateBalance($account->id);
         $account->balance_calculado = $newBalance;
 
         return response()->json([
@@ -286,6 +309,7 @@ class AccountController extends Controller
                 'adjustment_transaction' => $txn,
                 'previous_balance' => $currentBalance,
                 'new_balance' => $newBalance,
+                'applied_adjustment' => $diff,
             ],
         ], 200);
     }
@@ -308,6 +332,27 @@ class AccountController extends Controller
         $account->balance_calculado = $value;
         return response()->json([
             'status'=>'OK','code'=>200,'message'=>__('Balance recalculated'),'data'=>$account
+        ],200);
+    }
+
+    /**
+     * @group Account
+     * Post
+     * @urlParam id integer required The ID of the account. Example: 1
+     * Force recalculation of balance from initial plus signed transaction sums by type.
+     */
+    public function recalcBalanceFromInitialByType($id)
+    {
+        $account = $this->accountRepo->find($id);
+        if (!$account) {
+            return response()->json([
+                'status' => 'FAILED','code'=>404,'message'=>__('Account not found')
+            ],404);
+        }
+        $value = $this->accountRepo->recalcAndStoreFromInitialByType($account->id);
+        $account->balance_calculado = $value;
+        return response()->json([
+            'status'=>'OK','code'=>200,'message'=>__('Balance recalculated from initial by type'),'data'=>$account
         ],200);
     }
 
