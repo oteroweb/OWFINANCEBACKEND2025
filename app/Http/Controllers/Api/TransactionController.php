@@ -261,16 +261,37 @@ class TransactionController extends Controller
             }
             // If both provided amount and derived amount exist, they must match (compare absolute to support negative expenses)
             if (!empty($items) && $providedAmount !== null && $derivedAmount !== null) {
-                if (abs(abs((float)$providedAmount) - (float)$derivedAmount) > 0.01) {
-                    return response()->json([
-                        'status' => 'FAILED',
-                        'code' => 422,
-                        'message' => __('Provided amount must equal items total'),
-                        'data' => [
-                            'provided_amount' => round(abs((float)$providedAmount), 2),
-                            'items_total' => $derivedAmount,
-                        ],
-                    ], 422);
+                $prov = (float) $providedAmount;
+                $absDiff = abs(abs($prov) - $derivedAmount);
+                // Allow: absolute equality within tolerance. Additionally, permit items entered with same sign as provided amount.
+                // If all item amounts are negative for an expense, derivedAmount came from summing negatives; normalize that scenario.
+                $allItemsNegative = collect($items)->every(function($it){ return ((float)($it['amount'] ?? 0)) < 0; });
+                if ($allItemsNegative) {
+                    // Recompute derived as absolute for comparison
+                    $negSum = 0.0; foreach ($items as $it) { $negSum += abs((float)($it['amount'] ?? 0)); }
+                    $derivedNormalized = round($negSum, 2);
+                    if (abs(abs($prov) - $derivedNormalized) > 0.01) {
+                        return response()->json([
+                            'status' => 'FAILED', 'code' => 422,
+                            'message' => __('Provided amount must equal items total'),
+                            'data' => [
+                                'provided_amount' => round(abs($prov),2),
+                                'items_total' => $derivedNormalized,
+                            ],
+                        ], 422);
+                    }
+                } else {
+                    if ($absDiff > 0.01) {
+                        return response()->json([
+                            'status' => 'FAILED',
+                            'code' => 422,
+                            'message' => __('Provided amount must equal items total'),
+                            'data' => [
+                                'provided_amount' => round(abs($prov), 2),
+                                'items_total' => $derivedAmount,
+                            ],
+                        ], 422);
+                    }
                 }
             }
 

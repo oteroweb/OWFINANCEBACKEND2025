@@ -5,7 +5,7 @@ Este documento define los payloads soportados por el backend y las reglas de val
 Resumen rápido:
 - transaction_type_id: number
 - amount: Ingreso (+), Egreso (-), Transfer (+)
-- items[].amount: siempre positivo; sum(items[].amount) = abs(amount)
+- items[].amount: preferentemente positivo (el backend aceptará negativos para egresos y normalizará usando valor absoluto). La suma absoluta de items debe igualar abs(amount).
 - payments[].amount: en moneda de la cuenta; payments[].rate = User→Account; conversión: userAmount = accountAmount / rate
 - amount_tax: 0 (impuestos por línea o por pago, si se envían)
 - items[].tax_id aplica a “item|both”; payments[].tax_id aplica a “payment|both”
@@ -187,7 +187,7 @@ Notas:
 
 ## Reglas de validación (resumen)
 
-- Items vs amount: abs(amount) = suma(items[].amount) ± 0.01 (si ambos vienen)
+- Items vs amount: abs(amount) = suma(abs(items[].amount)) ± 0.01 (si ambos vienen). Se permite que los items vengan con signo para egresos.
 - Payments vs amount:
   - userAmount = amount_account / rate
   - Transfer (signos mixtos): match neto
