@@ -17,14 +17,22 @@ class TransactionRepo {
      */
     public function all($params = [], $authUser = null)
     {
-        $query = Transaction::whereIn('active', [1,0])
+        $query = Transaction::select('transactions.*')->distinct()
+            ->whereIn('active', [1,0])
             ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
 
         // Restricción por usuario autenticado (no admin)
-    if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
+        if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
             $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
             if (!empty($allowedAccountIds)) {
-                $query->whereIn('account_id', $allowedAccountIds);
+                // Permitir transacciones que pertenezcan a cuentas del usuario
+                // ya sea por account_id directo o por payment_transactions.account_id
+                $query->where(function($q) use ($allowedAccountIds) {
+                    $q->whereIn('account_id', $allowedAccountIds)
+                      ->orWhereHas('paymentTransactions', function($p) use ($allowedAccountIds) {
+                          $p->whereIn('account_id', $allowedAccountIds);
+                      });
+                });
             } else {
                 // No cuentas asociadas => forzar resultado vacío
                 $query->whereRaw('1=0');
@@ -72,7 +80,13 @@ class TransactionRepo {
             $ids = is_array($params['account_ids']) ? $params['account_ids'] : explode(',', $params['account_ids']);
             $ids = array_filter(array_map('trim', $ids));
             if (!empty($ids)) {
-                $query->whereIn('account_id', $ids);
+                // Coincidencia por account_id o por cuentas usadas en payments
+                $query->where(function($q) use ($ids) {
+                    $q->whereIn('account_id', $ids)
+                      ->orWhereHas('paymentTransactions', function($p) use ($ids) {
+                          $p->whereIn('account_id', $ids);
+                      });
+                });
             }
         }
         if (!empty($params['transaction_ids'])) {
@@ -200,13 +214,19 @@ class TransactionRepo {
      */
     public function allActive($params = [], $authUser = null)
     {
-        $query = Transaction::where('active',1)
+        $query = Transaction::select('transactions.*')->distinct()
+            ->where('active',1)
             ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
 
-    if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
+        if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
             $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
             if (!empty($allowedAccountIds)) {
-                $query->whereIn('account_id', $allowedAccountIds);
+                $query->where(function($q) use ($allowedAccountIds) {
+                    $q->whereIn('account_id', $allowedAccountIds)
+                      ->orWhereHas('paymentTransactions', function($p) use ($allowedAccountIds) {
+                          $p->whereIn('account_id', $allowedAccountIds);
+                      });
+                });
             } else {
                 $query->whereRaw('1=0');
             }
@@ -244,7 +264,12 @@ class TransactionRepo {
             $ids = is_array($params['account_ids']) ? $params['account_ids'] : explode(',', $params['account_ids']);
             $ids = array_filter(array_map('trim', $ids));
             if (!empty($ids)) {
-                $query->whereIn('account_id', $ids);
+                $query->where(function($q) use ($ids) {
+                    $q->whereIn('account_id', $ids)
+                      ->orWhereHas('paymentTransactions', function($p) use ($ids) {
+                          $p->whereIn('account_id', $ids);
+                      });
+                });
             }
         }
         if (!empty($params['transaction_ids'])) {
