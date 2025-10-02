@@ -84,21 +84,24 @@ class AccountRepo
 
         $accounts = $query->get();
         foreach ($accounts as $account) {
-            // Si existe balance_cached usarlo, sino calcular on-demand
-            $account->balance_calculado = $account->balance_cached ?? $this->calculateBalance($account->id);
+            // Si existe balance_cached usarlo, sino calcular on-demand (initial + payments)
+            $account->balance_calculado = $account->balance_cached ?? $this->calculateBalanceFromInitialByType($account->id);
         }
         return $accounts;
     }
 
     /**
-     * Suma todas las transacciones activas asociadas a la cuenta para calcular el balance.
+     * Suma todos los movimientos de pago (PaymentTransaction) activos asociados a la cuenta.
+     * NOTA: Esta función retorna únicamente la suma de movimientos, sin el saldo inicial.
      */
     public function calculateBalance($accountId)
     {
-        // Compat: suma simple de montos firmados tal como están almacenados (legacy)
-        return (float) \App\Models\Entities\Transaction::where('account_id', $accountId)
+        return (float) \App\Models\Entities\PaymentTransaction::where('account_id', $accountId)
             ->where('active', 1)
-            ->where('include_in_balance', 1)
+            ->whereHas('transaction', function ($q) {
+                $q->where('active', 1)
+                  ->where('include_in_balance', 1);
+            })
             ->sum('amount');
     }
 
@@ -119,12 +122,9 @@ class AccountRepo
      */
     public function calculateBalanceFromInitialByType(int $accountId): float
     {
-        // Nuevo comportamiento: ignorar tipos. Usar initial + suma firmada de transacciones activas e incluidas
+        // Nuevo comportamiento: initial + suma firmada de payment_transactions activos
         $initial = (float) Account::where('id', $accountId)->value('initial');
-        $sum = (float) \App\Models\Entities\Transaction::where('account_id', $accountId)
-            ->where('active', 1)
-            ->where('include_in_balance', 1)
-            ->sum('amount');
+        $sum = $this->calculateBalance($accountId);
         return round($initial + $sum, 2);
     }
 
@@ -200,7 +200,7 @@ class AccountRepo
         }
         $accounts = $query->get();
         foreach ($accounts as $account) {
-            $account->balance_calculado = $this->calculateBalance($account->id);
+            $account->balance_calculado = $this->calculateBalanceFromInitialByType($account->id);
         }
         return $accounts;
     }

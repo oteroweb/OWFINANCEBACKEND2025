@@ -491,16 +491,20 @@ class TransactionController extends Controller
             $transaction->load(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions.account']);
             DB::commit();
 
-            // Recalcular y persistir balance de la cuenta principal para reflejar inmediatamente el cambio
-            $accountBalance = null;
-            if ($transaction->account_id && $transaction->include_in_balance && $transaction->active) {
-                $accountBalance = app(\App\Models\Repositories\AccountRepo::class)->recalcAndStoreFromInitialByType($transaction->account_id);
-            } elseif ($transaction->account_id) {
-                // Si no afecta al balance, devolver el actual (cached si existe, o cálculo ad-hoc)
-                $acct = \App\Models\Entities\Account::find($transaction->account_id);
-                if ($acct) {
-                    $accountBalance = $acct->balance_cached ?? app(\App\Models\Repositories\AccountRepo::class)->calculateBalanceFromInitialByType($acct->id);
+            // Recalcular y persistir balances de todas las cuentas afectadas por los payments
+            $balancesAfter = [];
+            try {
+                $repo = app(\App\Models\Repositories\AccountRepo::class);
+                $accountIds = collect($transaction->paymentTransactions)->pluck('account_id')->filter()->unique()->values()->all();
+                foreach ($accountIds as $accId) {
+                    $balancesAfter[$accId] = $repo->recalcAndStoreFromInitialByType((int)$accId);
                 }
+                // Compat: si existe account_id principal, calcular también (aunque no se use para balance si viene null)
+                if ($transaction->account_id) {
+                    $balancesAfter[$transaction->account_id] = $repo->recalcAndStoreFromInitialByType((int)$transaction->account_id);
+                }
+            } catch (\Throwable $e) {
+                Log::error($e);
             }
 
             $response = [
@@ -509,7 +513,10 @@ class TransactionController extends Controller
                 'message' => __('Transaction saved correctly'),
                 'data'    => $transaction,
                 'meta'    => [
-                    'account_balance_after' => $accountBalance,
+                    // Mantener compat si el cliente esperaba un único balance de cuenta principal
+                    'account_balance_after' => isset($balancesAfter[$transaction->account_id ?? 0]) ? $balancesAfter[$transaction->account_id] : null,
+                    // Nuevo: balances calculados para todas las cuentas afectadas por los pagos
+                    'account_balances_after' => $balancesAfter,
                 ],
             ];
             return response()->json($response, 200);
