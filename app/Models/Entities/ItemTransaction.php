@@ -24,6 +24,7 @@ class ItemTransaction extends Model
         'deleted_at',
         'date',
         'category_id',
+        'item_category_id',
         'user_id',
         'custom_name',
     ];
@@ -53,6 +54,11 @@ class ItemTransaction extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function itemCategory()
+    {
+        return $this->belongsTo(ItemCategory::class, 'item_category_id');
     }
 
     public function tax()

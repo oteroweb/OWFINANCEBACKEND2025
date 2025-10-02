@@ -28,4 +28,22 @@ class PaymentTransaction extends Model
     {
         return $this->belongsTo(Transaction::class);
     }
+
+    /**
+     * Account used for this payment movement.
+     */
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
+
+    /**
+     * Convenience: expose account name directly.
+     */
+    protected $appends = ['account_name'];
+
+    public function getAccountNameAttribute()
+    {
+        return optional($this->account)->name;
+    }
 }

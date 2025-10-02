@@ -3,45 +3,29 @@
 Este documento define los payloads soportados por el backend y las reglas de validación principales, alineadas al comportamiento actual.
 
 Resumen rápido:
-- transaction_type_id: number
-- amount: Ingreso (+), Egreso (-), Transfer (+)
-- items[].amount: preferentemente positivo (el backend aceptará negativos para egresos y normalizará usando valor absoluto). La suma absoluta de items debe igualar abs(amount).
-- payments[].amount: en moneda de la cuenta; payments[].rate = User→Account; conversión: userAmount = accountAmount / rate
-- amount_tax: 0 (impuestos por línea o por pago, si se envían)
-- items[].tax_id aplica a “item|both”; payments[].tax_id aplica a “payment|both”
-- include_in_balance (boolean, default true): Controla si la transacción afecta el balance calculado y el balance_cached.
-
-## Balance y modos de cálculo
 
 El sistema soporta 3 enfoques simultáneos:
 1. On-demand: `calculateBalance(account_id)` = `initial + ∑(amount)` de transacciones activas con include_in_balance=1.
 2. Caché persistente: columna `accounts.balance_cached` actualizada por observer de transacciones (creación, actualización, borrado/restauración) aplicando deltas.
-3. Incremental por delta: se calcula la diferencia exacta según cambios (monto, active, include_in_balance, account_id) sin recalcular toda la suma.
 
 Endpoints relevantes:
 - POST `/api/v1/accounts/{id}/adjust-balance`: Ajusta al saldo objetivo. Si `include_in_balance=true`, crea transacción de ajuste. Si `false`, modifica `initial`.
-- POST `/api/v1/accounts/{id}/recalculate-account`: Fuerza recomputar balance desde `initial` + transacciones incluidas (sincroniza caché).
 
 Campo en transacciones:
-- `include_in_balance`: Si false, la transacción se excluye del cálculo de balance (on-demand y caché). Útil para transferencias internas, ajustes informativos, etc.
 
 Notas de integridad:
 - Si cambias manualmente transacciones históricas por script, ejecuta luego `/recalculate-account` para sincronizar caché.
 - Los montos deben venir ya con su signo correcto desde el frontend (ej: egreso negativo, ingreso positivo, transfer destino positivo / origen negativo en payments).
 
-## Campos comunes
-
 - name: string
 - amount: number (Ingreso + | Egreso - | Transfer +)
   - Signo gestionado por frontend según tipo; backend no infiere.
-- amount_tax: 0
 - date: 'YYYY-MM-DD HH:mm:ss'
-- provider_id: number|null
+- provider_id: number|null (presente siempre; puede ser null)
 - transaction_type_id: number|null
 - url_file: string|null
-- account_id: number|null
   - Úsalo solo cuando NO envías payments[]. Para cruces de moneda, usa payments[].
-- items?: Array<{ name: string; amount: number; category_id?: number|null; tax_id?: number|null }>
+- items?: Array<{ name: string; amount: number; item_category_id?: number|null; tax_id?: number|null }>
 - payments?: Array<{ account_id: number; amount: number; rate: number|null; tax_id?: number|null }>
   - amount: en moneda de la cuenta del pago
   - rate: User→Account (si monedas difieren; si igual, null o 1)
@@ -56,14 +40,11 @@ Notas de integridad:
   - Ingreso/Egreso avanzado (sin signos mixtos): se permite match por valor absoluto (| |∑userAmount| − |amount| | ≤ 0.01)
   - rate != 0; si misma moneda, rate puede ser null o 1
 
----
 
 ## Casos
 
-### Ingreso/Egreso — simple (misma moneda, sin payments)
-- amount en moneda del usuario
-- items suman abs(amount)
-- account_id presente; sin payments[]
+### Ingreso/Egreso — simple (misma moneda)
+- 1 payment y 1 ítem genérico; provider_id presente (null o id)
 
 ```json
 {
@@ -73,17 +54,15 @@ Notas de integridad:
   "date": "2025-02-01 10:30:00",
   "provider_id": 12,
   "transaction_type_id": 1,
-  "url_file": null,
   "account_id": 3,
   "items": [
-    { "name": "Venta", "amount": 1500, "category_id": 8 }
+  { "name": "Venta", "amount": 1500, "item_category_id": 8 }
   ]
 }
 ```
 
 ### Ingreso/Egreso — simple (cruce de moneda)
-- Usa payments[] para indicar rate por pago
-- Omite account_id tope
+- 1 payment con rate por pago; provider_id presente (null o id)
 
 ```json
 {
@@ -95,7 +74,7 @@ Notas de integridad:
   "transaction_type_id": 2,
   "url_file": "https://...",
   "items": [
-    { "name": "Pago", "amount": 20, "category_id": null }
+  { "name": "Pago", "amount": 20, "item_category_id": null }
   ],
   "payments": [
     { "account_id": 7, "amount": -730, "rate": 36.5, "tax_id": null }
@@ -107,7 +86,6 @@ Notas:
 - payments[0].amount = -730 en moneda de la cuenta (VES); rate=36.5 (User USD→Account VES)
 - Conversión: -730 / 36.5 = -20 (match con amount)
 
-### Ingreso/Egreso — detalle (factura)
 - amount = suma de items (cada línea ya incluye IVA si aplica)
 - tax_id por línea opcional (applies_to=item|both)
 
@@ -122,15 +100,14 @@ Notas:
   "url_file": null,
   "account_id": 3,
   "items": [
-    { "name": "Producto A", "amount": 58.0, "category_id": 2, "tax_id": 10 },
-    { "name": "Producto B", "amount": 58.0, "category_id": 5 }
+  { "name": "Producto A", "amount": 58.0, "item_category_id": 2, "tax_id": 10 },
+  { "name": "Producto B", "amount": 58.0, "item_category_id": 5 }
   ]
 }
 ```
 
 ### Ingreso/Egreso — pago avanzado (múltiples cuentas)
-- Usa payments[]; suma convertida a moneda del usuario debe igualar amount
-- payments[].tax_id opcional (IGTF/Pago Móvil; applies_to=payment|both)
+- N payments; provider_id presente (null o id)
 
 ```json
 {
@@ -141,7 +118,7 @@ Notas:
   "provider_id": null,
   "transaction_type_id": 1,
   "url_file": null,
-  "items": [ { "name": "Cobro", "amount": 100, "category_id": 8 } ],
+  "items": [ { "name": "Cobro", "amount": 100, "item_category_id": 8 } ],
   "payments": [
     { "account_id": 3, "amount": 50, "rate": 1, "tax_id": null },
     { "account_id": 7, "amount": 3650, "rate": 36.5, "tax_id": 11 }
@@ -150,9 +127,7 @@ Notas:
 ```
 
 ### Transferencia — usando payments[]
-- Un pago negativo (origen) y uno positivo (destino)
-- Ambos con rate = User→Account correspondiente
-- amount (tope) positivo y debe coincidir con la suma neta en moneda del usuario
+- 2 payments (negativo/positivo), rate por pago; provider_id presente (null o id)
 
 ```json
 {
@@ -182,9 +157,21 @@ Notas:
 
 ## Categorías
 
-- items[].category_id: number|null
-- Si es null, el backend acepta el valor; clasificación automática puede ejecutarse offline con `php artisan items:autocategorize`.
+Hay dos conceptos distintos y complementarios:
 
+- items[].item_category_id (ItemCategory, catálogo de ítems)
+  - Clasificación de productos/servicios del catálogo (árbol de Item Categories).
+  - Se usa para reportes de ítems y para precargar/recordar la categoría de un mismo ítem.
+  - En modo simple: si hay un único ítem, toma este valor desde el selector principal del UI.
+
+- items[].category_id (Category, categoría de la transacción)
+  - Clasificación operativa para reglas de frascos (Jars), presupuestos y análisis por categorías históricas.
+  - Es independiente de item_category_id; pueden coincidir o no según el flujo.
+  - Puede omitirse en modo simple; el backend puede dejarlo null o mapearlo según reglas configuradas.
+
+Recomendación de uso
+- Modo simple: enviar solo item_category_id en el ítem (desde el selector principal). category_id es opcional.
+- Modo detallado: puedes enviar ambos si necesitas diferenciar catálogo (item_category_id) de clasificación operativa (category_id).
 ## Reglas de validación (resumen)
 
 - Items vs amount: abs(amount) = suma(abs(items[].amount)) ± 0.01 (si ambos vienen). Se permite que los items vengan con signo para egresos.
@@ -234,35 +221,7 @@ Notas
 
 ---
 
-## Ejemplos de filtros (GET) con periodos y múltiples cuentas
-
-Base: `GET /api/v1/transactions`
-
-Parámetros existentes que puedes combinar:
-- page, per_page, sort_by, descending
-- search
-- provider_id, rate_id, user_id, account_id
-- account_ids (CSV) ej: `account_ids=27,23,25`
-- transaction_ids (CSV) ej: `transaction_ids=10,12`
-- transaction_type_id | transaction_type (slug)
-- date_from, date_to (rango directo)
-- period_type, month, quarter, semester, year (si configurado en backend)
-
-Reglas:
-- Si usas `period_type` se ignoran `date_from` y `date_to`.
-- `account_ids` filtra por varias cuentas (CSV).
-
-### 1. Mes específico varias cuentas
-`/api/v1/transactions?page=1&per_page=10&sort_by=date&descending=true&user_id=4&account_ids=27,23,25,17,22&period_type=month&month=8&year=2025`
-
-### 2. Trimestre con tipo y búsqueda
-`/api/v1/transactions?quarter=2&period_type=quarter&year=2025&transaction_type_id=4&search=invoice&account_ids=27,23`
-
-### 3. Semestre + conjunto de transacciones concreto
-`/api/v1/transactions?period_type=semester&semester=1&year=2025&transaction_ids=15,19,33&account_ids=27,23,25`
-
-### 4. Año completo paginado
-`/api/v1/transactions?period_type=year&year=2025&page=1&per_page=50&account_ids=27,23,25`
+<!-- Sección de filtros GET omitida para mantener el foco en payloads de creación/actualización. -->
 
 ### 5. Rango manual sin period_type
 `/api/v1/transactions?date_from=2025-08-01 00:00:00&date_to=2025-08-31 23:59:59&account_ids=27,23,25`

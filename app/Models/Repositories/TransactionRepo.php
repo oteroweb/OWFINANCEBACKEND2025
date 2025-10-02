@@ -19,7 +19,7 @@ class TransactionRepo {
     {
         $query = Transaction::select('transactions.*')->distinct()
             ->whereIn('active', [1,0])
-            ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
+            ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions.account']);
 
         // Restricción por usuario autenticado (no admin)
         if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
@@ -28,10 +28,10 @@ class TransactionRepo {
                 // Permitir transacciones que pertenezcan a cuentas del usuario
                 // ya sea por account_id directo o por payment_transactions.account_id
                 $query->where(function($q) use ($allowedAccountIds) {
-                    $q->whereIn('account_id', $allowedAccountIds)
-                      ->orWhereHas('paymentTransactions', function($p) use ($allowedAccountIds) {
-                          $p->whereIn('account_id', $allowedAccountIds);
-                      });
+                                        $q->whereIn('account_id', $allowedAccountIds)
+                                            ->orWhereHas('paymentTransactions', function($p) use ($allowedAccountIds) {
+                                                    $p->whereIn('account_id', $allowedAccountIds);
+                                            });
                 });
             } else {
                 // No cuentas asociadas => forzar resultado vacío
@@ -59,6 +59,16 @@ class TransactionRepo {
         }
         if (!empty($params['account_id'])) {
             $query->where('account_id', $params['account_id']);
+        }
+        // nested payments.account_id filter
+        if (!empty($params['payments_account_id'])) {
+            $accId = is_array($params['payments_account_id']) ? $params['payments_account_id'] : [$params['payments_account_id']];
+            $accId = array_values(array_filter(array_map('intval', $accId)));
+            if (!empty($accId)) {
+                $query->whereHas('paymentTransactions', function($p) use ($accId) {
+                    $p->whereIn('account_id', $accId);
+                });
+            }
         }
 
         // transaction_type filters (new FK takes precedence)
@@ -216,7 +226,7 @@ class TransactionRepo {
     {
         $query = Transaction::select('transactions.*')->distinct()
             ->where('active',1)
-            ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
+            ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions.account']);
 
         if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
             $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
@@ -245,6 +255,16 @@ class TransactionRepo {
         }
         if (!empty($params['account_id'])) {
             $query->where('account_id', $params['account_id']);
+        }
+        // nested payments.account_id filter (active)
+        if (!empty($params['payments_account_id'])) {
+            $accId = is_array($params['payments_account_id']) ? $params['payments_account_id'] : [$params['payments_account_id']];
+            $accId = array_values(array_filter(array_map('intval', $accId)));
+            if (!empty($accId)) {
+                $query->whereHas('paymentTransactions', function($p) use ($accId) {
+                    $p->whereIn('account_id', $accId);
+                });
+            }
         }
 
         if (!empty($params['transaction_type_id'])) {
@@ -391,7 +411,7 @@ class TransactionRepo {
     }
 
     public function find($id) {
-    return Transaction::with(['provider', 'rate', 'user', 'account', 'transactionType','itemTransactions','paymentTransactions'])->find($id);
+        return Transaction::with(['provider', 'rate', 'user', 'account', 'transactionType', 'itemTransactions', 'paymentTransactions.account'])->find($id);
     }
     public function store($data) {
         $transaction = new Transaction();

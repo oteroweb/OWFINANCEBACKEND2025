@@ -33,6 +33,7 @@ class ItemTransactionFactory extends Factory
             'active'         => $this->faker->boolean(),
             'date'           => $this->faker->dateTimeThisYear(),
             'category_id'    => null,
+            'item_category_id' => null,
             'user_id'        => null,
             'custom_name'    => $this->faker->word(),
         ];

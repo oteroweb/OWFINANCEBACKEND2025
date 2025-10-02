@@ -23,6 +23,12 @@ class TransactionTest extends TestCase
             'name' => 'Test Transaction',
             'date' => now()->format('Y-m-d H:i:s'),
             'transaction_type_id' => $type->id,
+            'items' => [
+                ['name' => 'Gen', 'amount' => 100.00, 'item_category_id' => null]
+            ],
+            'payments' => [
+                ['account_id' => $account->id, 'amount' => 100.00, 'rate' => 1]
+            ],
         ];
         $createResponse = $this->postJson('/api/v1/transactions/', $data);
         $createResponse->assertStatus(200)

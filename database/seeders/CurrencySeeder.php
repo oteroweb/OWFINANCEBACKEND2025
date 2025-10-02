@@ -31,8 +31,17 @@ class CurrencySeeder extends Seeder
                 [ 'name' => 'BNB',                  'symbol' => 'BNB','align' => 'left', 'code' => 'BNB', 'active' => 1 ],
         ];
 
+        // Idempotent seeding: upsert by unique code
         foreach ($currencies as $data) {
-            Currency::create($data);
+            Currency::updateOrCreate(
+                ['code' => $data['code']],
+                [
+                    'name' => $data['name'],
+                    'symbol' => $data['symbol'],
+                    'align' => $data['align'],
+                    'active' => $data['active'],
+                ]
+            );
         }
     }
 }

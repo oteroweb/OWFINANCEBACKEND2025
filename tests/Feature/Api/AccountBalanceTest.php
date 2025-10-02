@@ -40,6 +40,12 @@ class AccountBalanceTest extends TestCase
             'account_id' => $account->id,
             'transaction_type_id' => $type->id,
             'include_in_balance' => true,
+            'items' => [
+                ['name' => 'Gen', 'amount' => 100.00, 'item_category_id' => null]
+            ],
+            'payments' => [
+                ['account_id' => $account->id, 'amount' => 100.00, 'rate' => 1]
+            ],
         ];
         $resp = $this->postJson('/api/v1/transactions/', $payload, $headers);
         $resp->assertStatus(200);

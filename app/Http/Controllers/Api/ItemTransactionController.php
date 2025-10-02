@@ -111,6 +111,7 @@ class ItemTransactionController extends Controller
                 'jar_id'         => $request->input('jar_id'),
                 'date'           => $request->input('date'),
                 'category_id'    => $request->input('category_id'),
+                'item_category_id' => $request->input('item_category_id'),
                 'user_id'        => $request->input('user_id'),
                 'custom_name'    => $request->input('custom_name'),
             ];
@@ -191,6 +192,7 @@ class ItemTransactionController extends Controller
             if ($request->has('jar_id')) { $data['jar_id'] = $request->input('jar_id'); }
             if ($request->has('date')) { $data['date'] = $request->input('date'); }
             if ($request->has('category_id')) { $data['category_id'] = $request->input('category_id'); }
+            if ($request->has('item_category_id')) { $data['item_category_id'] = $request->input('item_category_id'); }
             if ($request->has('user_id')) { $data['user_id'] = $request->input('user_id'); }
             if ($request->has('custom_name')) { $data['custom_name'] = $request->input('custom_name'); }
             if ($request->has('active')) { $data['active'] = $request->input('active'); }

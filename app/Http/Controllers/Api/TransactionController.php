@@ -25,16 +25,44 @@ class TransactionController extends Controller
      * all
      */
     public function all(Request $request) {
+        // return json
         try {
             // Collect pagination, sorting, search and filter parameters
             $params = $request->only([
                 'page', 'per_page', 'sort_by', 'descending',
                 'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'date_from', 'date_to',
                 // nuevos filtros
-                'account_ids', 'transaction_ids',
+                'account_ids', 'transaction_ids', 'payments_account_id',
                 // periodos (extendidos)
                 'period_type', 'month', 'quarter', 'semester', 'year', 'week', 'fortnight'
             ]);
+            // Support multiple and single payment account filters
+            // Preferred: payment_account_ids=1,2,3 (or payments_account_ids)
+            $paymentsAccountIdsRaw = $request->input('payment_account_ids')
+                ?? $request->input('payments_account_ids');
+            if (!empty($paymentsAccountIdsRaw)) {
+                $list = is_array($paymentsAccountIdsRaw)
+                    ? $paymentsAccountIdsRaw
+                    : preg_split('/[\s,]+/', (string)$paymentsAccountIdsRaw, -1, PREG_SPLIT_NO_EMPTY);
+                $params['payments_account_id'] = array_values(array_filter(array_map('intval', $list)));
+            } else {
+                // Also tolerate single-value aliases or nested param
+                $paymentsAccountId = $request->input('payments_account_id')
+                    ?? $request->input('payment_account_id')
+                    ?? $request->input('transactions.payments.account_id')
+                    ?? $request->input('payments.account_id');
+                if (!empty($paymentsAccountId)) {
+                    if (is_array($paymentsAccountId)) {
+                        $params['payments_account_id'] = array_values(array_filter(array_map('intval', $paymentsAccountId)));
+                    } else {
+                        // If comma-separated in a single param, split it
+                        $parts = preg_split('/[\s,]+/', (string)$paymentsAccountId, -1, PREG_SPLIT_NO_EMPTY);
+                        $params['payments_account_id'] = count($parts) > 1
+                            ? array_values(array_filter(array_map('intval', $parts)))
+                            : $paymentsAccountId;
+                    }
+                }
+            }
             $authUser = $request->user();
             if ($authUser && !$authUser->isAdmin() && !app()->environment('testing')) {
                 unset($params['user_id']);
@@ -75,8 +103,32 @@ class TransactionController extends Controller
             // Collect pagination, sorting, search and filter parameters
             $params = $request->only([
                 'page', 'per_page', 'sort_by', 'descending',
-                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id'
+                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'payments_account_id'
             ]);
+            // Support multiple and single payment account filters (active list)
+            $paymentsAccountIdsRaw = $request->input('payment_account_ids')
+                ?? $request->input('payments_account_ids');
+            if (!empty($paymentsAccountIdsRaw)) {
+                $list = is_array($paymentsAccountIdsRaw)
+                    ? $paymentsAccountIdsRaw
+                    : preg_split('/[\s,]+/', (string)$paymentsAccountIdsRaw, -1, PREG_SPLIT_NO_EMPTY);
+                $params['payments_account_id'] = array_values(array_filter(array_map('intval', $list)));
+            } else {
+                $paymentsAccountId = $request->input('payments_account_id')
+                    ?? $request->input('payment_account_id')
+                    ?? $request->input('transactions.payments.account_id')
+                    ?? $request->input('payments.account_id');
+                if (!empty($paymentsAccountId)) {
+                    if (is_array($paymentsAccountId)) {
+                        $params['payments_account_id'] = array_values(array_filter(array_map('intval', $paymentsAccountId)));
+                    } else {
+                        $parts = preg_split('/[\s,]+/', (string)$paymentsAccountId, -1, PREG_SPLIT_NO_EMPTY);
+                        $params['payments_account_id'] = count($parts) > 1
+                            ? array_values(array_filter(array_map('intval', $parts)))
+                            : $paymentsAccountId;
+                    }
+                }
+            }
             $authUser = $request->user();
             if ($authUser && !$authUser->isAdmin() && !app()->environment('testing')) {
                 unset($params['user_id']);
@@ -88,6 +140,7 @@ class TransactionController extends Controller
                     $params['account_ids'] = $filtered;
                 }
             }
+
             $transaction = $this->transactionRepo->allActive($params, $authUser);
             $response = [
                 'status'  => 'OK',
@@ -156,13 +209,14 @@ class TransactionController extends Controller
      * @bodyParam amount_tax number optional The tax amount. Example: 10.00
      */
     public function save(Request $request) {
-        $validator = Validator::make($request->all(), [
+    $validator = Validator::make($request->all(), [
             'name' => 'required|max:100',
             // Amount can be omitted if items are provided; we will derive it
             'amount' => 'nullable|numeric',
             'description' => 'max:255',
             'date' => 'required|date',
-            'provider_id' => 'nullable|exists:providers,id',
+            // Debe estar presente aunque sea null
+            'provider_id' => 'present|nullable|exists:providers,id',
             'url_file' => 'nullable|string',
             'rate_id' => 'nullable|integer',
             'transaction_type_id' => 'nullable|exists:transaction_types,id',
@@ -181,10 +235,11 @@ class TransactionController extends Controller
             'items.*.jar_id' => 'nullable|exists:jars,id',
             'items.*.date' => 'nullable|date',
             'items.*.category_id' => 'nullable|exists:categories,id',
+            'items.*.item_category_id' => 'nullable|exists:item_categories,id',
             'items.*.user_id' => 'nullable|exists:users,id',
             'items.*.custom_name' => 'nullable|string|max:150',
-            // Payments
-            'payments' => 'nullable|array|min:1',
+            // Payments (siempre requeridos)
+            'payments' => 'required|array|min:1',
             'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
             'payments.*.amount' => 'required_with:payments|numeric',
             'payments.*.rate' => 'nullable|numeric',
@@ -210,6 +265,33 @@ class TransactionController extends Controller
 
             $items = $request->input('items', []);
             $payments = $request->input('payments', []);
+
+            // Reglas de cardinalidad por modo (inferido por payments)
+            $paymentsCount = is_array($payments) ? count($payments) : 0;
+            $hasPos = false; $hasNeg = false;
+            foreach ($payments as $pm) {
+                $accAmt = isset($pm['amount']) ? (float) $pm['amount'] : 0.0;
+                if ($accAmt > 0) $hasPos = true;
+                if ($accAmt < 0) $hasNeg = true;
+            }
+            $isTransferLike = $hasPos && $hasNeg;
+            // Transferencia: exactamente 2 payments con signos opuestos
+            if ($isTransferLike && $paymentsCount !== 2) {
+                return response()->json([
+                    'status' => 'FAILED','code' => 422,
+                    'message' => __('Transfers must have exactly 2 payments with opposite signs')
+                ], 422);
+            }
+            // Modo simple: 1 payment => se espera 1 item genérico
+            if (!$isTransferLike && $paymentsCount === 1) {
+                $itemsCount = is_array($items) ? count($items) : 0;
+                if ($itemsCount !== 1) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 422,
+                        'message' => __('Simple transactions must contain exactly one item')
+                    ], 422);
+                }
+            }
 
             // Authorization: ensure the user can operate on the target account(s)
             $accountsToCheck = [];
@@ -250,7 +332,7 @@ class TransactionController extends Controller
                 $derivedAmount = round($sum, 2);
             }
 
-            // If no items provided, amount is required
+            // If no items provided, amount is required (transfer suele venir sin items)
             $providedAmount = $request->input('amount');
             if (empty($items) && $providedAmount === null) {
                 return response()->json([
@@ -384,7 +466,9 @@ class TransactionController extends Controller
                     'description' => $it['description'] ?? null,
                     'jar_id' => $it['jar_id'] ?? null,
                     'date' => $it['date'] ?? $transaction->date,
+                    // Backward-compat: keep legacy category_id, but prefer new item_category_id for ItemCategory linkage
                     'category_id' => $it['category_id'] ?? null,
+                    'item_category_id' => $it['item_category_id'] ?? null,
                     'user_id' => $it['user_id'] ?? $transaction->user_id,
                     'custom_name' => $it['custom_name'] ?? null,
                     'active' => 1,
@@ -403,8 +487,8 @@ class TransactionController extends Controller
                 PaymentTransaction::create($payload);
             }
 
-            // Reload with relations
-            $transaction->load(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions']);
+            // Reload with relations (including account inside payment transactions)
+            $transaction->load(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions.account']);
             DB::commit();
 
             // Recalcular y persistir balance de la cuenta principal para reflejar inmediatamente el cambio
@@ -450,6 +534,129 @@ class TransactionController extends Controller
     public function update(Request $request, $id) {
         $transaction = $this->transactionRepo->find($id);
         if (isset($transaction->id)) {
+            // Validación condicional en update: sólo valida lo que venga en el payload
+            $validator = Validator::make($request->all(), [
+                'name' => 'sometimes|string|max:100',
+                'amount' => 'sometimes|numeric',
+                'description' => 'sometimes|string|max:255',
+                'date' => 'sometimes|date',
+                'provider_id' => 'sometimes|present|nullable|exists:providers,id',
+                'url_file' => 'sometimes|nullable|string',
+                'rate_id' => 'sometimes|nullable|integer',
+                'transaction_type_id' => 'sometimes|nullable|exists:transaction_types,id',
+                'amount_tax' => 'sometimes|nullable|numeric',
+                'active' => 'sometimes|boolean',
+                'include_in_balance' => 'sometimes|boolean',
+                // items
+                'items' => 'sometimes|array',
+                'items.*.item_id' => 'nullable|exists:items,id',
+                'items.*.name' => 'nullable|string|max:150',
+                'items.*.quantity' => 'nullable|numeric',
+                'items.*.amount' => 'required_with:items|numeric',
+                'items.*.tax_id' => 'nullable|exists:taxes,id',
+                'items.*.rate_id' => 'nullable|exists:rates,id',
+                'items.*.description' => 'nullable|string|max:255',
+                'items.*.jar_id' => 'nullable|exists:jars,id',
+                'items.*.date' => 'nullable|date',
+                'items.*.category_id' => 'nullable|exists:categories,id',
+                'items.*.item_category_id' => 'nullable|exists:item_categories,id',
+                'items.*.user_id' => 'nullable|exists:users,id',
+                'items.*.custom_name' => 'nullable|string|max:150',
+                // payments
+                'payments' => 'sometimes|array|min:1',
+                'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
+                'payments.*.amount' => 'required_with:payments|numeric',
+                'payments.*.rate' => 'nullable|numeric',
+            ], $this->custom_message());
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'FAILED', 'code' => 400,
+                    'message' => __('Incorrect Params'),
+                    'data' => $validator->errors()->getMessages(),
+                ], 400);
+            }
+
+            // Reglas cardinalidad en update si vienen pagos
+            $itemsUpd = $request->input('items', null);
+            $paymentsUpd = $request->input('payments', null);
+            if (is_array($paymentsUpd)) {
+                $paymentsCount = count($paymentsUpd);
+                $hasPos = false; $hasNeg = false;
+                foreach ($paymentsUpd as $pm) {
+                    $amt = (float)($pm['amount'] ?? 0);
+                    if ($amt > 0) $hasPos = true;
+                    if ($amt < 0) $hasNeg = true;
+                }
+                $isTransferLike = $hasPos && $hasNeg;
+                if ($isTransferLike && $paymentsCount !== 2) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 422,
+                        'message' => __('Transfers must have exactly 2 payments with opposite signs')
+                    ], 422);
+                }
+                if (!$isTransferLike && $paymentsCount === 1 && is_array($itemsUpd)) {
+                    if (count($itemsUpd) !== 1) {
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Simple transactions must contain exactly one item')
+                        ], 422);
+                    }
+                }
+            }
+
+            // Consistencia de montos en update sólo si vienen ambos en el payload
+            $providedAmount = $request->has('amount') ? (float)$request->input('amount') : null;
+            if (is_array($itemsUpd) && $providedAmount !== null) {
+                $sum = 0.0; $allNeg = true; $anyNeg = false;
+                foreach ($itemsUpd as $it) {
+                    $q = isset($it['quantity']) ? (float)$it['quantity'] : 1.0;
+                    $a = isset($it['amount']) ? (float)$it['amount'] : 0.0;
+                    $sum += ($a * $q);
+                    if ($a >= 0) $allNeg = false; if ($a < 0) $anyNeg = true;
+                }
+                $itemsTotal = round($sum,2);
+                $diff = abs(abs($providedAmount) - ($allNeg? abs($itemsTotal): $itemsTotal));
+                if ($diff > 0.01) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 422,
+                        'message' => __('Provided amount must equal items total'),
+                        'data' => [
+                            'provided_amount' => round(abs($providedAmount),2),
+                            'items_total' => $allNeg? abs($itemsTotal): $itemsTotal,
+                        ],
+                    ], 422);
+                }
+            }
+
+            if (is_array($paymentsUpd) && $providedAmount !== null) {
+                $sumUser = 0.0; $hasPos=false; $hasNeg=false;
+                foreach ($paymentsUpd as $pm) {
+                    $accAmt = (float)($pm['amount'] ?? 0.0);
+                    $rate = (float)($pm['rate'] ?? 1.0);
+                    if ($rate === 0.0) {
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Rate cannot be zero in payments')
+                        ], 422);
+                    }
+                    $sumUser += ($accAmt / $rate);
+                    if ($accAmt > 0) $hasPos = true; if ($accAmt < 0) $hasNeg = true;
+                }
+                $sumUser = round($sumUser,2);
+                $netMatches = abs($sumUser - $providedAmount) <= 0.01;
+                $absMatches = abs(abs($sumUser) - abs($providedAmount)) <= 0.01;
+                $valid = ($hasPos && $hasNeg) ? $netMatches : $absMatches;
+                if (!$valid) {
+                    return response()->json([
+                        'status' => 'FAILED','code' => 422,
+                        'message' => __('Payments total must equal transaction amount'),
+                        'data' => [
+                            'amount' => round($providedAmount,2),
+                            'payments_sum_user' => $sumUser,
+                        ],
+                    ], 422);
+                }
+            }
             $data= array();
             // Capturar el estado original antes de actualizar para calcular deltas/afectaciones
             $original = $transaction->replicate();

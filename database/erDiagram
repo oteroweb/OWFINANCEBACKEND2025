@@ -275,6 +275,7 @@ erDiagram
     datetime deleted_at
     datetime date
     bigint category_id FK
+    bigint item_category_id FK
     bigint user_id FK
     varchar custom_name
     int quantity
@@ -494,6 +495,7 @@ erDiagram
   RATES ||--o{ ITEM_TRANSACTIONS : rate
   JARS ||--o{ ITEM_TRANSACTIONS : assigned_to
   CATEGORIES ||--o{ ITEM_TRANSACTIONS : classified_as
+  ITEM_CATEGORIES ||--o{ ITEM_TRANSACTIONS : classified_as
   USERS ||--o{ ITEM_TRANSACTIONS : user
 
   ITEM_TRANSACTIONS ||--o{ ITEM_TAXES : has_taxes
