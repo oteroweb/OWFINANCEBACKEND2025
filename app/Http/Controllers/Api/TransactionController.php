@@ -31,6 +31,8 @@ class TransactionController extends Controller
             $params = $request->only([
                 'page', 'per_page', 'sort_by', 'descending',
                 'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'date_from', 'date_to',
+                // top-level category filters
+                'category_id', 'category',
                 // nuevos filtros
                 'account_ids', 'transaction_ids', 'payments_account_id',
                 // periodos (extendidos)
@@ -103,7 +105,9 @@ class TransactionController extends Controller
             // Collect pagination, sorting, search and filter parameters
             $params = $request->only([
                 'page', 'per_page', 'sort_by', 'descending',
-                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'payments_account_id'
+                'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'payments_account_id',
+                // top-level category filters
+                'category_id', 'category'
             ]);
             // Support multiple and single payment account filters (active list)
             $paymentsAccountIdsRaw = $request->input('payment_account_ids')
@@ -221,6 +225,7 @@ class TransactionController extends Controller
             'rate_id' => 'nullable|integer',
             'transaction_type_id' => 'nullable|exists:transaction_types,id',
             'amount_tax' => 'nullable|numeric',
+            'category_id' => 'nullable|exists:categories,id',
             'active' => 'sometimes|boolean',
             'include_in_balance' => 'sometimes|boolean',
             // Nested: items and payments
@@ -389,6 +394,7 @@ class TransactionController extends Controller
                 'transaction_type_id'=> $request->input('transaction_type_id'),
                 'amount_tax'=> $request->input('amount_tax'),
                 'account_id'=> $request->input('account_id'),
+                'category_id'=> $request->input('category_id'),
                 'user_id'=> $user->id,
             ];
             if ($request->exists('active')) {
@@ -488,7 +494,7 @@ class TransactionController extends Controller
             }
 
             // Reload with relations (including account inside payment transactions)
-            $transaction->load(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions.account']);
+            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account']);
             DB::commit();
 
             // Recalcular y persistir balances de todas las cuentas afectadas por los payments
@@ -552,6 +558,7 @@ class TransactionController extends Controller
                 'rate_id' => 'sometimes|nullable|integer',
                 'transaction_type_id' => 'sometimes|nullable|exists:transaction_types,id',
                 'amount_tax' => 'sometimes|nullable|numeric',
+                'category_id' => 'sometimes|nullable|exists:categories,id',
                 'active' => 'sometimes|boolean',
                 'include_in_balance' => 'sometimes|boolean',
                 // items
@@ -678,6 +685,7 @@ class TransactionController extends Controller
             if ($request->has('amount_tax')) { $data['amount_tax'] = $request->input('amount_tax'); }
             if ($request->has('account_id')) { $data['account_id'] = $request->input('account_id'); }
             if ($request->has('user_id')) { $data['user_id'] = $request->input('user_id'); }
+            if ($request->has('category_id')) { $data['category_id'] = $request->input('category_id'); }
             if ($request->exists('active')) { $data['active'] = $request->boolean('active'); }
             if ($request->exists('include_in_balance')) { $data['include_in_balance'] = $request->boolean('include_in_balance'); }
             $transaction = $this->transactionRepo->update($transaction, $data);

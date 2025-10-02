@@ -232,6 +232,7 @@ erDiagram
     bigint transaction_type_id FK
     bigint user_id FK
     bigint account_id FK
+    bigint category_id FK
     decimal amount_tax
     datetime created_at
     datetime updated_at
@@ -495,6 +496,7 @@ erDiagram
   RATES ||--o{ ITEM_TRANSACTIONS : rate
   JARS ||--o{ ITEM_TRANSACTIONS : assigned_to
   CATEGORIES ||--o{ ITEM_TRANSACTIONS : classified_as
+  CATEGORIES ||--o{ TRANSACTIONS : classified_as
   ITEM_CATEGORIES ||--o{ ITEM_TRANSACTIONS : classified_as
   USERS ||--o{ ITEM_TRANSACTIONS : user
 

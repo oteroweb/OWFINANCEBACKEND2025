@@ -19,7 +19,11 @@ class TransactionRepo {
     {
         $query = Transaction::select('transactions.*')->distinct()
             ->whereIn('active', [1,0])
-            ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions.account']);
+            ->with([
+                'provider','rate','user','account','transactionType','category',
+                'itemTransactions', 'itemTransactions.category', 'itemTransactions.itemCategory',
+                'paymentTransactions.account'
+            ]);
 
         // Restricción por usuario autenticado (no admin)
         if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
@@ -59,6 +63,15 @@ class TransactionRepo {
         }
         if (!empty($params['account_id'])) {
             $query->where('account_id', $params['account_id']);
+        }
+        // top-level category filter
+        if (!empty($params['category_id'])) {
+            $query->where('category_id', $params['category_id']);
+        } elseif (!empty($params['category'])) {
+            $catName = $params['category'];
+            $query->whereHas('category', function ($q2) use ($catName) {
+                $q2->where('name', 'like', "%{$catName}%");
+            });
         }
         // nested payments.account_id filter
         if (!empty($params['payments_account_id'])) {
@@ -198,7 +211,7 @@ class TransactionRepo {
         // Apply global search (reusable loop)
         if (!empty($params['search'])) {
             $searchTerm = $params['search'];
-            $this->applyGlobalSearch($query, $searchTerm, ['name', 'description', 'provider.name', 'transaction_type.name', 'user.name', 'account.name']);
+            $this->applyGlobalSearch($query, $searchTerm, ['name', 'description', 'provider.name', 'transaction_type.name', 'user.name', 'account.name', 'category.name']);
         }
 
         // Apply sorting
@@ -226,7 +239,11 @@ class TransactionRepo {
     {
         $query = Transaction::select('transactions.*')->distinct()
             ->where('active',1)
-            ->with(['provider','rate','user','account','transactionType','itemTransactions','paymentTransactions.account']);
+            ->with([
+                'provider','rate','user','account','transactionType','category',
+                'itemTransactions','itemTransactions.category','itemTransactions.itemCategory',
+                'paymentTransactions.account'
+            ]);
 
         if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
             $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
@@ -255,6 +272,15 @@ class TransactionRepo {
         }
         if (!empty($params['account_id'])) {
             $query->where('account_id', $params['account_id']);
+        }
+        // top-level category filter (active)
+        if (!empty($params['category_id'])) {
+            $query->where('category_id', $params['category_id']);
+        } elseif (!empty($params['category'])) {
+            $catName = $params['category'];
+            $query->whereHas('category', function ($q2) use ($catName) {
+                $q2->where('name', 'like', "%{$catName}%");
+            });
         }
         // nested payments.account_id filter (active)
         if (!empty($params['payments_account_id'])) {
@@ -384,7 +410,7 @@ class TransactionRepo {
         }
 
         // Reusable global search using a loop over fields (supports relations via dot-notation)
-        $searchFields = ['name', 'description', 'provider.name', 'transaction_type.name', 'user.name', 'account.name'];
+    $searchFields = ['name', 'description', 'provider.name', 'transaction_type.name', 'user.name', 'account.name', 'category.name'];
         if (!empty($params['search'])) {
             $searchTerm = $params['search'];
             Log::debug('TransactionRepo allActive search', [
@@ -411,7 +437,11 @@ class TransactionRepo {
     }
 
     public function find($id) {
-        return Transaction::with(['provider', 'rate', 'user', 'account', 'transactionType', 'itemTransactions', 'paymentTransactions.account'])->find($id);
+        return Transaction::with([
+            'provider','rate','user','account','transactionType','category',
+            'itemTransactions','itemTransactions.category','itemTransactions.itemCategory',
+            'paymentTransactions.account'
+        ])->find($id);
     }
     public function store($data) {
         $transaction = new Transaction();
@@ -429,8 +459,12 @@ class TransactionRepo {
         $transaction->save();
         return $transaction;
     }
-    public function withTrashed() {
-        return Transaction::withTrashed()->with(['provider', 'rate', 'user', 'account', 'transactionType'])->get();
+    public function withTrashed($sortBy = 'date', $descending = false) {
+        $direction = filter_var($descending, FILTER_VALIDATE_BOOLEAN) ? 'desc' : 'asc';
+        return Transaction::withTrashed()
+            ->with(['provider', 'rate', 'user', 'account', 'transactionType','category'])
+            ->orderBy($sortBy, $direction)
+            ->get();
     }
 
     /**

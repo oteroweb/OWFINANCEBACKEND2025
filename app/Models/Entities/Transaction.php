@@ -30,6 +30,7 @@ class Transaction extends Model
         'transaction_type_id',
         'user_id',
         'account_id',
+        'category_id',
         'amount_tax',
     'include_in_balance',
     ];
@@ -62,6 +63,11 @@ class Transaction extends Model
     public function transactionType()
     {
         return $this->belongsTo(TransactionType::class, 'transaction_type_id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
     }
 
     // Relationship: a transaction has many item transactions (invoice lines)
