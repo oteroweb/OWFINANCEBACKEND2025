@@ -11,6 +11,20 @@ class UserController extends Controller
 {
     public function __construct(private UserRepo $repo) {}
 
+    /**
+     * Obtener el perfil del usuario autenticado
+     */
+    public function profile(Request $request)
+    {
+        $user = $request->user()->load(['client', 'role', 'currency', 'accounts']);
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => '',
+            'data' => $user
+        ]);
+    }
+
     public function all(Request $request)
     {
         $params = $request->only(['page','per_page','sort_by','descending','search','client_id']);
@@ -77,6 +91,71 @@ class UserController extends Controller
             'code' => 200,
             'message' => '',
             'data' => $user
+        ]);
+    }
+
+    /**
+     * Actualizar el perfil del usuario autenticado. Si es admin, puede actualizar a cualquier usuario mediante ID.
+     */
+    public function updateProfile(Request $request, $id = null)
+    {
+        $authUser = $request->user();
+
+        // Determinar usuario a actualizar
+        $targetId = $id ?? $request->input('id');
+        if ($targetId) {
+            // Solo admin puede actualizar a otros
+            if (!$authUser->isAdmin() && (int)$targetId !== (int)$authUser->id) {
+                return response()->json([
+                    'status' => 'ERROR',
+                    'code' => 403,
+                    'message' => __('No autorizado para actualizar este usuario.'),
+                    'data' => null,
+                ], 403);
+            }
+            $user = $this->repo->find($targetId);
+        } else {
+            $user = $authUser->load(['client', 'role', 'currency', 'accounts']);
+        }
+
+        // Campos permitidos
+        $adminOnlyFields = ['role_id', 'active', 'client_id', 'balance'];
+        $commonFields = ['name', 'phone', 'email', 'password', 'currency_id'];
+        $allowed = $authUser->isAdmin() ? array_merge($commonFields, $adminOnlyFields) : $commonFields;
+
+        // Reglas de validación dinámicas
+        $rules = [
+            'name' => 'sometimes|string',
+            'phone' => 'sometimes|nullable|string',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'password' => 'sometimes|string|min:6',
+            'currency_id' => 'sometimes|nullable|exists:currencies,id',
+        ];
+        if ($authUser->isAdmin()) {
+            $rules = array_merge($rules, [
+                'role_id' => 'sometimes|exists:roles,id',
+                'active' => 'sometimes|boolean',
+                'client_id' => 'sometimes|nullable|exists:clients,id',
+                'balance' => 'sometimes|numeric',
+            ]);
+        }
+
+        $data = $request->only($allowed);
+        $validated = validator($data, $rules)->validate();
+
+        if (array_key_exists('active', $validated)) {
+            $validated['active'] = (bool)$request->boolean('active');
+        }
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        }
+
+        $updated = $this->repo->update($user, $validated);
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => __('Perfil actualizado correctamente.'),
+            'data' => $updated,
         ]);
     }
 
