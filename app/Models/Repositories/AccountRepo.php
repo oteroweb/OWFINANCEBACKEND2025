@@ -96,13 +96,35 @@ class AccountRepo
      */
     public function calculateBalance($accountId)
     {
-        return (float) \App\Models\Entities\PaymentTransaction::where('account_id', $accountId)
+        // Suma de pagos (modelo nuevo)
+        $sumPayments = (float) \App\Models\Entities\PaymentTransaction::where('account_id', $accountId)
             ->where('active', 1)
             ->whereHas('transaction', function ($q) {
                 $q->where('active', 1)
                   ->where('include_in_balance', 1);
             })
             ->sum('amount');
+
+        // Compatibilidad: incluir transacciones sin paymentTransactions asignados explícitamente
+        // que afectan directamente a account_id (p.ej., ajustes o legacy)
+        $sumLegacy = (float) \App\Models\Entities\Transaction::where('account_id', $accountId)
+            ->where('active', 1)
+            ->where('include_in_balance', 1)
+            ->whereDoesntHave('paymentTransactions')
+            ->sum('amount');
+
+        if (abs($sumPayments) > 0.00001) {
+            // Caso normal: hay pagos; sumar además transacciones legacy sin pagos
+            return round($sumPayments + $sumLegacy, 2);
+        }
+
+        // Fallback: si por alguna razón no hay pagos contados para esta cuenta,
+        // usar la suma de transacciones clásicas por account_id (evita doble conteo)
+        $sumByAccount = (float) \App\Models\Entities\Transaction::where('account_id', $accountId)
+            ->where('active', 1)
+            ->where('include_in_balance', 1)
+            ->sum('amount');
+        return round($sumByAccount, 2);
     }
 
     /**

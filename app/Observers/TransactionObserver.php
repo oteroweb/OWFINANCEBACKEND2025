@@ -9,46 +9,53 @@ class TransactionObserver
 {
     public function created(Transaction $transaction): void
     {
-        if ($this->counts($transaction)) {
-            $service = app(BalanceService::class);
-            $before = optional($transaction->account()->first())->balance_cached;
-            $service->applyDelta($transaction->account_id, (float)$transaction->amount);
-            $after = optional($transaction->account()->first())->balance_cached;
-            if ($before === $after && (float)$transaction->amount !== 0.0) {
-                // Fallback: recalc in case observer fired before relation refresh
-                $service->recalcAccount($transaction->account_id);
-            }
-        }
+        // No-op on created: the controller recalculates balances after creating payment transactions.
+        // Leaving this empty avoids applying outdated amount-based deltas.
     }
 
     public function updated(Transaction $transaction): void
     {
-        // Obtener original (antes de cambios) usando getOriginal
-        $original = new Transaction();
-        $original->fill($transaction->getOriginal());
-        $original->account_id = $transaction->getOriginal('account_id');
-        $original->amount = $transaction->getOriginal('amount');
-        $original->active = $transaction->getOriginal('active');
-        $original->include_in_balance = $transaction->getOriginal('include_in_balance');
-
-        $deltas = app(BalanceService::class)->computeUpdateDeltas($original, $transaction);
-        foreach ($deltas as $accountId => $delta) {
-            app(BalanceService::class)->applyDelta($accountId, $delta);
+        // Recalcular balances desde pagos + inicial para cuentas impactadas
+        $repo = app(\App\Models\Repositories\AccountRepo::class);
+        $ids = [];
+        // Cuentas de pagos actuales
+        try {
+            $ids = array_merge($ids, $transaction->paymentTransactions()->pluck('account_id')->all());
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        // account_id actual y original (por compat)
+        $curr = $transaction->account_id;
+        $orig = $transaction->getOriginal('account_id');
+        if ($curr !== null) { $ids[] = $curr; }
+        if ($orig !== null) { $ids[] = $orig; }
+        // Normalizar y recalcular
+        $ids = array_values(array_unique(array_filter(array_map(function($v){ return is_numeric($v)? (int)$v : null; }, $ids))));
+        foreach ($ids as $aid) {
+            try { $repo->recalcAndStoreFromInitialByType($aid); } catch (\Throwable $e) { /* log if needed */ }
         }
     }
 
     public function deleted(Transaction $transaction): void
     {
-        if ($this->counts($transaction)) {
-            app(BalanceService::class)->applyDelta($transaction->account_id, - (float)$transaction->amount);
-        }
+        // Recalcular balances de cuentas relacionadas
+        $repo = app(\App\Models\Repositories\AccountRepo::class);
+        $ids = [];
+        try { $ids = array_merge($ids, $transaction->paymentTransactions()->pluck('account_id')->all()); } catch (\Throwable $e) {}
+        if ($transaction->account_id !== null) { $ids[] = $transaction->account_id; }
+        $ids = array_values(array_unique(array_filter(array_map(function($v){ return is_numeric($v)? (int)$v : null; }, $ids))));
+        foreach ($ids as $aid) { try { $repo->recalcAndStoreFromInitialByType($aid); } catch (\Throwable $e) {} }
     }
 
     public function restored(Transaction $transaction): void
     {
-        if ($this->counts($transaction)) {
-            app(BalanceService::class)->applyDelta($transaction->account_id, (float)$transaction->amount);
-        }
+        // Recalcular balances de cuentas relacionadas
+        $repo = app(\App\Models\Repositories\AccountRepo::class);
+        $ids = [];
+        try { $ids = array_merge($ids, $transaction->paymentTransactions()->pluck('account_id')->all()); } catch (\Throwable $e) {}
+        if ($transaction->account_id !== null) { $ids[] = $transaction->account_id; }
+        $ids = array_values(array_unique(array_filter(array_map(function($v){ return is_numeric($v)? (int)$v : null; }, $ids))));
+        foreach ($ids as $aid) { try { $repo->recalcAndStoreFromInitialByType($aid); } catch (\Throwable $e) {} }
     }
 
     private function counts(Transaction $t): bool

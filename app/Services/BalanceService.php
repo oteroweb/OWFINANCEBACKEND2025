@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\DB;
 
 class BalanceService
 {
+    // NOTE: This service reflects legacy amount-based balance semantics. New logic in AccountRepo
+    // calculates balances from PaymentTransaction sums + Account.initial. Observers/controllers
+    // should prefer AccountRepo->recalcAndStoreFromInitialByType for correctness.
     /**
      * Recalcula completamente el balance_cached de una cuenta usando la lógica actual (transacciones activas include_in_balance=1).
      */

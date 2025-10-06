@@ -219,8 +219,8 @@ class TransactionController extends Controller
             'amount' => 'nullable|numeric',
             'description' => 'max:255',
             'date' => 'required|date',
-            // Debe estar presente aunque sea null
-            'provider_id' => 'present|nullable|exists:providers,id',
+            // Optional: if provided, must exist. Do not require presence.
+            'provider_id' => 'nullable|exists:providers,id',
             'url_file' => 'nullable|string',
             'rate_id' => 'nullable|integer',
             'transaction_type_id' => 'nullable|exists:transaction_types,id',
@@ -256,7 +256,7 @@ class TransactionController extends Controller
                 'message' => __('Incorrect Params'),
                 'data'    => $validator->errors()->getMessages(),
             ];
-            return response()->json($response);
+            return response()->json($response, 400);
         }
         try {
             // Authenticated user (via Sanctum). Required to bind ownership and authorize accounts.
@@ -672,8 +672,9 @@ class TransactionController extends Controller
                 }
             }
             $data= array();
-            // Capturar el estado original antes de actualizar para calcular deltas/afectaciones
+            // Capturar el estado original y pagos originales para afectaciones
             $original = $transaction->replicate();
+            $originalPaymentAccountIds = $transaction->paymentTransactions()->pluck('account_id')->map(fn($v) => (int)$v)->all();
             if ($request->has('name')) { $data['name'] = $request->input('name'); }
             if ($request->has('amount')) { $data['amount'] = $request->input('amount'); }
             if ($request->has('description')) { $data['description'] = $request->input('description'); }
@@ -688,21 +689,97 @@ class TransactionController extends Controller
             if ($request->has('category_id')) { $data['category_id'] = $request->input('category_id'); }
             if ($request->exists('active')) { $data['active'] = $request->boolean('active'); }
             if ($request->exists('include_in_balance')) { $data['include_in_balance'] = $request->boolean('include_in_balance'); }
+            DB::beginTransaction();
             $transaction = $this->transactionRepo->update($transaction, $data);
+
+            // Si vienen items en el payload, reescribir el conjunto de itemTransactions (estrategia replace)
+            if (is_array($itemsUpd)) {
+                // Soft delete existentes y recrear
+                ItemTransaction::where('transaction_id', $transaction->id)->delete();
+                foreach ($itemsUpd as $it) {
+                    // applies_to validation for item taxes
+                    if (!empty($it['tax_id'])) {
+                        $tax = Tax::find($it['tax_id']);
+                        if (!$tax || !in_array($tax->applies_to ?? 'item', ['item','both'], true)) {
+                            DB::rollBack();
+                            return response()->json([
+                                'status' => 'FAILED','code' => 422,
+                                'message' => __('Selected tax does not apply to items')
+                            ], 422);
+                        }
+                    }
+                    ItemTransaction::create([
+                        'transaction_id' => $transaction->id,
+                        'item_id' => $it['item_id'] ?? null,
+                        'quantity' => $it['quantity'] ?? 1,
+                        'name' => $it['name'] ?? null,
+                        'amount' => $it['amount'] ?? 0,
+                        'tax_id' => $it['tax_id'] ?? null,
+                        'rate_id' => $it['rate_id'] ?? null,
+                        'description' => $it['description'] ?? null,
+                        'jar_id' => $it['jar_id'] ?? null,
+                        'date' => $it['date'] ?? $transaction->date,
+                        'category_id' => $it['category_id'] ?? null,
+                        'item_category_id' => $it['item_category_id'] ?? null,
+                        'user_id' => $it['user_id'] ?? $transaction->user_id,
+                        'custom_name' => $it['custom_name'] ?? null,
+                        'active' => 1,
+                    ]);
+                }
+            }
+
+            // Si vienen payments en el payload, reemplazar el conjunto de PaymentTransactions
+            $newPaymentAccountIds = [];
+            if (is_array($paymentsUpd)) {
+                PaymentTransaction::where('transaction_id', $transaction->id)->delete();
+                foreach ($paymentsUpd as $pm) {
+                    $accId = isset($pm['account_id']) ? (int)$pm['account_id'] : null;
+                    $amt = isset($pm['amount']) ? (float)$pm['amount'] : 0.0;
+                    if ($accId) { $newPaymentAccountIds[] = $accId; }
+                    PaymentTransaction::create([
+                        'transaction_id' => $transaction->id,
+                        'account_id' => $accId,
+                        'amount' => $amt,
+                        'active' => 1,
+                    ]);
+                }
+            }
+
+            // Auto-sync: if amount changed and no explicit payments provided, and this is a simple transaction
+            // with exactly one payment, update that payment amount to match the transaction amount.
+            if ($request->has('amount') && !$request->has('payments')) {
+                try {
+                    $paymentsCount = PaymentTransaction::where('transaction_id', $transaction->id)->count();
+                    if ($paymentsCount === 1) {
+                        $pt = PaymentTransaction::where('transaction_id', $transaction->id)->first();
+                        if ($pt) {
+                            $pt->amount = (float) $transaction->amount;
+                            $pt->save();
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::error($e);
+                }
+            }
+
+            // Recargar relaciones y confirmar cambios
+            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account']);
+            DB::commit();
 
             // Recalcular balances afectados y retornarlos
             $balancesAfter = [];
             try {
-                $deltas = app(\App\Services\BalanceService::class)->computeUpdateDeltas($original, $transaction);
                 $repo = app(\App\Models\Repositories\AccountRepo::class);
-                foreach (array_keys($deltas) as $accountId) {
-                    if ($accountId) {
-                        $balancesAfter[$accountId] = $repo->recalcAndStoreFromInitialByType($accountId);
+                // Afectadas: cuentas de pagos originales y nuevas (si se enviaron payments)
+                $impacted = array_unique(array_map('intval', array_merge($originalPaymentAccountIds, $newPaymentAccountIds)));
+                foreach ($impacted as $accId) {
+                    if ($accId) {
+                        $balancesAfter[$accId] = $repo->recalcAndStoreFromInitialByType($accId);
                     }
                 }
-                // Si no hubo deltas (p.ej. cambio sin impacto), pero hay cuenta, devolver su balance actualizado
-                if (empty($balancesAfter) && $transaction->account_id) {
-                    $balancesAfter[$transaction->account_id] = $repo->recalcAndStoreFromInitialByType($transaction->account_id);
+                // Compat: incluir cuenta principal si existe
+                if ($transaction->account_id) {
+                    $balancesAfter[$transaction->account_id] = $repo->recalcAndStoreFromInitialByType((int)$transaction->account_id);
                 }
             } catch (\Throwable $e) {
                 Log::error($e);
