@@ -48,6 +48,16 @@ erDiagram
     datetime deleted_at
   }
 
+  USER_CURRENCIES {
+    bigint id PK
+    bigint user_id FK
+    bigint currency_id FK
+    decimal current_rate
+    boolean is_current
+    datetime created_at
+    datetime updated_at
+  }
+
   ACCOUNT_TYPES {
     bigint id PK
     varchar name
@@ -472,6 +482,9 @@ erDiagram
 
   CATEGORIES ||--o{ CATEGORIES : parent_of
   USERS ||--o{ CATEGORIES : owned_by_user
+
+  USERS ||--o{ USER_CURRENCIES : has_rates
+  CURRENCIES ||--o{ USER_CURRENCIES : rated_for_user
 
   USERS ||--o{ JARS : owned_by
   JARS ||--o{ JAR_CATEGORY : maps

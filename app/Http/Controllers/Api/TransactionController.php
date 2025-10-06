@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Entities\ItemTransaction;
 use App\Models\Entities\PaymentTransaction;
 use App\Models\Entities\Tax;
+use App\Models\Entities\UserCurrency;
+use App\Models\Entities\Account;
 
 class TransactionController extends Controller
 {
@@ -248,6 +250,7 @@ class TransactionController extends Controller
             'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
             'payments.*.amount' => 'required_with:payments|numeric',
             'payments.*.rate' => 'nullable|numeric',
+            'payments.*.current_rate' => 'nullable|boolean',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -407,7 +410,10 @@ class TransactionController extends Controller
                 $hasPos = false; $hasNeg = false;
                 foreach ($payments as $pm) {
                     $accAmt = isset($pm['amount']) ? (float) $pm['amount'] : 0.0;
-                    $rate = isset($pm['rate']) ? (float) $pm['rate'] : 1.0;
+                    $accId = isset($pm['account_id']) ? (int)$pm['account_id'] : null;
+                    $providedRate = isset($pm['rate']) && $pm['rate'] !== null ? (float)$pm['rate'] : null;
+                    $markCurrent = array_key_exists('current_rate', $pm) ? (bool)$pm['current_rate'] : null;
+                    $rate = $this->resolveUserCurrencyRate((int)$user->id, (int)$accId, $providedRate, $markCurrent);
                     if ($rate === 0.0) {
                         return response()->json([
                             'status' => 'FAILED','code' => 422,
@@ -581,6 +587,7 @@ class TransactionController extends Controller
                 'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
                 'payments.*.amount' => 'required_with:payments|numeric',
                 'payments.*.rate' => 'nullable|numeric',
+                'payments.*.current_rate' => 'nullable|boolean',
             ], $this->custom_message());
             if ($validator->fails()) {
                 return response()->json([
@@ -646,7 +653,10 @@ class TransactionController extends Controller
                 $sumUser = 0.0; $hasPos=false; $hasNeg=false;
                 foreach ($paymentsUpd as $pm) {
                     $accAmt = (float)($pm['amount'] ?? 0.0);
-                    $rate = (float)($pm['rate'] ?? 1.0);
+                    $accId = isset($pm['account_id']) ? (int)$pm['account_id'] : null;
+                    $providedRate = isset($pm['rate']) && $pm['rate'] !== null ? (float)$pm['rate'] : null;
+                    $markCurrent = array_key_exists('current_rate', $pm) ? (bool)$pm['current_rate'] : null;
+                    $rate = $this->resolveUserCurrencyRate((int)($request->user()->id ?? $transaction->user_id), (int)$accId, $providedRate, $markCurrent);
                     if ($rate === 0.0) {
                         return response()->json([
                             'status' => 'FAILED','code' => 422,
@@ -929,5 +939,55 @@ class TransactionController extends Controller
             'amount.required'=> __('The amount is required'),
             'date.required'=> __('The date is required'),
         ];
+    }
+
+    /**
+     * Resolve effective rate for a payment from provided value or user's current rate for the account's currency.
+     * Also persists/associates the provided rate with the user/currency and optionally marks it as current.
+     */
+    private function resolveUserCurrencyRate(int $userId, int $accountId, ?float $providedRate, ?bool $markCurrent): float
+    {
+        $account = $accountId ? Account::find($accountId) : null;
+        if (!$account || !$account->currency_id) {
+            return (float) ($providedRate ?? 1.0);
+        }
+        $currencyId = (int) $account->currency_id;
+
+        if ($providedRate !== null) {
+            // Ensure association exists for this exact rate
+            $record = UserCurrency::firstOrCreate(
+                [
+                    'user_id' => $userId,
+                    'currency_id' => $currencyId,
+                    'current_rate' => $providedRate,
+                ],
+                [
+                    'is_current' => (bool) ($markCurrent ?? false),
+                    'is_official' => true,
+                ]
+            );
+            // No se desmarcan otros; se permite múltiples current
+            if ($markCurrent !== null) { $record->is_current = (bool)$markCurrent; $record->save(); }
+            return (float) $providedRate;
+        }
+
+        // No provided rate: try user's current (prefer official)
+        $current = UserCurrency::where('user_id', $userId)
+            ->where('currency_id', $currencyId)
+            ->where('is_current', true)
+            ->where('is_official', true)
+            ->orderByDesc('updated_at')
+            ->first();
+        if (!$current) {
+            $current = UserCurrency::where('user_id', $userId)
+                ->where('currency_id', $currencyId)
+                ->where('is_current', true)
+                ->orderByDesc('updated_at')
+                ->first();
+        }
+        if ($current && $current->current_rate && (float)$current->current_rate > 0) {
+            return (float) $current->current_rate;
+        }
+        return 1.0; // fallback
     }
 }

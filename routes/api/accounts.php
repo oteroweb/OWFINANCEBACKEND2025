@@ -32,3 +32,14 @@ Route::group([
     Route::delete('/{id}', [AccountController::class, 'delete']);
     Route::get('/{id}', [AccountController::class, 'find']);
 });
+
+// UserCurrency routes (rates per user and currency)
+Route::group([
+    'middleware' => ['api', 'auth:sanctum'],
+    'prefix'     => 'user-currencies',
+], function () {
+    Route::get('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'index']);
+    Route::post('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'store']);
+    Route::put('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'update']);
+    Route::delete('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'destroy']);
+});
