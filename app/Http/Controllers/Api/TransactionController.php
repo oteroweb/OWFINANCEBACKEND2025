@@ -404,6 +404,8 @@ class TransactionController extends Controller
             // If payments are provided, validate that their sum equals the transaction amount using currency conversion
             if (!empty($payments)) {
                 $sumUser = 0.0;
+                $sumPosUser = 0.0; // sum of positive legs (user currency)
+                $sumNegAbsUser = 0.0; // sum of |negative legs| (user currency)
                 $hasPos = false; $hasNeg = false;
                 foreach ($payments as $pm) {
                     $accAmt = isset($pm['amount']) ? (float) $pm['amount'] : 0.0;
@@ -414,28 +416,55 @@ class TransactionController extends Controller
                             'message' => __('Rate cannot be zero in payments')
                         ], 422);
                     }
-                    $userAmt = $accAmt / $rate; // User→Account conversion inverted
+                    $userAmt = $accAmt / $rate; // convert to user currency
                     $sumUser += $userAmt;
-                    if ($accAmt > 0) $hasPos = true;
-                    if ($accAmt < 0) $hasNeg = true;
+                    if ($accAmt > 0) { $hasPos = true; $sumPosUser += $userAmt; }
+                    if ($accAmt < 0) { $hasNeg = true; $sumNegAbsUser += abs($userAmt); }
                 }
                 $sumUser = round($sumUser, 2);
+                $sumPosUser = round($sumPosUser, 2);
+                $sumNegAbsUser = round($sumNegAbsUser, 2);
                 $finalAmount = isset($data['amount']) ? round((float) $data['amount'], 2) : 0.0;
 
-                $netMatches = abs($sumUser - $finalAmount) <= 0.01;
-                $absMatches = abs(abs($sumUser) - abs($finalAmount)) <= 0.01;
-
-                // For mixed-sign (e.g., transfer), require net match; otherwise allow absolute match (advanced payments for income/expense)
-                $valid = $hasPos && $hasNeg ? $netMatches : $absMatches;
-                if (!$valid) {
-                    return response()->json([
-                        'status' => 'FAILED', 'code' => 422,
-                        'message' => __('Payments total must equal transaction amount'),
-                        'data' => [
-                            'amount' => $finalAmount,
-                            'payments_sum_user' => $sumUser,
-                        ],
-                    ], 422);
+                if ($hasPos && $hasNeg) {
+                    // Transfer-like: legs must be equal/opposite and amount must equal the positive leg (moved value)
+                    $legsMatch = abs($sumPosUser - $sumNegAbsUser) <= 0.01;
+                    if (!$legsMatch) {
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Transfer payments must be equal and opposite'),
+                            'data' => [
+                                'payments_pos_sum_user' => $sumPosUser,
+                                'payments_neg_abs_sum_user' => $sumNegAbsUser,
+                                'payments_sum_user' => $sumUser,
+                            ],
+                        ], 422);
+                    }
+                    if (abs($sumPosUser - abs($finalAmount)) > 0.01) {
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Payments total must equal transaction amount'),
+                            'data' => [
+                                'amount' => $finalAmount,
+                                'payments_pos_sum_user' => $sumPosUser,
+                                'payments_neg_abs_sum_user' => $sumNegAbsUser,
+                                'payments_sum_user' => $sumUser,
+                            ],
+                        ], 422);
+                    }
+                } else {
+                    // Non-transfer: allow absolute match (advanced payments for income/expense)
+                    $absMatches = abs(abs($sumUser) - abs($finalAmount)) <= 0.01;
+                    if (!$absMatches) {
+                        return response()->json([
+                            'status' => 'FAILED', 'code' => 422,
+                            'message' => __('Payments total must equal transaction amount'),
+                            'data' => [
+                                'amount' => $finalAmount,
+                                'payments_sum_user' => $sumUser,
+                            ],
+                        ], 422);
+                    }
                 }
             }
 
@@ -643,7 +672,7 @@ class TransactionController extends Controller
             }
 
             if (is_array($paymentsUpd) && $providedAmount !== null) {
-                $sumUser = 0.0; $hasPos=false; $hasNeg=false;
+                $sumUser = 0.0; $sumPosUser = 0.0; $sumNegAbsUser = 0.0; $hasPos=false; $hasNeg=false;
                 foreach ($paymentsUpd as $pm) {
                     $accAmt = (float)($pm['amount'] ?? 0.0);
                     $rate = (float)($pm['rate'] ?? 1.0);
@@ -653,22 +682,53 @@ class TransactionController extends Controller
                             'message' => __('Rate cannot be zero in payments')
                         ], 422);
                     }
-                    $sumUser += ($accAmt / $rate);
-                    if ($accAmt > 0) $hasPos = true; if ($accAmt < 0) $hasNeg = true;
+                    $userAmt = ($accAmt / $rate);
+                    $sumUser += $userAmt;
+                    if ($accAmt > 0) { $hasPos = true; $sumPosUser += $userAmt; }
+                    if ($accAmt < 0) { $hasNeg = true; $sumNegAbsUser += abs($userAmt); }
                 }
                 $sumUser = round($sumUser,2);
-                $netMatches = abs($sumUser - $providedAmount) <= 0.01;
-                $absMatches = abs(abs($sumUser) - abs($providedAmount)) <= 0.01;
-                $valid = ($hasPos && $hasNeg) ? $netMatches : $absMatches;
-                if (!$valid) {
-                    return response()->json([
-                        'status' => 'FAILED','code' => 422,
-                        'message' => __('Payments total must equal transaction amount'),
-                        'data' => [
-                            'amount' => round($providedAmount,2),
-                            'payments_sum_user' => $sumUser,
-                        ],
-                    ], 422);
+                $sumPosUser = round($sumPosUser,2);
+                $sumNegAbsUser = round($sumNegAbsUser,2);
+                $providedAmount = round($providedAmount,2);
+                if ($hasPos && $hasNeg) {
+                    // Transfer-like: positive leg must equal |negative leg| and equal provided amount
+                    $legsMatch = abs($sumPosUser - $sumNegAbsUser) <= 0.01;
+                    if (!$legsMatch) {
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Transfer payments must be equal and opposite'),
+                            'data' => [
+                                'payments_pos_sum_user' => $sumPosUser,
+                                'payments_neg_abs_sum_user' => $sumNegAbsUser,
+                                'payments_sum_user' => $sumUser,
+                            ],
+                        ], 422);
+                    }
+                    if (abs($sumPosUser - abs($providedAmount)) > 0.01) {
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Payments total must equal transaction amount'),
+                            'data' => [
+                                'amount' => $providedAmount,
+                                'payments_pos_sum_user' => $sumPosUser,
+                                'payments_neg_abs_sum_user' => $sumNegAbsUser,
+                                'payments_sum_user' => $sumUser,
+                            ],
+                        ], 422);
+                    }
+                } else {
+                    $absMatches = abs(abs($sumUser) - abs($providedAmount)) <= 0.01;
+                    if (!$absMatches) {
+                        return response()->json([
+                            'status' => 'FAILED','code' => 422,
+                            'message' => __('Payments total must equal transaction amount'),
+                            'data' => [
+                                'amount' => $providedAmount,
+                                'payments_sum_user' => $sumUser,
+                            ],
+                        ], 422);
+                    }
                 }
             }
             $data= array();
