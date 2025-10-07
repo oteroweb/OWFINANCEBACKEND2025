@@ -4,31 +4,38 @@ Este documento define los payloads soportados por el backend y las reglas de val
 
 Resumen rápido:
 
-El sistema soporta 3 enfoques simultáneos:
-1. On-demand: `calculateBalance(account_id)` = `initial + ∑(amount)` de transacciones activas con include_in_balance=1.
-2. Caché persistente: columna `accounts.balance_cached` actualizada por observer de transacciones (creación, actualización, borrado/restauración) aplicando deltas.
+El sistema soporta 2 enfoques complementarios para saldos, ahora basados en pagos:
+1. Cálculo on-demand: `balance_calculado = initial + ∑(payment_transactions.amount)` de pagos activos cuya transacción padre está activa e `include_in_balance=1`.
+2. Caché persistente: columna `accounts.balance_cached`, recalculada tras operaciones relevantes de transacciones/pagos (creación, actualización, borrado/restauración) con la misma semántica de pagos.
 
 Endpoints relevantes:
 - POST `/api/v1/accounts/{id}/adjust-balance`: Ajusta al saldo objetivo. Si `include_in_balance=true`, crea transacción de ajuste. Si `false`, modifica `initial`.
 
-Campo en transacciones:
+Campos en transacciones (create/update):
 
 Notas de integridad:
 - Si cambias manualmente transacciones históricas por script, ejecuta luego `/recalculate-account` para sincronizar caché.
 - Los montos deben venir ya con su signo correcto desde el frontend (ej: egreso negativo, ingreso positivo, transfer destino positivo / origen negativo en payments).
 
 - name: string
-- amount: number (Ingreso + | Egreso - | Transfer +)
-  - Signo gestionado por frontend según tipo; backend no infiere.
+- amount: number|null (Ingreso + | Egreso - | Transfer +)
+  - Puede omitirse si envías items[]; el backend lo deriva como suma de ítems (con tolerancia 0.01).
+  - El signo lo gestiona el frontend; el backend no infiere el tipo.
 - date: 'YYYY-MM-DD HH:mm:ss'
-- provider_id: number|null (presente siempre; puede ser null)
+- provider_id: number|null (puede ser null; no es requerido en create)
 - transaction_type_id: number|null
+- category_id: number|null (categoría de la transacción a nivel top)
+- account_id: number|null (cuenta “principal” opcional, útil para compatibilidad o flujos simples)
+- include_in_balance: boolean (por defecto true si no se envía)
+- active: boolean (por defecto true)
 - url_file: string|null
   - Úsalo solo cuando NO envías payments[]. Para cruces de moneda, usa payments[].
-- items?: Array<{ name: string; amount: number; item_category_id?: number|null; tax_id?: number|null }>
-- payments?: Array<{ account_id: number; amount: number; rate: number|null; tax_id?: number|null }>
-  - amount: en moneda de la cuenta del pago
-  - rate: User→Account (si monedas difieren; si igual, null o 1)
+- items?: Array<{ name: string; amount: number; item_category_id?: number|null; category_id?: number|null; tax_id?: number|null; quantity?: number }>
+- payments: Array<{ account_id: number; amount: number; rate?: number|null; current_rate?: boolean; tax_id?: number|null }>
+  - payments[] es requerido (min: 1). Todas las operaciones se basan en pagos.
+  - amount: monto en moneda de la cuenta del pago.
+  - rate: tasa User→Account (si monedas difieren; si igual, puede ser null o 1).
+  - current_rate: si envías rate, puedes marcar este registro como “actual” para el usuario y la moneda de la cuenta; no desmarca otros “actuales”.
   - tax_id (opcional): impuesto por pago (IGTF/Comisión Pago Móvil)
 
 ## Validaciones clave (backend)
@@ -39,6 +46,11 @@ Notas de integridad:
   - Transfer (signos mixtos en pagos): se exige match neto (|∑userAmount − amount| ≤ 0.01)
   - Ingreso/Egreso avanzado (sin signos mixtos): se permite match por valor absoluto (| |∑userAmount| − |amount| | ≤ 0.01)
   - rate != 0; si misma moneda, rate puede ser null o 1
+
+Cardinalidad y modos de operación
+- Simple: si envías exactamente 1 payment (y no es transferencia), debes enviar exactamente 1 item.
+- Transferencia: exactamente 2 payments con signos opuestos; el amount top-level debe coincidir con la pierna positiva en moneda del usuario (tras dividir por la tasa).
+- Múltiples pagos (ingreso/egreso avanzado): se permite N payments; la validación usa suma por valor absoluto en moneda del usuario.
 
 
 ## Casos
@@ -77,13 +89,14 @@ Notas de integridad:
   { "name": "Pago", "amount": 20, "item_category_id": null }
   ],
   "payments": [
-    { "account_id": 7, "amount": -730, "rate": 36.5, "tax_id": null }
+    { "account_id": 7, "amount": -730, "rate": 36.5, "current_rate": true, "tax_id": null }
   ]
 }
 ```
 
 Notas:
 - payments[0].amount = -730 en moneda de la cuenta (VES); rate=36.5 (User USD→Account VES)
+- current_rate=true: la tasa 36.5 se registra/actualiza en la tabla USER_CURRENCIES del usuario y se marca como “actual” para VES; NO se desmarcan otros “actuales”.
 - Conversión: -730 / 36.5 = -20 (match con amount)
 
 - amount = suma de items (cada línea ya incluye IVA si aplica)
@@ -164,10 +177,10 @@ Hay dos conceptos distintos y complementarios:
   - Se usa para reportes de ítems y para precargar/recordar la categoría de un mismo ítem.
   - En modo simple: si hay un único ítem, toma este valor desde el selector principal del UI.
 
-- items[].category_id (Category, categoría de la transacción)
-  - Clasificación operativa para reglas de frascos (Jars), presupuestos y análisis por categorías históricas.
-  - Es independiente de item_category_id; pueden coincidir o no según el flujo.
-  - Puede omitirse en modo simple; el backend puede dejarlo null o mapearlo según reglas configuradas.
+- category_id (Category a nivel transacción)
+  - Clasificación operativa para reglas de frascos (Jars), presupuestos y análisis por categorías históricas aplicada a la transacción completa.
+  - También puedes enviar items[].category_id cuando necesites granularidad por línea; ambos conceptos pueden coexistir.
+  - Si no la envías, puede quedar null o inferirse según reglas del sistema.
 
 Recomendación de uso
 - Modo simple: enviar solo item_category_id en el ítem (desde el selector principal). category_id es opcional.
@@ -222,6 +235,19 @@ Notas
 ---
 
 <!-- Sección de filtros GET omitida para mantener el foco en payloads de creación/actualización. -->
+
+---
+
+Tasas de cambio por usuario (USER_CURRENCIES)
+- Si envías payments[].rate, el backend garantiza que exista un registro en USER_CURRENCIES para (user_id, currency_id de la cuenta, current_rate=rate). Si envías payments[].current_rate=true/false, se establece is_current en ese registro SIN desmarcar otros registros actuales (se permiten múltiples “actuales”). Por defecto, los rates creados desde transacciones se marcan como is_official=true.
+- Si NO envías payments[].rate, el backend resuelve la tasa de forma automática: primero busca una tasa “actual oficial” (is_current=true AND is_official=true) del usuario para la moneda de la cuenta; si no hay, toma cualquier “actual”; si tampoco hay, usa 1.0 (mismas monedas).
+- rate debe ser distinto de 0. Para misma moneda, puedes enviar null o 1.
+
+Respuestas y metadatos
+- En las respuestas de transacciones, los pagos incluyen la relación anidada de la cuenta: paymentTransactions.account.
+- En create/update/delete se incluye meta con balances recalculados:
+  - meta.account_balance_after: saldo de la cuenta “principal” si aplica (compatibilidad).
+  - meta.account_balances_after: objeto con saldos de todas las cuentas afectadas por los payments.
 
 ### 5. Rango manual sin period_type
 `/api/v1/transactions?date_from=2025-08-01 00:00:00&date_to=2025-08-31 23:59:59&account_ids=27,23,25`
