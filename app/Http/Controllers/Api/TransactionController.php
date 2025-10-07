@@ -250,6 +250,8 @@ class TransactionController extends Controller
             'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
             'payments.*.amount' => 'required_with:payments|numeric',
             'payments.*.rate' => 'nullable|numeric',
+            'payments.*.rate_is_current' => 'nullable|boolean',
+            'payments.*.rate_is_official' => 'nullable|boolean',
             'payments.*.current_rate' => 'nullable|boolean',
         ], $this->custom_message());
         if ($validator->fails()) {
@@ -526,6 +528,26 @@ class TransactionController extends Controller
                     'active' => 1,
                 ];
                 PaymentTransaction::create($payload);
+
+                // If payment provides a rate and flags to update user's current/official rate, persist it
+                if (array_key_exists('rate', $pm) && $pm['rate'] !== null) {
+                    $makeCurrent = (bool)($pm['rate_is_current'] ?? false);
+                    $makeOfficial = (bool)($pm['rate_is_official'] ?? false);
+                    if ($makeCurrent || $makeOfficial) {
+                        try {
+                            $account = \App\Models\Entities\Account::find($pm['account_id']);
+                            if ($account && $account->currency_id) {
+                                app(\App\Services\UserRateService::class)->applyFromPayment(
+                                    (int)$user->id,
+                                    (int)$account->currency_id,
+                                    (float)$pm['rate'],
+                                    $makeCurrent,
+                                    $makeOfficial
+                                );
+                            }
+                        } catch (\Throwable $e) { Log::error($e); }
+                    }
+                }
             }
 
             // Reload with relations (including account inside payment transactions)
@@ -616,6 +638,8 @@ class TransactionController extends Controller
                 'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
                 'payments.*.amount' => 'required_with:payments|numeric',
                 'payments.*.rate' => 'nullable|numeric',
+                'payments.*.rate_is_current' => 'nullable|boolean',
+                'payments.*.rate_is_official' => 'nullable|boolean',
                 'payments.*.current_rate' => 'nullable|boolean',
             ], $this->custom_message());
             if ($validator->fails()) {
@@ -812,6 +836,26 @@ class TransactionController extends Controller
                         'amount' => $amt,
                         'active' => 1,
                     ]);
+
+                    // If payment provides a rate and flags to update user's current/official rate, persist it
+                    if (array_key_exists('rate', $pm) && $pm['rate'] !== null) {
+                        $makeCurrent = (bool)($pm['rate_is_current'] ?? false);
+                        $makeOfficial = (bool)($pm['rate_is_official'] ?? false);
+                        if ($makeCurrent || $makeOfficial) {
+                            try {
+                                $account = \App\Models\Entities\Account::find($accId);
+                                if ($account && $account->currency_id) {
+                                    app(\App\Services\UserRateService::class)->applyFromPayment(
+                                        (int)$transaction->user_id,
+                                        (int)$account->currency_id,
+                                        (float)$pm['rate'],
+                                        $makeCurrent,
+                                        $makeOfficial
+                                    );
+                                }
+                            } catch (\Throwable $e) { Log::error($e); }
+                        }
+                    }
                 }
             }
 

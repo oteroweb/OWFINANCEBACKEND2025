@@ -16,7 +16,8 @@ class UserController extends Controller
      */
     public function profile(Request $request)
     {
-        $user = $request->user()->load(['client', 'role', 'currency', 'accounts']);
+    // Include the user's currencies (user-specific rates) with base currency details
+    $user = $request->user()->load(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies']);
         return response()->json([
             'status' => 'OK',
             'code' => 200,
@@ -115,7 +116,8 @@ class UserController extends Controller
             }
             $user = $this->repo->find($targetId);
         } else {
-            $user = $authUser->load(['client', 'role', 'currency', 'accounts']);
+            // For self-profile, include currencies as well
+            $user = $authUser->load(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies']);
         }
 
         // Campos permitidos
@@ -151,6 +153,8 @@ class UserController extends Controller
         }
 
         $updated = $this->repo->update($user, $validated);
+    // Return with currencies included
+    $updated->load(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies']);
         return response()->json([
             'status' => 'OK',
             'code' => 200,

@@ -9,7 +9,7 @@ class UserRepo
     public function all(array $params = [])
     {
         $query = User::whereIn('active', [1, 0])
-            ->with(['client', 'role', 'currency', 'accounts']);
+            ->with(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies']);
 
         if (!empty($params['client_id'])) {
             $query->where('client_id', $params['client_id']);
@@ -51,7 +51,7 @@ class UserRepo
     public function allActive(array $params = [])
     {
         $query = User::where('active', 1)
-            ->with(['client', 'role', 'currency', 'accounts']);
+            ->with(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies']);
 
         if (!empty($params['client_id'])) {
             $query->where('client_id', $params['client_id']);
@@ -91,7 +91,7 @@ class UserRepo
 
     public function find($id)
     {
-    return User::with(['client', 'role', 'currency', 'accounts'])->findOrFail($id);
+    return User::with(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies'])->findOrFail($id);
     }
 
     public function store(array $data)
@@ -99,14 +99,14 @@ class UserRepo
         $user = new User();
         $user->fill($data);
         $user->save();
-    return $user->load('client', 'role', 'currency', 'accounts');
+    return $user->load('client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies');
     }
 
     public function update(User $user, array $data)
     {
         $user->fill($data);
         $user->save();
-    return $user->load('client', 'role', 'currency', 'accounts');
+    return $user->load('client', 'role', 'currency', 'accounts', 'currencyRates.currency');
     }
 
     public function delete(User $user)
@@ -119,13 +119,13 @@ class UserRepo
 
     public function withTrashed()
     {
-    return User::withTrashed()->with(['client', 'role', 'currency', 'accounts'])->get();
+    return User::withTrashed()->with(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies'])->get();
     }
 
     public function changeStatus(User $user)
     {
         $user->active = !$user->active;
         $user->save();
-    return $user->load('client', 'role', 'currency', 'accounts');
+    return $user->load('client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies');
     }
 }

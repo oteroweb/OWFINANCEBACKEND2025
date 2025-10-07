@@ -99,4 +99,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\Entities\UserCurrency::class)->where('is_current', true);
     }
+
+    /**
+     * The currencies configured for this user, with pivot data (current_rate, is_current, is_official).
+     */
+    public function currencies()
+    {
+        return $this->belongsToMany(\App\Models\Entities\Currency::class, 'user_currencies', 'user_id', 'currency_id')
+            ->withPivot(['current_rate', 'is_current', 'is_official'])
+            ->withTimestamps();
+    }
 }

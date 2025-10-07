@@ -49,11 +49,34 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken($request->device_name)->plainTextToken;
-        $user->load('role');
-        $user->load('currency'); // Cargar la relación de moneda si es necesario
+        // Eager-load relations for client bootstrap
+        $user->load(['role', 'currency', 'accounts.currency', 'currencyRates.currency', 'currencies']);
+
+        // Default currencies array (from user's accounts). If none configured or nulls, fallback to [1].
+        $accountCurrencyIds = collect($user->accounts ?? [])->pluck('currency_id')
+            ->filter(fn($v) => !is_null($v))
+            ->unique()->values()->all();
+        $defaultCurrencyIds = !empty($accountCurrencyIds) ? $accountCurrencyIds : [1];
+
+        // Build user.rates array: [{ name: <currency code lower>, value: <current_rate> }]
+        $rates = collect($user->currencyRates ?? [])
+            ->filter(fn($r) => (bool)($r->is_current ?? false))
+            ->sortByDesc(fn($r) => $r->updated_at ?? $r->created_at)
+            ->groupBy('currency_id')
+            ->map(fn($grp) => $grp->first())
+            ->values()
+            ->map(function($r){
+                $code = strtolower((string)($r->currency->code ?? ''));
+                return [ 'name' => $code, 'value' => (float)($r->current_rate ?? 0.0) ];
+            })
+            ->all();
+        // Attach as dynamic attribute so it's serialized within user
+        $user->setAttribute('rates', $rates);
+
         return response()->json([
             'token' => $token,
             'user' => $user,
+            'default_currency_ids' => $defaultCurrencyIds,
         ]);
     }
 
@@ -94,8 +117,22 @@ class AuthController extends Controller
      */
     public function profile(Request $request)
     {
+        $user = $request->user()->load(['currency', 'currencyRates.currency']);
+        $rates = collect($user->currencyRates ?? [])
+            ->filter(fn($r) => (bool)($r->is_current ?? false))
+            ->sortByDesc(fn($r) => $r->updated_at ?? $r->created_at)
+            ->groupBy('currency_id')
+            ->map(fn($grp) => $grp->first())
+            ->values()
+            ->map(function($r){
+                $code = strtolower((string)($r->currency->code ?? ''));
+                return [ 'name' => $code, 'value' => (float)($r->current_rate ?? 0.0) ];
+            })
+            ->all();
+        $user->setAttribute('rates', $rates);
+
         return response()->json([
-            'user' => $request->user()
+            'user' => $user
         ]);
     }
 

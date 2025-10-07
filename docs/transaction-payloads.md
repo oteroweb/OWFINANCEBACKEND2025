@@ -31,11 +31,12 @@ Notas de integridad:
 - url_file: string|null
   - Úsalo solo cuando NO envías payments[]. Para cruces de moneda, usa payments[].
 - items?: Array<{ name: string; amount: number; item_category_id?: number|null; category_id?: number|null; tax_id?: number|null; quantity?: number }>
-- payments: Array<{ account_id: number; amount: number; rate?: number|null; current_rate?: boolean; tax_id?: number|null }>
+- payments: Array<{ account_id: number; amount: number; rate?: number|null; rate_is_current?: boolean; rate_is_official?: boolean; tax_id?: number|null }>
   - payments[] es requerido (min: 1). Todas las operaciones se basan en pagos.
   - amount: monto en moneda de la cuenta del pago.
   - rate: tasa User→Account (si monedas difieren; si igual, puede ser null o 1).
-  - current_rate: si envías rate, puedes marcar este registro como “actual” para el usuario y la moneda de la cuenta; no desmarca otros “actuales”.
+  - rate_is_current: si envías rate y este flag=true, se marca como “tasa actual” del usuario para esa moneda y se desmarcan las actuales previas de esa moneda.
+  - rate_is_official: si envías rate y este flag=true, se marca como “tasa oficial” del usuario para esa moneda y se desmarcan las oficiales previas de esa moneda.
   - tax_id (opcional): impuesto por pago (IGTF/Comisión Pago Móvil)
 
 ## Validaciones clave (backend)
@@ -43,7 +44,7 @@ Notas de integridad:
 - Items vs amount: si vienen items y amount, se compara abs(amount) con sum(items)
 - Payments vs amount:
   - userAmount = amount_account / rate
-  - Transfer (signos mixtos en pagos): se exige match neto (|∑userAmount − amount| ≤ 0.01)
+  - Transfer (signos mixtos en pagos): exactamente 2 payments; las piernas deben ser iguales y opuestas en moneda del usuario y la pierna positiva debe coincidir con `amount` (tolerancia ≤ 0.01)
   - Ingreso/Egreso avanzado (sin signos mixtos): se permite match por valor absoluto (| |∑userAmount| − |amount| | ≤ 0.01)
   - rate != 0; si misma moneda, rate puede ser null o 1
 
@@ -89,7 +90,7 @@ Cardinalidad y modos de operación
   { "name": "Pago", "amount": 20, "item_category_id": null }
   ],
   "payments": [
-    { "account_id": 7, "amount": -730, "rate": 36.5, "current_rate": true, "tax_id": null }
+    { "account_id": 7, "amount": -730, "rate": 36.5, "rate_is_current": true, "tax_id": null }
   ]
 }
 ```
@@ -160,7 +161,7 @@ Notas:
 ```
 
 Notas:
-- -200/1 + 7300/36.5 = -200 + 200 = 0; el amount top-level representa el monto transferido (200) y la validación usa match neto para signos mixtos.
+- -200/1 + 7300/36.5 = -200 + 200 = 0; el amount top-level representa el monto transferido (200). La validación exige 2 pagos con signos opuestos, mismas magnitudes (en moneda del usuario) y que la pierna positiva sea igual a `amount`.
 
 ## Impuestos
 
@@ -190,7 +191,7 @@ Recomendación de uso
 - Items vs amount: abs(amount) = suma(abs(items[].amount)) ± 0.01 (si ambos vienen). Se permite que los items vengan con signo para egresos.
 - Payments vs amount:
   - userAmount = amount_account / rate
-  - Transfer (signos mixtos): match neto
+  - Transfer (signos mixtos): exactamente 2 pagos opuestos; magnitudes iguales en moneda de usuario y la pierna positiva debe igualar `amount`
   - Ingreso/Egreso avanzado (signo único): match por valor absoluto
   - rate != 0; si misma moneda, rate puede ser null o 1
 
@@ -239,7 +240,7 @@ Notas
 ---
 
 Tasas de cambio por usuario (USER_CURRENCIES)
-- Si envías payments[].rate, el backend garantiza que exista un registro en USER_CURRENCIES para (user_id, currency_id de la cuenta, current_rate=rate). Si envías payments[].current_rate=true/false, se establece is_current en ese registro SIN desmarcar otros registros actuales (se permiten múltiples “actuales”). Por defecto, los rates creados desde transacciones se marcan como is_official=true.
+- Si envías payments[].rate, el backend garantiza que exista un registro en USER_CURRENCIES para (user_id, currency_id de la cuenta, current_rate=rate). Si envías payments[].rate_is_current=true o payments[].rate_is_official=true, se crea el registro y se desmarcan los previos de esa moneda para ese usuario según corresponda (solo 1 “actual” y 1 “oficial” por moneda/usuario).
 - Si NO envías payments[].rate, el backend resuelve la tasa de forma automática: primero busca una tasa “actual oficial” (is_current=true AND is_official=true) del usuario para la moneda de la cuenta; si no hay, toma cualquier “actual”; si tampoco hay, usa 1.0 (mismas monedas).
 - rate debe ser distinto de 0. Para misma moneda, puedes enviar null o 1.
 
@@ -285,3 +286,39 @@ Notas:
 - `descending=true` o `false` (también acepta 1/0).
 - Formato de fechas: `YYYY-MM-DD HH:mm:ss`.
 - Si envías `transaction_type_id` y `transaction_type`, prevalece el ID.
+
+## Ejemplos con flags de tasa en payments
+
+### Marcar una tasa como actual al crear un pago (ingreso/egreso)
+
+```json
+{
+  "name": "Pago VES",
+  "amount": -20,
+  "date": "2025-02-01 11:00:00",
+  "transaction_type_id": 2,
+  "items": [ { "name": "Pago", "amount": 20 } ],
+  "payments": [
+    { "account_id": 7, "amount": -730, "rate": 36.5, "rate_is_current": true }
+  ]
+}
+```
+
+Efecto: crea/actualiza un registro en `user_currencies` para la moneda de la cuenta 7, con `current_rate=36.5` y `is_current=true`, desmarcando el anterior `is_current` de esa moneda para el usuario.
+
+### Marcar una tasa como actual y oficial en el mismo pago
+
+```json
+{
+  "name": "Compra USD→VES",
+  "amount": -50,
+  "date": "2025-03-10 09:30:00",
+  "transaction_type_id": 2,
+  "items": [ { "name": "Compra", "amount": 50 } ],
+  "payments": [
+    { "account_id": 7, "amount": -1825, "rate": 36.5, "rate_is_current": true, "rate_is_official": true }
+  ]
+}
+```
+
+Efecto: registra 36.5 como nueva tasa en `user_currencies`, marcándola como actual y oficial para esa moneda del usuario (desmarca previas actuales/oficiales de esa moneda).

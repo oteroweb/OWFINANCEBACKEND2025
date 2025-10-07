@@ -1,63 +1,91 @@
-# User Currencies API (tasas por usuario)
+# User currencies and rates
 
-Este documento describe el CRUD de tasas por usuario/moneda y su interacción con transacciones.
+This document explains how user-specific currency rates are handled across login, profile, configuration, and transactions.
 
-Base URL: /api/v1/user-currencies (auth: Sanctum)
+## Data model
 
-## Modelo
+- `currencies`: master currency list.
+- `user_currencies`: per-user, per-currency historical rates.
+  - fields: `user_id`, `currency_id`, `current_rate`, `is_current`, `is_official`, timestamps.
+  - one current and one official per (user, currency) at a time (enforced at app level).
 
-Tabla: USER_CURRENCIES
-- user_id: bigint FK users.id
-- currency_id: bigint FK currencies.id (moneda de la cuenta a la que aplica la tasa)
-- current_rate: decimal(18,6) — valor de la tasa User→Currency
-- is_current: boolean — marca de tasa "actual" (pueden existir múltiples actuales)
-- is_official: boolean — distingue tasa oficial vs. oferta puntual
-- timestamps, soft deletes
+## Backend responses
 
-## Endpoints
+- Login (POST /api/v1/login): returns
+  - `token`: Sanctum token
+  - `user`: with relations and a `rates` array built from `user_currencies` where `is_current=true` (dedup by currency)
+  - `default_currency_ids`: list of currency ids from user's accounts (fallback `[1]`)
 
-GET /
-Parámetros opcionales:
-- user_id: filtra por usuario
-- currency_id: filtra por moneda
-- is_current: true|false
-- per_page: tamaño de página (paginado Laravel por defecto)
+- Profile (GET /api/v1/admin/user): returns
+  - `user`: includes `rates` with the same logic as login
 
-Respuesta 200:
+## Example login response
+
+Example login response (excerpt):
+
+```json
 {
-  "status": "OK",
-  "code": 200,
-  "data": { "current_page": 1, "data": [ { "id": 1, "user_id": 5, "currency_id": 2, "current_rate": 36.5, "is_current": true, "is_official": true, "created_at": "...", "updated_at": "..." }], "...": "..." }
+  "token": "...",
+  "user": {
+    "id": 5,
+    "name": "Ana",
+    "rates": [
+      { "name": "ves", "value": 36.5 },
+      { "name": "usd", "value": 1 }
+    ]
+  },
+  "default_currency_ids": [1, 3]
 }
+```
 
-POST /
-Body:
-- user_id (required)
-- currency_id (required)
-- current_rate (required, > 0)
-- is_current (optional, default false)
-- is_official (optional, default true)
+## Building user.rates
 
-Comportamiento:
-- Crea o reutiliza (firstOrCreate) por (user_id, currency_id, current_rate).
-- Si se proveen is_current/is_official, se actualizan en el registro resultante.
-- No se desmarcan otros registros current del mismo usuario/moneda.
+`user.rates` is an array of objects like `{ name: 'ves', value: 36.5 }`, computed from `user_currencies` where `is_current=true`. If multiple records exist per currency, the most recent is chosen.
 
-PUT /{id}
-Body (parcial):
-- current_rate (optional, > 0)
-- is_current (optional)
-- is_official (optional)
+## Transaction flow and setting rates
 
-Comportamiento:
-- Actualiza solo campos enviados; múltiples registros pueden quedar is_current=true.
+When creating/updating a transaction, `payments` can include:
 
-DELETE /{id}
-- Soft delete del registro.
+- `rate`: number (optional)
+- `rate_is_current`: boolean (optional)
+- `rate_is_official`: boolean (optional)
 
-## Interacción con transacciones
+If any flag is `true`, the backend will:
+- Clear previous flags for that `(user, currency)`
+- Create a new `user_currencies` entry with the provided `rate` and flags.
 
-- En TransactionController, si el payload payments[].rate está presente, se asegura su existencia en USER_CURRENCIES y opcionalmente se marca is_current según payments[].current_rate, sin democión de otros.
+The currency is inferred from the `account_id` in the payment.
+
+## Frontend prompts
+
+- On login or profile refresh, hydrate `userStore` from `user.rates` and `default_currency_ids`.
+- In configuration UI, show historical rates per currency and actions:
+  - Make current
+  - Make official
+  - Add new rate
+- In transaction form:
+  - When selecting an account, prefill `rate` from `user.rates` by the account's currency code (default `1` if not found)
+  - Expose checkboxes to mark as current/official and send the flags in the payment object.
+
+## Validation
+
+- Transfers require exactly 2 opposite payments; their legs must be equal/opposite and the positive leg must equal the transaction amount (in user currency).
+- Non-transfer transactions allow absolute sum match between payments and transaction amount.
+- `rate` cannot be zero.
+
+## Notes
+
+- Use backend endpoints as the source of truth; treat frontend store as cache.
+- Consider adding `effective_at` if you need back-dated rates and queries by date.
+ - Si no viene payments[].rate, la tasa se resuelve así:
+   1) Preferir una tasa del usuario marcada como is_current=true e is_official=true para la moneda de la cuenta;
+   2) si no existe, cualquier is_current=true;
+   3) si no existe, fallback 1.0 (misma moneda o no definida).
+ - Validaciones: rate != 0. Para misma moneda, rate puede ser null o 1.
+
+## Consideraciones adicionales
+- Pueden existir múltiples tasas “actuales” en paralelo para distintas monedas; para una misma moneda, solo hay una “actual” y una “oficial” a la vez por usuario cuando se usan los flags desde transacción/configuración.
+- Añade límites de dominio (máximo/mínimo) a nivel UI o reglas del backend si aplica.
 - Si no viene payments[].rate, se resuelve la tasa así:
   1) Preferir una tasa del usuario marcada como is_current=true e is_official=true para la moneda de la cuenta;
   2) si no existe, cualquier is_current=true;
