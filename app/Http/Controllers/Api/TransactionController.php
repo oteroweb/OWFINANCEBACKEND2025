@@ -175,7 +175,11 @@ class TransactionController extends Controller
     public function find($id) {
         try {
             $transaction = $this->transactionRepo->find($id);
-            if (isset($transaction->id)) {
+            if ($transaction && isset($transaction->id)) {
+                // Ensure payment rate relation is present in payload
+                try {
+                    $transaction->load(['paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate']);
+                } catch (\Throwable $e) { Log::error($e); }
                 $response = [
                     'status'  => 'OK',
                     'code'    => 200,
@@ -413,6 +417,7 @@ class TransactionController extends Controller
                 $sumPosUser = 0.0; // sum of positive legs (user currency)
                 $sumNegAbsUser = 0.0; // sum of |negative legs| (user currency)
                 $hasPos = false; $hasNeg = false;
+                $userCurrencyIdsByIdx = [];
                 foreach ($payments as $idx => $pm) {
                     $accAmt = isset($pm['amount']) ? (float) $pm['amount'] : 0.0;
                     $accId = isset($pm['account_id']) ? (int)$pm['account_id'] : null;
@@ -424,6 +429,7 @@ class TransactionController extends Controller
                     $markOfficial = array_key_exists('is_official', $pm) ? (bool)$pm['is_official'] : null;
                     $tmpUserCurrencyId = null;
                     $rate = $this->resolveUserCurrencyRate((int)$user->id, (int)$accId, $providedRate, $markCurrent, $markOfficial, $tmpUserCurrencyId);
+                    if ($tmpUserCurrencyId) { $userCurrencyIdsByIdx[$idx] = (int)$tmpUserCurrencyId; }
                     if ($rate === 0.0) {
                         return response()->json([
                             'status' => 'FAILED','code' => 422,
@@ -491,7 +497,7 @@ class TransactionController extends Controller
             }
             $transaction= $this->transactionRepo->store($data);
 
-            // Create Item Transactions
+                $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate']);
             foreach ($items as $it) {
                 // applies_to validation for item taxes
                 if (!empty($it['tax_id'])) {
@@ -530,6 +536,7 @@ class TransactionController extends Controller
                 $payload = [
                     'transaction_id' => $transaction->id,
                     'account_id' => $pm['account_id'],
+                    'user_currency_id' => $userCurrencyIdsByIdx[$idx] ?? null,
                     'amount' => $pm['amount'],
                     'active' => 1,
                 ];
@@ -537,7 +544,7 @@ class TransactionController extends Controller
             }
 
             // Reload with relations (including account inside payment transactions)
-            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account']);
+            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate']);
             DB::commit();
 
             // Recalcular y persistir balances de todas las cuentas afectadas por los payments
@@ -692,6 +699,7 @@ class TransactionController extends Controller
 
             if (is_array($paymentsUpd) && $providedAmount !== null) {
                 $sumUser = 0.0; $sumPosUser = 0.0; $sumNegAbsUser = 0.0; $hasPos=false; $hasNeg=false;
+                $userCurrencyIdsByIdx = [];
                 foreach ($paymentsUpd as $idx => $pm) {
                     $accAmt = (float)($pm['amount'] ?? 0.0);
                     $accId = isset($pm['account_id']) ? (int)$pm['account_id'] : null;
@@ -702,6 +710,7 @@ class TransactionController extends Controller
                     $markOfficial = array_key_exists('is_official', $pm) ? (bool)$pm['is_official'] : null;
                     $tmpUserCurrencyId = null;
                     $rate = $this->resolveUserCurrencyRate((int)($request->user()->id ?? $transaction->user_id), (int)$accId, $providedRate, $markCurrent, $markOfficial, $tmpUserCurrencyId);
+                    if ($tmpUserCurrencyId) { $userCurrencyIdsByIdx[$idx] = (int)$tmpUserCurrencyId; }
                     if ($rate === 0.0) {
                         return response()->json([
                             'status' => 'FAILED','code' => 422,
@@ -825,6 +834,7 @@ class TransactionController extends Controller
                     PaymentTransaction::create([
                         'transaction_id' => $transaction->id,
                         'account_id' => $accId,
+                        'user_currency_id' => $userCurrencyIdsByIdx[$idx] ?? null,
                         'amount' => $amt,
                         'active' => 1,
                     ]);
@@ -849,7 +859,7 @@ class TransactionController extends Controller
             }
 
             // Recargar relaciones y confirmar cambios
-            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account']);
+            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate']);
             DB::commit();
 
             // Recalcular balances afectados y retornarlos

@@ -22,7 +22,8 @@ class TransactionRepo {
             ->with([
                 'provider','rate','user','account','transactionType','category',
                 'itemTransactions', 'itemTransactions.category', 'itemTransactions.itemCategory',
-                'paymentTransactions.account'
+                // Include payment rate relation so each payment contains its rate object
+                'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency'
             ]);
 
         // Restricción por usuario autenticado (no admin)
@@ -242,7 +243,7 @@ class TransactionRepo {
             ->with([
                 'provider','rate','user','account','transactionType','category',
                 'itemTransactions','itemTransactions.category','itemTransactions.itemCategory',
-                'paymentTransactions.account'
+                'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency'
             ]);
 
         if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
@@ -440,7 +441,7 @@ class TransactionRepo {
         return Transaction::with([
             'provider','rate','user','account','transactionType','category',
             'itemTransactions','itemTransactions.category','itemTransactions.itemCategory',
-            'paymentTransactions.account'
+            'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency'
         ])->find($id);
     }
     public function store($data) {
