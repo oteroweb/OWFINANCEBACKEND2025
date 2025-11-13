@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\Repositories\UserRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Entities\UserCurrency;
+use App\Models\Repositories\AccountRepo;
 
 class UserController extends Controller
 {
@@ -16,13 +18,85 @@ class UserController extends Controller
      */
     public function profile(Request $request)
     {
-    // Include the user's currencies (user-specific rates) with base currency details
-    $user = $request->user()->load(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies']);
+        // Incluir cuentas con su moneda y tasas del usuario (históricas y actuales)
+        $user = $request->user()->load([
+            'client', 'role', 'currency',
+            'accounts.currency', // cuentas con su moneda
+            'currencyRates.currency', // historial de tasas por usuario
+            'currentCurrencyRates.currency', // tasas actuales por usuario
+        ]);
+
+        // Recalcular balances de todas las cuentas del usuario y adjuntar al payload
+        try {
+            $repo = app(AccountRepo::class);
+            foreach ($user->accounts as $acc) {
+                $newBalance = $repo->recalcAndStoreFromInitialByType((int)$acc->id);
+                $acc->balance = $newBalance;
+                $acc->setAttribute('balance_cached', $newBalance);
+            }
+        } catch (\Throwable $e) { /* mantener respuesta aunque falle el recálculo */ }
+
+        // Construir arreglo de tasas: para cada moneda presente en las cuentas del usuario
+        // tomar la última tasa marcada como is_current=true; si no existe, usar 1.0
+        // Importante: excluir la moneda base (moneda por defecto del usuario) para que las tasas sean pares BASE/OTRA
+        $baseCurrencyId = (int)($user->currency_id ?? 0);
+        $accountCurrencyIds = $user->accounts
+            ->pluck('currency_id')
+            ->filter()
+            ->unique()
+            ->reject(fn ($cid) => (int)$cid === $baseCurrencyId)
+            ->values();
+        $rates = [];
+        foreach ($accountCurrencyIds as $cid) {
+            // 1) Preferir la última marcada como current
+            $rec = UserCurrency::with('currency')
+                ->where('user_id', $user->id)
+                ->where('currency_id', $cid)
+                ->where('is_current', true)
+                ->orderByDesc('updated_at')
+                ->first();
+            // 2) Si no hay current, tomar la última registrada para esa moneda
+            if (!$rec) {
+                $rec = UserCurrency::with('currency')
+                    ->where('user_id', $user->id)
+                    ->where('currency_id', $cid)
+                    ->orderByDesc('updated_at')
+                    ->first();
+            }
+            if ($rec) {
+                $rates[] = [
+                    'id' => $rec->id,
+                    'currency' => $rec->currency,
+                    'current_rate' => (float)($rec->current_rate ?? 1.0),
+                    'is_official' => (bool)($rec->is_official ?? false),
+                    'is_current' => (bool)($rec->is_current ?? false),
+                    'updated_at' => $rec->updated_at,
+                ];
+            } else {
+                // Fallback: tasa 1.0 sin marcar; tomar objeto currency desde cualquier cuenta con ese currency_id
+                $accWithCurrency = $user->accounts->firstWhere('currency_id', (int)$cid);
+                $rates[] = [
+                    'id' => null,
+                    'currency' => $accWithCurrency?->currency,
+                    'current_rate' => 1.0,
+                    'is_official' => false,
+                    'is_current' => false,
+                    'updated_at' => null,
+                ];
+            }
+        }
+
+        $payload = $user->toArray();
+        // Adjuntar metadata de moneda base para claridad del cliente
+        $payload['base_currency_id'] = $baseCurrencyId ?: null;
+        $payload['base_currency'] = $user->currency ?? null;
+        $payload['rates'] = $rates;
+
         return response()->json([
             'status' => 'OK',
             'code' => 200,
             'message' => '',
-            'data' => $user
+            'data' => $payload
         ]);
     }
 
@@ -116,8 +190,13 @@ class UserController extends Controller
             }
             $user = $this->repo->find($targetId);
         } else {
-            // For self-profile, include currencies as well
-            $user = $authUser->load(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies']);
+                // Para self-profile, incluir también cuentas con moneda y tasas
+                $user = $authUser->load([
+                    'client', 'role', 'currency',
+                    'accounts.currency',
+                    'currencyRates.currency',
+                    'currentCurrencyRates.currency',
+                ]);
         }
 
         // Campos permitidos
@@ -153,13 +232,79 @@ class UserController extends Controller
         }
 
         $updated = $this->repo->update($user, $validated);
-    // Return with currencies included
-    $updated->load(['client', 'role', 'currency', 'accounts', 'currencyRates.currency', 'currencies']);
+        // Devolver con cuentas/monedas y tasas incluidas + arreglo reducido de tasas actuales
+        $updated->load([
+            'client', 'role', 'currency',
+            'accounts.currency',
+            'currencyRates.currency',
+            'currentCurrencyRates.currency',
+        ]);
+
+        // Recalcular balances de las cuentas
+        try {
+            $repo = app(AccountRepo::class);
+            foreach ($updated->accounts as $acc) {
+                $newBalance = $repo->recalcAndStoreFromInitialByType((int)$acc->id);
+                $acc->balance = $newBalance;
+                $acc->setAttribute('balance_cached', $newBalance);
+            }
+        } catch (\Throwable $e) { }
+
+        // Tasas por cada moneda de sus cuentas (última is_current; si no, 1.0), excluyendo la moneda base
+        $baseCurrencyId = (int)($updated->currency_id ?? 0);
+        $accountCurrencyIds = $updated->accounts
+            ->pluck('currency_id')
+            ->filter()
+            ->unique()
+            ->reject(fn ($cid) => (int)$cid === $baseCurrencyId)
+            ->values();
+        $rates = [];
+        foreach ($accountCurrencyIds as $cid) {
+            $rec = UserCurrency::with('currency')
+                ->where('user_id', $updated->id)
+                ->where('currency_id', $cid)
+                ->where('is_current', true)
+                ->orderByDesc('updated_at')
+                ->first();
+            if (!$rec) {
+                $rec = UserCurrency::with('currency')
+                    ->where('user_id', $updated->id)
+                    ->where('currency_id', $cid)
+                    ->orderByDesc('updated_at')
+                    ->first();
+            }
+            if ($rec) {
+                $rates[] = [
+                    'id' => $rec->id,
+                    'currency' => $rec->currency,
+                    'current_rate' => (float)($rec->current_rate ?? 1.0),
+                    'is_official' => (bool)($rec->is_official ?? false),
+                    'is_current' => (bool)($rec->is_current ?? false),
+                    'updated_at' => $rec->updated_at,
+                ];
+            } else {
+                $accWithCurrency = $updated->accounts->firstWhere('currency_id', (int)$cid);
+                $rates[] = [
+                    'id' => null,
+                    'currency' => $accWithCurrency?->currency,
+                    'current_rate' => 1.0,
+                    'is_official' => false,
+                    'is_current' => false,
+                    'updated_at' => null,
+                ];
+            }
+        }
+
+        $payload = $updated->toArray();
+        $payload['base_currency_id'] = $baseCurrencyId ?: null;
+        $payload['base_currency'] = $updated->currency ?? null;
+        $payload['rates'] = $rates;
+
         return response()->json([
             'status' => 'OK',
             'code' => 200,
             'message' => __('Perfil actualizado correctamente.'),
-            'data' => $updated,
+            'data' => $payload,
         ]);
     }
 

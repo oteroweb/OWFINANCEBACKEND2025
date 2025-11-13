@@ -17,12 +17,14 @@ class UserCurrency extends Model
         'current_rate',
         'is_current',
         'is_official',
+        'official_at',
     ];
 
     protected $casts = [
         'is_current' => 'boolean',
         'is_official' => 'boolean',
         'current_rate' => 'float',
+        'official_at' => 'datetime',
     ];
 
     public function user()

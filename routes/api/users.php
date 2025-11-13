@@ -11,15 +11,15 @@ Route::group([
     Route::get('/active', [UserController::class, 'allActive']);
     Route::get('/all', [UserController::class, 'withTrashed']);
     Route::get('/', [UserController::class, 'all']);
-    Route::patch('/{id}/status', [UserController::class, 'change_status']);
-    Route::put('/{id}', [UserController::class, 'update']);
-    Route::delete('/{id}', [UserController::class, 'delete']);
-    Route::get('/{id}', [UserController::class, 'find']);
+    Route::patch('/{id}/status', [UserController::class, 'change_status'])->whereNumber('id');
+    Route::put('/{id}', [UserController::class, 'update'])->whereNumber('id');
+    Route::delete('/{id}', [UserController::class, 'delete'])->whereNumber('id');
+    Route::get('/{id}', [UserController::class, 'find'])->whereNumber('id');
 
     // User-scoped jar utilities (protected)
     Route::group(['middleware' => ['auth:sanctum']], function () {
         // Perfil del usuario autenticado y actualización
-        Route::get('/profile', [UserController::class, 'profile']);
+    Route::get('/profile', [UserController::class, 'profile']); // includes accounts + rates
         Route::match(['put', 'patch'], '/profile', [UserController::class, 'updateProfile']);
         // Si es admin, puede actualizar el perfil de cualquier usuario por ID
         Route::match(['put', 'patch'], '/profile/{id}', [UserController::class, 'updateProfile'])->whereNumber('id');

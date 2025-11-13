@@ -43,3 +43,14 @@ Route::group([
     Route::put('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'update']);
     Route::delete('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'destroy']);
 });
+
+// Backward-compat alias with underscore
+Route::group([
+    'middleware' => ['api', 'auth:sanctum'],
+    'prefix'     => 'user_currencies',
+], function () {
+    Route::get('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'index']);
+    Route::post('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'store']);
+    Route::put('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'update']);
+    Route::delete('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'destroy']);
+});

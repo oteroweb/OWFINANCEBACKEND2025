@@ -12,11 +12,40 @@ class UserCurrencyController extends Controller
 {
     public function index(Request $request)
     {
-        $query = UserCurrency::query();
+        $query = UserCurrency::with('currency');
         if ($request->filled('user_id')) { $query->where('user_id', $request->input('user_id')); }
         if ($request->filled('currency_id')) { $query->where('currency_id', $request->input('currency_id')); }
         if ($request->filled('is_current')) { $query->where('is_current', filter_var($request->input('is_current'), FILTER_VALIDATE_BOOLEAN)); }
-        return response()->json(['status'=>'OK','code'=>200,'data'=>$query->paginate($request->input('per_page', 15))]);
+        $pagination = $query->paginate($request->input('per_page', 15));
+
+        // Compact latest current rate per currency (prefer official, then latest)
+        $userId = $request->input('user_id') ?? ($request->user()->id ?? null);
+        $compact = [];
+        if ($userId) {
+            $currentRates = UserCurrency::with('currency')
+                ->where('user_id', $userId)
+                ->where('is_current', true)
+                ->orderByDesc('is_official')
+                ->orderByDesc('updated_at')
+                ->get()
+                ->groupBy('currency_id')
+                ->map(fn($g) => $g->first());
+            $compact = collect($currentRates)->values()->map(function ($rec) {
+                return [
+                    'id' => $rec->id,
+                    'currency' => $rec->currency,
+                    'current_rate' => (float) ($rec->current_rate ?? 1.0),
+                    'is_official' => (bool) ($rec->is_official ?? false),
+                    'is_current' => (bool) ($rec->is_current ?? false),
+                    'updated_at' => $rec->updated_at,
+                ];
+            })->all();
+        }
+        return response()->json([
+            'status'=>'OK','code'=>200,
+            'data'=>$pagination,
+            'rates'=>$compact,
+        ]);
     }
 
     public function store(Request $request)

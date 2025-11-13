@@ -31,13 +31,14 @@ Notas de integridad:
 - url_file: string|null
   - Úsalo solo cuando NO envías payments[]. Para cruces de moneda, usa payments[].
 - items?: Array<{ name: string; amount: number; item_category_id?: number|null; category_id?: number|null; tax_id?: number|null; quantity?: number }>
-- payments: Array<{ account_id: number; amount: number; rate?: number|null; rate_is_current?: boolean; rate_is_official?: boolean; tax_id?: number|null }>
+- payments: Array<{ account_id: number; amount: number; rate?: number|null; rate_is_current?: boolean; rate_is_official?: boolean }>
   - payments[] es requerido (min: 1). Todas las operaciones se basan en pagos.
   - amount: monto en moneda de la cuenta del pago.
   - rate: tasa User→Account (si monedas difieren; si igual, puede ser null o 1).
-  - rate_is_current: si envías rate y este flag=true, se marca como “tasa actual” del usuario para esa moneda y se desmarcan las actuales previas de esa moneda.
-  - rate_is_official: si envías rate y este flag=true, se marca como “tasa oficial” del usuario para esa moneda y se desmarcan las oficiales previas de esa moneda.
-  - tax_id (opcional): impuesto por pago (IGTF/Comisión Pago Móvil)
+  - rate_is_current: si envías rate y este flag=true, se marca como “tasa actual” del usuario para esa moneda. Se garantiza un solo `is_current=true` por (user, currency); el backend desmarca la anterior.
+  - rate_is_official: si envías rate y este flag=true, se marca como “tasa oficial histórica” del usuario para esa moneda. NO se desmarcan oficiales previas; cada tasa oficial queda almacenada con timestamp `official_at` para construir historial/gráficas.
+  - Alias aceptados: `is_current` o `current_rate` equivalen a `rate_is_current`; `is_official` equivale a `rate_is_official`.
+  - Si envías múltiples pagos con `rate_is_current=true` en el mismo request, el último del arreglo prevalece como actual.
 
 ## Validaciones clave (backend)
 
@@ -90,14 +91,14 @@ Cardinalidad y modos de operación
   { "name": "Pago", "amount": 20, "item_category_id": null }
   ],
   "payments": [
-    { "account_id": 7, "amount": -730, "rate": 36.5, "rate_is_current": true, "tax_id": null }
+    { "account_id": 7, "amount": -730, "rate": 36.5, "rate_is_current": true }
   ]
 }
 ```
 
 Notas:
 - payments[0].amount = -730 en moneda de la cuenta (VES); rate=36.5 (User USD→Account VES)
-- current_rate=true: la tasa 36.5 se registra/actualiza en la tabla USER_CURRENCIES del usuario y se marca como “actual” para VES; NO se desmarcan otros “actuales”.
+- rate_is_current=true: la tasa 36.5 se registra/actualiza en la tabla USER_CURRENCIES del usuario y se marca como “actual” para VES desmarcando cualquier otra actual previa.
 - Conversión: -730 / 36.5 = -20 (match con amount)
 
 - amount = suma de items (cada línea ya incluye IVA si aplica)
@@ -134,8 +135,8 @@ Notas:
   "url_file": null,
   "items": [ { "name": "Cobro", "amount": 100, "item_category_id": 8 } ],
   "payments": [
-    { "account_id": 3, "amount": 50, "rate": 1, "tax_id": null },
-    { "account_id": 7, "amount": 3650, "rate": 36.5, "tax_id": 11 }
+    { "account_id": 3, "amount": 50, "rate": 1 },
+    { "account_id": 7, "amount": 3650, "rate": 36.5 }
   ]
 }
 ```
@@ -154,8 +155,8 @@ Notas:
   "url_file": null,
   "items": [],
   "payments": [
-    { "account_id": 3, "amount": -200, "rate": 1, "tax_id": null },
-    { "account_id": 9, "amount": 7300, "rate": 36.5, "tax_id": null }
+    { "account_id": 3, "amount": -200, "rate": 1 },
+    { "account_id": 9, "amount": 7300, "rate": 36.5 }
   ]
 }
 ```
@@ -166,8 +167,7 @@ Notas:
 ## Impuestos
 
 - items[].tax_id (opcional): permitido si tax.applies_to ∈ {item, both}
-- payments[].tax_id (opcional): permitido si tax.applies_to ∈ {payment, both}
-- amount_tax top-level: 0 (los impuestos se reflejan por línea o por pago)
+- amount_tax top-level: 0 (actualmente los impuestos se modelan por línea de ítem; impuestos por pago no están implementados)
 
 ## Categorías
 
@@ -240,9 +240,22 @@ Notas
 ---
 
 Tasas de cambio por usuario (USER_CURRENCIES)
-- Si envías payments[].rate, el backend garantiza que exista un registro en USER_CURRENCIES para (user_id, currency_id de la cuenta, current_rate=rate). Si envías payments[].rate_is_current=true o payments[].rate_is_official=true, se crea el registro y se desmarcan los previos de esa moneda para ese usuario según corresponda (solo 1 “actual” y 1 “oficial” por moneda/usuario).
-- Si NO envías payments[].rate, el backend resuelve la tasa de forma automática: primero busca una tasa “actual oficial” (is_current=true AND is_official=true) del usuario para la moneda de la cuenta; si no hay, toma cualquier “actual”; si tampoco hay, usa 1.0 (mismas monedas).
+- Si envías payments[].rate, el backend garantiza que exista un registro en USER_CURRENCIES para (user_id, currency_id de la cuenta, current_rate=rate). Política actual:
+  - `rate_is_current=true`: se marca esa tasa como la única actual (is_current=true) para la moneda (se desmarcan previas actuales).
+  - `rate_is_official=true`: se marca esa tasa como oficial histórica (is_official=true) sin desmarcar las anteriores oficiales. Si es la primera vez que se marca como oficial, se asigna `official_at=NOW()`.
+  - Se puede enviar ambos flags simultáneamente: la tasa quedará como actual y oficial.
+- Si NO envías payments[].rate, el backend resuelve la tasa de forma automática: primero busca una tasa “actual oficial” (is_current=true AND is_official=true); si no hay, toma cualquier “actual”; si tampoco hay, usa 1.0 (mismas monedas).
 - rate debe ser distinto de 0. Para misma moneda, puedes enviar null o 1.
+
+Campos relevantes en USER_CURRENCIES:
+- user_id, currency_id, current_rate
+- is_current (boolean) – máximo uno por (user,currency)
+- is_official (boolean) – puede haber múltiples históricos
+- official_at (timestamp|null) – fecha de primera marcación oficial (se deja intacta en remarcas posteriores)
+
+Historial oficial y gráficas futuras:
+- Puedes construir un historial tomando todos los registros con is_official=true ordenados por official_at ASC/DESC.
+- Endpoint sugerido futuro: `GET /api/v1/user_currencies/history?currency_id=XXX&official=1` (no implementado aún) para alimentar gráficas de evolución.
 
 Respuestas y metadatos
 - En las respuestas de transacciones, los pagos incluyen la relación anidada de la cuenta: paymentTransactions.account.
@@ -321,4 +334,22 @@ Efecto: crea/actualiza un registro en `user_currencies` para la moneda de la cue
 }
 ```
 
-Efecto: registra 36.5 como nueva tasa en `user_currencies`, marcándola como actual y oficial para esa moneda del usuario (desmarca previas actuales/oficiales de esa moneda).
+Efecto: registra o reutiliza 36.5 como tasa en `user_currencies`, marcándola como actual (desmarca previa actual) y oficial histórica (conserva previas oficiales). Si es la primera vez que se marca como oficial, setea `official_at`.
+
+### Marcar múltiples tasas oficiales en distintos pagos (histórico)
+
+```json
+{
+  "name": "Compra serie",
+  "amount": -100,
+  "date": "2025-03-11 10:00:00",
+  "transaction_type_id": 2,
+  "items": [ { "name": "Compra", "amount": 100 } ],
+  "payments": [
+    { "account_id": 7, "amount": -3650, "rate": 36.5, "rate_is_official": true },
+    { "account_id": 7, "amount": -3700, "rate": 37.0, "rate_is_official": true }
+  ]
+}
+```
+
+Efecto: ambas tasas (36.5 y 37.0) quedan registradas como oficiales históricas con su `official_at`. Ninguna se desmarca.
