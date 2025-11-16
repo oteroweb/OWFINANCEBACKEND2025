@@ -422,11 +422,11 @@ class TransactionController extends Controller
                     $accAmt = isset($pm['amount']) ? (float) $pm['amount'] : 0.0;
                     $accId = isset($pm['account_id']) ? (int)$pm['account_id'] : null;
                     $providedRate = isset($pm['rate']) && $pm['rate'] !== null ? (float)$pm['rate'] : null;
-                    // Simple flow: use the flags as provided per payment (last wins naturally by order)
+                    // Normalize boolean-ish flags coming as strings or numbers
                     $markCurrent = array_key_exists('is_current', $pm)
-                        ? (bool)$pm['is_current']
-                        : (array_key_exists('current_rate', $pm) ? (bool)$pm['current_rate'] : null);
-                    $markOfficial = array_key_exists('is_official', $pm) ? (bool)$pm['is_official'] : null;
+                        ? $this->toBoolOrNull($pm['is_current'])
+                        : (array_key_exists('current_rate', $pm) ? $this->toBoolOrNull($pm['current_rate']) : null);
+                    $markOfficial = array_key_exists('is_official', $pm) ? $this->toBoolOrNull($pm['is_official']) : null;
                     $tmpUserCurrencyId = null;
                     $rate = $this->resolveUserCurrencyRate((int)$user->id, (int)$accId, $providedRate, $markCurrent, $markOfficial, $tmpUserCurrencyId);
                     if ($tmpUserCurrencyId) { $userCurrencyIdsByIdx[$idx] = (int)$tmpUserCurrencyId; }
@@ -682,9 +682,9 @@ class TransactionController extends Controller
                     $accId = isset($pm['account_id']) ? (int)$pm['account_id'] : null;
                     $providedRate = isset($pm['rate']) && $pm['rate'] !== null ? (float)$pm['rate'] : null;
                     $markCurrent = array_key_exists('is_current', $pm)
-                        ? (bool)$pm['is_current']
-                        : (array_key_exists('current_rate', $pm) ? (bool)$pm['current_rate'] : null);
-                    $markOfficial = array_key_exists('is_official', $pm) ? (bool)$pm['is_official'] : null;
+                        ? $this->toBoolOrNull($pm['is_current'])
+                        : (array_key_exists('current_rate', $pm) ? $this->toBoolOrNull($pm['current_rate']) : null);
+                    $markOfficial = array_key_exists('is_official', $pm) ? $this->toBoolOrNull($pm['is_official']) : null;
                     $tmpUserCurrencyId = null;
                     $rate = $this->resolveUserCurrencyRate((int)($request->user()->id ?? $transaction->user_id), (int)$accId, $providedRate, $markCurrent, $markOfficial, $tmpUserCurrencyId);
                     if ($tmpUserCurrencyId) { $userCurrencyIdsByIdx[$idx] = (int)$tmpUserCurrencyId; }
@@ -978,6 +978,24 @@ class TransactionController extends Controller
             'amount.required'=> __('The amount is required'),
             'date.required'=> __('The date is required'),
         ];
+    }
+
+    /**
+     * Normalize mixed input into boolean or null.
+     * Accepts true/false, 1/0, "1"/"0", "true"/"false", "yes"/"no", "on"/"off".
+     */
+    private function toBoolOrNull($val): ?bool
+    {
+        if ($val === null) return null;
+        if (is_bool($val)) return $val;
+        if (is_int($val)) return $val === 1;
+        if (is_float($val)) return ((int)$val) === 1;
+        if (is_string($val)) {
+            $v = strtolower(trim($val));
+            if (in_array($v, ['1','true','yes','on'], true)) return true;
+            if (in_array($v, ['0','false','no','off',''], true)) return false;
+        }
+        return null;
     }
 
     /**
