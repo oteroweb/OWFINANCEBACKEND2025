@@ -33,4 +33,12 @@ class Currency extends Model
     {
         return \Database\Factories\CurrencyFactory::new();
     }
+
+    /**
+     * User-specific rates pointing to this currency.
+     */
+    public function userRates()
+    {
+        return $this->hasMany(UserCurrency::class);
+    }
 }

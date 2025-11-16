@@ -83,4 +83,30 @@ class User extends Authenticatable
     {
         return $this->belongsTo(\App\Models\Entities\Currency::class);
     }
+
+    /**
+     * User-specific currency rates (historical records).
+     */
+    public function currencyRates()
+    {
+        return $this->hasMany(\App\Models\Entities\UserCurrency::class);
+    }
+
+    /**
+     * Convenience: only current rates per currency for this user.
+     */
+    public function currentCurrencyRates()
+    {
+        return $this->hasMany(\App\Models\Entities\UserCurrency::class)->where('is_current', true);
+    }
+
+    /**
+     * The currencies configured for this user, with pivot data (current_rate, is_current, is_official).
+     */
+    public function currencies()
+    {
+        return $this->belongsToMany(\App\Models\Entities\Currency::class, 'user_currencies', 'user_id', 'currency_id')
+            ->withPivot(['current_rate', 'is_current', 'is_official'])
+            ->withTimestamps();
+    }
 }
