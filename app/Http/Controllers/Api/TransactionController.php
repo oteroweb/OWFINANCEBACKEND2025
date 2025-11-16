@@ -447,7 +447,7 @@ class TransactionController extends Controller
                 $finalAmount = isset($data['amount']) ? round((float) $data['amount'], 2) : 0.0;
 
                 if ($hasPos && $hasNeg) {
-                    // Transfer-like: legs must be equal/opposite and amount must equal the positive leg (moved value)
+                    // Transfer-like: only require legs to be equal and opposite in user currency.
                     $legsMatch = abs($sumPosUser - $sumNegAbsUser) <= 0.01;
                     if (!$legsMatch) {
                         return response()->json([
@@ -460,18 +460,7 @@ class TransactionController extends Controller
                             ],
                         ], 422);
                     }
-                    if (abs($sumPosUser - abs($finalAmount)) > 0.01) {
-                        return response()->json([
-                            'status' => 'FAILED','code' => 422,
-                            'message' => __('Payments total must equal transaction amount'),
-                            'data' => [
-                                'amount' => $finalAmount,
-                                'payments_pos_sum_user' => $sumPosUser,
-                                'payments_neg_abs_sum_user' => $sumNegAbsUser,
-                                'payments_sum_user' => $sumUser,
-                            ],
-                        ], 422);
-                    }
+                    // Do not enforce matching the top-level amount for transfers.
                 } else {
                     // Non-transfer: allow absolute match (advanced payments for income/expense)
                     $absMatches = abs(abs($sumUser) - abs($finalAmount)) <= 0.01;
@@ -727,7 +716,7 @@ class TransactionController extends Controller
                 $sumNegAbsUser = round($sumNegAbsUser,2);
                 $providedAmount = round($providedAmount,2);
                 if ($hasPos && $hasNeg) {
-                    // Transfer-like: positive leg must equal |negative leg| and equal provided amount
+                    // Transfer-like: only require legs to be equal and opposite in user currency.
                     $legsMatch = abs($sumPosUser - $sumNegAbsUser) <= 0.01;
                     if (!$legsMatch) {
                         return response()->json([
@@ -740,18 +729,7 @@ class TransactionController extends Controller
                             ],
                         ], 422);
                     }
-                    if (abs($sumPosUser - abs($providedAmount)) > 0.01) {
-                        return response()->json([
-                            'status' => 'FAILED','code' => 422,
-                            'message' => __('Payments total must equal transaction amount'),
-                            'data' => [
-                                'amount' => $providedAmount,
-                                'payments_pos_sum_user' => $sumPosUser,
-                                'payments_neg_abs_sum_user' => $sumNegAbsUser,
-                                'payments_sum_user' => $sumUser,
-                            ],
-                        ], 422);
-                    }
+                    // Do not enforce matching the top-level amount for transfers.
                 } else {
                     $absMatches = abs(abs($sumUser) - abs($providedAmount)) <= 0.01;
                     if (!$absMatches) {
