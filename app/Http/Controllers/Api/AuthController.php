@@ -59,7 +59,7 @@ class AuthController extends Controller
                 ->where('is_current', true)
                 ->orderByDesc('updated_at')
                 ->first();
-            Log::info("Found current rate record for currency {$cid}:", $rec ? $rec->toArray() : null);
+            Log::info("Found current rate record for currency {$cid}:", $rec ? $rec->toArray() : []);
 
             // 2) Si no hay current, tomar la última registrada para esa moneda
             if (!$rec) {
@@ -68,7 +68,7 @@ class AuthController extends Controller
                     ->where('currency_id', $cid)
                     ->orderByDesc('updated_at')
                     ->first();
-                Log::info("Found latest rate record for currency {$cid}:", $rec ? $rec->toArray() : null);
+                Log::info("Found latest rate record for currency {$cid}:", $rec ? $rec->toArray() : []);
             }
             if ($rec) {
                 $rates[] = [
