@@ -39,24 +39,40 @@ class AuthController extends Controller
             'currentCurrencyRates.currency',
         ]);
 
-        $currentRates = $user->currencyRates()
-            ->with('currency')
-            ->where('is_current', true)
-            ->orderByDesc('is_official')
-            ->orderByDesc('updated_at')
-            ->get()
-            ->groupBy('currency_id')
-            ->map(fn($g) => $g->first());
-        $rates = collect($currentRates)->values()->map(function ($rec) {
-            return [
-                'id' => $rec->id,
-                'currency' => $rec->currency,
-                'current_rate' => (float) ($rec->current_rate ?? 1.0),
-                'is_official' => (bool) ($rec->is_official ?? false),
-                'is_current' => (bool) ($rec->is_current ?? false),
-                'updated_at' => $rec->updated_at,
-            ];
-        })->all();
+        // Tasas por cada moneda de sus cuentas (última is_current; si no, la más reciente), excluyendo la moneda base
+        $baseCurrencyId = (int)($user->currency_id ?? 0);
+        $accountCurrencyIds = $user->accounts
+            ->pluck('currency_id')
+            ->filter()
+            ->unique()
+            ->reject(fn ($cid) => (int)$cid === $baseCurrencyId)
+            ->values();
+        $rates = [];
+        foreach ($accountCurrencyIds as $cid) {
+            // 1) Preferir la última marcada como current
+            $rec = $user->currencyRates()
+                ->where('currency_id', $cid)
+                ->where('is_current', true)
+                ->orderByDesc('updated_at')
+                ->first();
+            // 2) Si no hay current, tomar la última registrada para esa moneda
+            if (!$rec) {
+                $rec = $user->currencyRates()
+                    ->where('currency_id', $cid)
+                    ->orderByDesc('updated_at')
+                    ->first();
+            }
+            if ($rec) {
+                $rates[] = [
+                    'id' => $rec->id,
+                    'currency' => $rec->currency,
+                    'current_rate' => (float)($rec->current_rate ?? 1.0),
+                    'is_official' => (bool)($rec->is_official ?? false),
+                    'is_current' => (bool)($rec->is_current ?? false),
+                    'updated_at' => $rec->updated_at,
+                ];
+            }
+        }
 
     $payload = $user->toArray();
     $payload['rates'] = $rates;
