@@ -447,20 +447,8 @@ class TransactionController extends Controller
                 $finalAmount = isset($data['amount']) ? round((float) $data['amount'], 2) : 0.0;
 
                 if ($hasPos && $hasNeg) {
-                    // Transfer-like: only require legs to be equal and opposite in user currency.
-                    $legsMatch = abs($sumPosUser - $sumNegAbsUser) <= 0.01;
-                    if (!$legsMatch) {
-                        return response()->json([
-                            'status' => 'FAILED','code' => 422,
-                            'message' => __('Transfer payments must be equal and opposite'),
-                            'data' => [
-                                'payments_pos_sum_user' => $sumPosUser,
-                                'payments_neg_abs_sum_user' => $sumNegAbsUser,
-                                'payments_sum_user' => $sumUser,
-                            ],
-                        ], 422);
-                    }
-                    // Do not enforce matching the top-level amount for transfers.
+                    // Transfer-like: no strict validation on leg equality/opposition or matching amount.
+                    // Conversion is applied later as needed, but we don't block creation by validation here.
                 } else {
                     // Non-transfer: allow absolute match (advanced payments for income/expense)
                     $absMatches = abs(abs($sumUser) - abs($finalAmount)) <= 0.01;
@@ -716,20 +704,7 @@ class TransactionController extends Controller
                 $sumNegAbsUser = round($sumNegAbsUser,2);
                 $providedAmount = round($providedAmount,2);
                 if ($hasPos && $hasNeg) {
-                    // Transfer-like: only require legs to be equal and opposite in user currency.
-                    $legsMatch = abs($sumPosUser - $sumNegAbsUser) <= 0.01;
-                    if (!$legsMatch) {
-                        return response()->json([
-                            'status' => 'FAILED','code' => 422,
-                            'message' => __('Transfer payments must be equal and opposite'),
-                            'data' => [
-                                'payments_pos_sum_user' => $sumPosUser,
-                                'payments_neg_abs_sum_user' => $sumNegAbsUser,
-                                'payments_sum_user' => $sumUser,
-                            ],
-                        ], 422);
-                    }
-                    // Do not enforce matching the top-level amount for transfers.
+                    // Transfer-like: no strict validation on leg equality/opposition or matching amount.
                 } else {
                     $absMatches = abs(abs($sumUser) - abs($providedAmount)) <= 0.01;
                     if (!$absMatches) {
