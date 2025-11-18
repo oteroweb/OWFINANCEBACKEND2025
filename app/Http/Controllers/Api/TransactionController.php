@@ -448,19 +448,33 @@ class TransactionController extends Controller
 
                 if ($hasPos && $hasNeg) {
                     // Transfer-like: no strict validation on leg equality/opposition or matching amount.
-                    // Conversion is applied later as needed, but we don't block creation by validation here.
                 } else {
-                    // Non-transfer: allow absolute match (advanced payments for income/expense)
-                    $absMatches = abs(abs($sumUser) - abs($finalAmount)) <= 0.01;
-                    if (!$absMatches) {
-                        return response()->json([
-                            'status' => 'FAILED', 'code' => 422,
-                            'message' => __('Payments total must equal transaction amount'),
-                            'data' => [
-                                'amount' => $finalAmount,
-                                'payments_sum_user' => $sumUser,
-                            ],
-                        ], 422);
+                    // Non-transfer validation:
+                    // 1. Check for a direct match first. This is the most common case for a simple expense
+                    //    where the payment amount is identical to the transaction amount. If they match,
+                    //    we can bypass the currency conversion check.
+                    $directMatch = false;
+                    if (count($payments) === 1) {
+                        $paymentAmount = round((float)($payments[0]['amount'] ?? 0.0), 2);
+                        if (abs(abs($paymentAmount) - abs($finalAmount)) <= 0.01) {
+                            $directMatch = true;
+                        }
+                    }
+
+                    // 2. If it's not a direct match, it implies a currency conversion is intended or
+                    //    there are multiple payments. In this case, the converted sum must match.
+                    if (!$directMatch) {
+                        $absMatches = abs(abs($sumUser) - abs($finalAmount)) <= 0.01;
+                        if (!$absMatches) {
+                            return response()->json([
+                                'status' => 'FAILED', 'code' => 422,
+                                'message' => __('Payments total (after conversion) must equal transaction amount'),
+                                'data' => [
+                                    'amount' => $finalAmount,
+                                    'payments_sum_user' => $sumUser,
+                                ],
+                            ], 422);
+                        }
                     }
                 }
             }
