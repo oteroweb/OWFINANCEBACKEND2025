@@ -298,15 +298,15 @@ class TransactionController extends Controller
                 ], 422);
             }
             // Modo simple: 1 payment => se espera 1 item genérico
-            if (!$isTransferLike && $paymentsCount === 1) {
-                $itemsCount = is_array($items) ? count($items) : 0;
-                if ($itemsCount !== 1) {
-                    return response()->json([
-                        'status' => 'FAILED','code' => 422,
-                        'message' => __('Simple transactions must contain exactly one item')
-                    ], 422);
-                }
-            }
+            // if (!$isTransferLike && $paymentsCount === 1) {
+            //     $itemsCount = is_array($items) ? count($items) : 0;
+            //     if ($itemsCount !== 1) {
+            //         return response()->json([
+            //             'status' => 'FAILED','code' => 422,
+            //             'message' => __('Simple transactions must contain exactly one item')
+            //         ], 422);
+            //     }
+            // }
 
             // Authorization: ensure the user can operate on the target account(s)
             $accountsToCheck = [];
