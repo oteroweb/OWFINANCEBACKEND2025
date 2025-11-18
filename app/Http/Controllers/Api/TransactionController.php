@@ -654,14 +654,14 @@ class TransactionController extends Controller
                         'message' => __('Transfers must have exactly 2 payments with opposite signs')
                     ], 422);
                 }
-                if (!$isTransferLike && $paymentsCount === 1 && is_array($itemsUpd)) {
-                    if (count($itemsUpd) !== 1) {
-                        return response()->json([
-                            'status' => 'FAILED','code' => 422,
-                            'message' => __('Simple transactions must contain exactly one item')
-                        ], 422);
-                    }
-                }
+                // if (!$isTransferLike && $paymentsCount === 1 && is_array($itemsUpd)) {
+                //     if (count($itemsUpd) !== 1) {
+                //         return response()->json([
+                //             'status' => 'FAILED','code' => 422,
+                //             'message' => __('Simple transactions must contain exactly one item')
+                //         ], 422);
+                //     }
+                // }
             }
 
             // Consistencia de montos en update sólo si vienen ambos en el payload
