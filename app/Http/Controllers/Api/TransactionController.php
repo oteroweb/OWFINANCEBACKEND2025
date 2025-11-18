@@ -720,16 +720,29 @@ class TransactionController extends Controller
                 if ($hasPos && $hasNeg) {
                     // Transfer-like: no strict validation on leg equality/opposition or matching amount.
                 } else {
-                    $absMatches = abs(abs($sumUser) - abs($providedAmount)) <= 0.01;
-                    if (!$absMatches) {
-                        return response()->json([
-                            'status' => 'FAILED','code' => 422,
-                            'message' => __('Payments total must equal transaction amount'),
-                            'data' => [
-                                'amount' => $providedAmount,
-                                'payments_sum_user' => $sumUser,
-                            ],
-                        ], 422);
+                    // Non-transfer validation:
+                    // 1. Check for a direct match first.
+                    $directMatch = false;
+                    if (count($paymentsUpd) === 1) {
+                        $paymentAmount = round((float)($paymentsUpd[0]['amount'] ?? 0.0), 2);
+                        if (abs(abs($paymentAmount) - abs($providedAmount)) <= 0.01) {
+                            $directMatch = true;
+                        }
+                    }
+
+                    // 2. If not a direct match, validate with currency conversion.
+                    if (!$directMatch) {
+                        $absMatches = abs(abs($sumUser) - abs($providedAmount)) <= 0.01;
+                        if (!$absMatches) {
+                            return response()->json([
+                                'status' => 'FAILED','code' => 422,
+                                'message' => __('Payments total (after conversion) must equal transaction amount'),
+                                'data' => [
+                                    'amount' => $providedAmount,
+                                    'payments_sum_user' => $sumUser,
+                                ],
+                            ], 422);
+                        }
                     }
                 }
             }
