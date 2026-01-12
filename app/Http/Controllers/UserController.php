@@ -7,7 +7,9 @@ use App\Models\Repositories\UserRepo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Entities\UserCurrency;
+use App\Models\Entities\UserMonthlyIncomeHistory;
 use App\Models\Repositories\AccountRepo;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -230,6 +232,61 @@ class UserController extends Controller
         }
         if (isset($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
+        }
+
+        // Save monthly_income to history if it changed
+        if (isset($validated['monthly_income'])) {
+            $oldMonthlyIncome = (float) ($user->monthly_income ?? 0);
+            $newMonthlyIncome = (float) $validated['monthly_income'];
+            
+            // Get the month from request or default to current month
+            $targetMonth = $request->input('month');
+            \Log::info('[UserController] Saving monthly income', [
+                'user_id' => $user->id,
+                'new_income' => $newMonthlyIncome,
+                'target_month_param' => $targetMonth,
+            ]);
+            
+            if ($targetMonth) {
+                // Validate format YYYY-MM and convert to first day of month
+                try {
+                    $monthDate = Carbon::createFromFormat('Y-m', $targetMonth)->startOfMonth()->toDateString();
+                } catch (\Exception $e) {
+                    \Log::error('[UserController] Invalid month format', ['month' => $targetMonth, 'error' => $e->getMessage()]);
+                    $monthDate = Carbon::now()->startOfMonth()->toDateString();
+                }
+            } else {
+                $monthDate = Carbon::now()->startOfMonth()->toDateString();
+            }
+            
+            \Log::info('[UserController] Calculated month date', [
+                'monthDate' => $monthDate,
+                'current_month' => Carbon::now()->startOfMonth()->toDateString(),
+            ]);
+            
+            // Always save to history (even if same value) for the specific month
+            $historyRecord = UserMonthlyIncomeHistory::saveForMonth(
+                $user->id,
+                $newMonthlyIncome,
+                $monthDate,
+                'Updated via profile for ' . $monthDate
+            );
+            
+            \Log::info('[UserController] Saved to history', [
+                'history_id' => $historyRecord->id,
+                'saved_month' => $historyRecord->month,
+                'saved_income' => $historyRecord->monthly_income,
+            ]);
+            
+            // Only update user's current monthly_income if we're editing current month
+            if ($monthDate === Carbon::now()->startOfMonth()->toDateString()) {
+                // Update happens via $validated array below
+                \Log::info('[UserController] Updating user monthly_income (current month)');
+            } else {
+                // Don't update user's monthly_income if editing past/future month
+                \Log::info('[UserController] NOT updating user monthly_income (not current month)');
+                unset($validated['monthly_income']);
+            }
         }
 
         $updated = $this->repo->update($user, $validated);

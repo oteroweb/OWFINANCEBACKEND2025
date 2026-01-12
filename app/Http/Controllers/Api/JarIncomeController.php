@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Entities\ItemTransaction;
 use App\Models\Entities\Category;
+use App\Models\Entities\UserMonthlyIncomeHistory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -52,7 +53,8 @@ class JarIncomeController extends Controller
             $endOfMonth = $date->clone()->endOfMonth();
 
             // Ingreso esperado (configurado manualmente por el usuario)
-            $expectedIncome = (float) ($user->monthly_income ?? 0);
+            // Try to get historical monthly_income for the specified month
+            $expectedIncome = $this->getMonthlyIncomeForMonth($user->id, $date);
 
             // Ingreso calculado (transacciones reales del mes)
             // Suma todas las transacciones de tipo 'income' del mes
@@ -140,5 +142,53 @@ class JarIncomeController extends Controller
         }
 
         return Carbon::now();
+    }
+
+    /**
+     * Get monthly income for a specific month
+     * Tries to get historical value first, falls back to current monthly_income
+     */
+    private function getMonthlyIncomeForMonth(int $userId, Carbon $date): float
+    {
+        $firstDayOfMonth = $date->clone()->startOfMonth()->toDateString();
+        
+        \Log::info('[JarIncomeController] Getting monthly income', [
+            'user_id' => $userId,
+            'requested_date' => $date->toDateString(),
+            'first_day_of_month' => $firstDayOfMonth,
+        ]);
+        
+        // Try to get historical record for this specific month
+        $historicalIncome = UserMonthlyIncomeHistory::getForMonth($userId, $firstDayOfMonth);
+        
+        if ($historicalIncome !== null) {
+            \Log::info('[JarIncomeController] Found historical income', [
+                'income' => $historicalIncome,
+                'source' => 'exact_match'
+            ]);
+            return $historicalIncome;
+        }
+        
+        // If no historical record, try to get the most recent one before this month
+        $recentIncome = UserMonthlyIncomeHistory::getMostRecentBeforeMonth($userId, $firstDayOfMonth);
+        
+        if ($recentIncome !== null) {
+            \Log::info('[JarIncomeController] Found recent income before month', [
+                'income' => $recentIncome,
+                'source' => 'most_recent_before'
+            ]);
+            return $recentIncome;
+        }
+        
+        // Fallback to current monthly_income
+        $user = \App\Models\User::find($userId);
+        $fallbackIncome = (float) ($user->monthly_income ?? 0);
+        
+        \Log::info('[JarIncomeController] Using fallback income', [
+            'income' => $fallbackIncome,
+            'source' => 'user_current'
+        ]);
+        
+        return $fallbackIncome;
     }
 }

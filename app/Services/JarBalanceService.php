@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Entities\Jar;
 use App\Models\Entities\ItemTransaction;
 use App\Models\Entities\JarAdjustment;
+use App\Models\Entities\UserMonthlyIncomeHistory;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -43,12 +44,39 @@ class JarBalanceService
         }
 
         if ($jar->type === 'percent') {
-            // Pasar el jar completo para filtrado por base_scope
-            $income = $this->calculateUserIncome($jar, $date);
-            return $income * ($jar->percent / 100);
+            // For percent jars, use the monthly_income configured for that month
+            $monthlyIncome = $this->getMonthlyIncomeForMonth($jar->user_id, $date);
+            return $monthlyIncome * ($jar->percent / 100);
         }
 
         return 0;
+    }
+
+    /**
+     * Get monthly income for a specific user and month
+     * Tries historical data first, then falls back to current value
+     */
+    private function getMonthlyIncomeForMonth(int $userId, Carbon $date): float
+    {
+        $firstDayOfMonth = $date->clone()->startOfMonth()->toDateString();
+
+        // Try to get historical record for this specific month
+        $historicalIncome = UserMonthlyIncomeHistory::getForMonth($userId, $firstDayOfMonth);
+
+        if ($historicalIncome !== null) {
+            return $historicalIncome;
+        }
+
+        // If no historical record, try to get the most recent one before this month
+        $recentIncome = UserMonthlyIncomeHistory::getMostRecentBeforeMonth($userId, $firstDayOfMonth);
+
+        if ($recentIncome !== null) {
+            return $recentIncome;
+        }
+
+        // Fallback to current monthly_income
+        $user = \App\Models\User::find($userId);
+        return (float) ($user->monthly_income ?? 0);
     }
 
     /**
