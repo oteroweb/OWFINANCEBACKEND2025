@@ -134,6 +134,8 @@ class JarController extends Controller
             'fixed_amount' => 'nullable|numeric|min:0',
             'percent' => 'nullable|numeric|min:0|max:100',
             'base_scope' => 'nullable|in:all_income,categories',
+            'base_categories' => 'nullable|array',
+            'base_categories.*' => 'integer|exists:categories,id',
             'color' => 'nullable|string|max:16',
             'sort_order' => 'nullable|integer',
         ], $this->custom_message());
@@ -147,6 +149,17 @@ class JarController extends Controller
             ];
             return response()->json($response, 400);
         }
+
+        // Validación adicional: si base_scope = 'categories' debe haber categorías base
+        if ($request->input('base_scope') === 'categories' &&
+            empty($request->input('base_categories'))) {
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 422,
+                'message' => __('You must select at least one income category when base_scope is categories')
+            ], 422);
+        }
+
         try {
             $user = $request->user();
             $payload = $request->only(['name','type','fixed_amount','percent','base_scope','color','sort_order']);
@@ -174,6 +187,15 @@ class JarController extends Controller
             }
 
             $jar = $this->jarRepo->store($payload);
+
+            // Sincronizar base_categories si se proporcionaron
+            if ($request->filled('base_categories')) {
+                $jar->baseCategories()->sync($request->input('base_categories'));
+            }
+
+            // Recargar con relaciones
+            $jar->load(['categories', 'baseCategories']);
+
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -211,12 +233,26 @@ class JarController extends Controller
                 'fixed_amount' => 'nullable|numeric|min:0',
                 'percent' => 'nullable|numeric|min:0|max:100',
                 'base_scope' => 'nullable|in:all_income,categories',
+                'base_categories' => 'nullable|array',
+                'base_categories.*' => 'integer|exists:categories,id',
                 'color' => 'nullable|string|max:16',
                 'sort_order' => 'nullable|integer',
                 'active' => 'sometimes|boolean',
             ]);
             if ($validator->fails()) {
                 return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()], 400);
+            }
+
+            // Validación adicional: si base_scope = 'categories' debe haber categorías base
+            $newBaseScope = $request->input('base_scope', $jar->base_scope);
+            if ($newBaseScope === 'categories' &&
+                $request->has('base_categories') &&
+                empty($request->input('base_categories'))) {
+                return response()->json([
+                    'status' => 'FAILED',
+                    'code' => 422,
+                    'message' => __('You must select at least one income category when base_scope is categories')
+                ], 422);
             }
 
             $payload = $request->only(['name','type','fixed_amount','percent','base_scope','color','sort_order']);
@@ -236,6 +272,15 @@ class JarController extends Controller
             }
 
             $jar = $this->jarRepo->update($jar, $payload);
+
+            // Sincronizar base_categories si se proporcionaron
+            if ($request->has('base_categories')) {
+                $jar->baseCategories()->sync($request->input('base_categories'));
+            }
+
+            // Recargar con relaciones
+            $jar->load(['categories', 'baseCategories']);
+
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,

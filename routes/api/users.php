@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Api\UserJarController;
+use App\Http\Controllers\Api\JarBalanceController;
 
 Route::group([
     'prefix' => 'users',
@@ -35,5 +36,11 @@ Route::group([
         Route::post('/{userId}/jars/{id}/categories', [UserJarController::class, 'replaceJarCategories']);
         Route::get('/{userId}/categories/unassigned', [UserJarController::class, 'unassignedCategories']);
         Route::patch('/{userId}/item-transactions/{id}', [UserJarController::class, 'updateItemTransactionJar']);
+
+        // Jar Balance Management (Nuevo Sistema Simplificado)
+        Route::get('/jars/{jarId}/balance', [JarBalanceController::class, 'getBalance']);
+        Route::post('/jars/{jarId}/adjust', [JarBalanceController::class, 'adjustBalance']);
+        Route::get('/jars/{jarId}/adjustments', [JarBalanceController::class, 'getAdjustmentHistory']);
+        Route::post('/jars/{jarId}/reset-adjustment', [JarBalanceController::class, 'resetAdjustmentForNextPeriod']);
     });
 });

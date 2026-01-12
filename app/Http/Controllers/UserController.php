@@ -201,7 +201,7 @@ class UserController extends Controller
 
         // Campos permitidos
         $adminOnlyFields = ['role_id', 'active', 'client_id', 'balance'];
-        $commonFields = ['name', 'phone', 'email', 'password', 'currency_id'];
+        $commonFields = ['name', 'phone', 'email', 'password', 'currency_id', 'monthly_income'];
         $allowed = $authUser->isAdmin() ? array_merge($commonFields, $adminOnlyFields) : $commonFields;
 
         // Reglas de validación dinámicas
@@ -211,6 +211,7 @@ class UserController extends Controller
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'password' => 'sometimes|string|min:6',
             'currency_id' => 'sometimes|nullable|exists:currencies,id',
+            'monthly_income' => 'sometimes|numeric|min:0',
         ];
         if ($authUser->isAdmin()) {
             $rules = array_merge($rules, [

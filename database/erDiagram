@@ -54,6 +54,8 @@ erDiagram
     bigint currency_id FK
     decimal current_rate
     boolean is_current
+    boolean is_official
+    datetime official_at
     datetime created_at
     datetime updated_at
   }
@@ -174,27 +176,31 @@ erDiagram
   CATEGORIES {
     bigint id PK
     varchar name
+    varchar icon
+    bigint parent_id FK
+    bigint transaction_type_id FK
+    boolean include_in_balance
+    enum type
+    int sort_order
     boolean active
     date date
-    bigint parent_id FK
     bigint user_id FK
-    datetime created_at
-    datetime updated_at
-    datetime deleted_at
-  }
-
   JARS {
     bigint id PK
     varchar name
-    boolean is_active
     decimal percent
     varchar type
     decimal fixed_amount
     enum base_scope
-    boolean active
-    int sort_order
     varchar color
+    int sort_order
     date date
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+    bigint user_id FK
+  } date date
     datetime created_at
     datetime updated_at
     datetime deleted_at
@@ -244,16 +250,17 @@ erDiagram
     bigint account_id FK
     bigint category_id FK
     decimal amount_tax
-    datetime created_at
-    datetime updated_at
-    datetime deleted_at
-  }
-
   PAYMENT_TRANSACTIONS {
     bigint id PK
     bigint transaction_id FK
     bigint account_id FK
+    bigint user_currency_id FK
     decimal amount
+    boolean active
+    datetime created_at
+    datetime updated_at
+    datetime deleted_at
+  } decimal amount
     boolean active
     datetime created_at
     datetime updated_at
@@ -491,12 +498,14 @@ erDiagram
   CATEGORIES ||--o{ JAR_CATEGORY : maps
   JARS ||--o{ JAR_BASE_CATEGORY : base_of
   CATEGORIES ||--o{ JAR_BASE_CATEGORY : base_in
-
-  PROVIDERS ||--o{ TRANSACTIONS : paid_to
-  RATES ||--o{ TRANSACTIONS : rate_used
-  USERS ||--o{ TRANSACTIONS : created_by
-  ACCOUNTS ||--o{ TRANSACTIONS : from_account
   TRANSACTION_TYPES ||--o{ TRANSACTIONS : typed_as
+  TRANSACTION_TYPES ||--o{ CATEGORIES : defines
+
+  TRANSACTIONS ||--o{ PAYMENT_TRANSACTIONS : settles
+  ACCOUNTS ||--o{ PAYMENT_TRANSACTIONS : with_account
+  USER_CURRENCIES ||--o{ PAYMENT_TRANSACTIONS : currency_rate
+  PAYMENT_TRANSACTIONS ||--o{ PAYMENT_TRANSACTION_TAXES : has_tax
+  TAXES ||--o{ PAYMENT_TRANSACTION_TAXES : taxd_as
 
   TRANSACTIONS ||--o{ PAYMENT_TRANSACTIONS : settles
   ACCOUNTS ||--o{ PAYMENT_TRANSACTIONS : with_account

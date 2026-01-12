@@ -381,12 +381,17 @@ class CategoryController extends Controller
             return response()->json(['status' => 'FAILED', 'code' => 401, 'message' => __('Unauthenticated')], 401);
         }
         $effectiveUserId = $user?->id ?? (int)$userId;
+
+        // Get per_page parameter (default: 1000)
+        $perPage = $request->query('per_page', 1000);
+
         // Load user categories (including globals with null user_id)
-    $cats = \App\Models\Entities\Category::where(function($q) use ($effectiveUserId) {
-        $q->whereNull('user_id')->orWhere('user_id', $effectiveUserId);
+        $cats = \App\Models\Entities\Category::where(function($q) use ($effectiveUserId) {
+            $q->whereNull('user_id')->orWhere('user_id', $effectiveUserId);
             })
             ->orderBy('sort_order')
             ->orderBy('name')
+            ->limit($perPage)
             ->get(['id','name as label','parent_id','type','icon']);
         $map = [];
         foreach ($cats as $c) {

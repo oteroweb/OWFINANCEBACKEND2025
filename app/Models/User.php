@@ -26,6 +26,7 @@ class User extends Authenticatable
         'password',
         'role_id',
         'balance',
+        'monthly_income',
         'currency_id',
         'client_id',
         'active',

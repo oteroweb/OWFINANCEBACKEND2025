@@ -15,13 +15,16 @@ class Jar extends Model
         'name',
         'percent',
         'type',
-    'fixed_amount',
-    'base_scope',
-    'active',
+        'fixed_amount',
+        'base_scope',
+        'active',
         'date',
-    'user_id',
-    'sort_order',
-    'color',
+        'user_id',
+        'sort_order',
+        'color',
+        'adjustment',
+        'refresh_mode',
+        'status',
     ];
 
     protected $casts = [
@@ -52,6 +55,11 @@ class Jar extends Model
             ->withPivot(['active', 'deleted_at'])
             ->wherePivotNull('deleted_at')
             ->withTimestamps();
+    }
+
+    public function adjustments()
+    {
+        return $this->hasMany(JarAdjustment::class);
     }
 
     protected static function newFactory()
