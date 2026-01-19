@@ -50,10 +50,13 @@ class JarBalanceController extends Controller
      *
      * Request body:
      * {
-     *   "amount": 100.50,           // positive or negative
+     *   "target_balance": 200.00,   // the desired available balance (can be negative)
      *   "reason": "Sync from old system",
      *   "date": "2025-01-15"        // optional, defaults to today
      * }
+     *
+     * The adjustment amount is calculated as: target_balance - current_available
+     * Example: if current is 420 and target is 200, adjustment = -220
      */
     public function adjustBalance(int $jarId, Request $request): JsonResponse
     {
@@ -64,16 +67,16 @@ class JarBalanceController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            'amount' => 'required|numeric',
+            'target_balance' => 'required|numeric',
             'reason' => 'nullable|string|max:255',
             'date' => 'nullable|date',
         ]);
 
-        $date = $validated['date'] ? Carbon::parse($validated['date']) : null;
+        $date = isset($validated['date']) && $validated['date'] ? Carbon::parse($validated['date']) : null;
 
-        $adjustment = $this->balanceService->adjustBalance(
+        $adjustment = $this->balanceService->adjustToTargetBalance(
             $jar,
-            (float) $validated['amount'],
+            (float) $validated['target_balance'],
             $validated['reason'] ?? null,
             $date,
             $userId

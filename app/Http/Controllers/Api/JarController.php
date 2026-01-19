@@ -20,6 +20,216 @@ class JarController extends Controller
 
     /**
      * @group Jar
+     * Post
+     *
+     * Bulk synchronize jars for the current user
+     * Creates new jars, updates existing ones, and soft-deletes removed ones
+     * @bodyParam jars array required Array of jar objects
+     */
+    public function bulkSync(Request $request)
+    {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json(['status'=>'FAILED','code'=>401,'message'=>__('Unauthorized')], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'jars' => 'required|array',
+            'jars.*.id' => 'nullable|integer|exists:jars,id',
+            'jars.*.name' => 'required|string|max:100',
+            'jars.*.type' => 'required|in:fixed,percent',
+            'jars.*.fixed_amount' => 'nullable|numeric|min:0',
+            'jars.*.percent' => 'nullable|numeric|min:0|max:100',
+            'jars.*.base_scope' => 'nullable|in:all_income,categories',
+            'jars.*.base_categories' => 'nullable|array',
+            'jars.*.base_categories.*' => 'integer|exists:categories,id',
+            'jars.*.category_ids' => 'nullable|array',
+            'jars.*.category_ids.*' => 'integer|exists:categories,id',
+            'jars.*.color' => 'nullable|string|max:16',
+            'jars.*.sort_order' => 'nullable|integer',
+            'jars.*.active' => 'nullable|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'=>'FAILED',
+                'code'=>400,
+                'message'=>__('Incorrect Params'),
+                'data'=>$validator->errors()->getMessages()
+            ], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            $incomingJars = $request->input('jars', []);
+            $userId = $authUser->id;
+            $processedIds = [];
+            $resultJars = [];
+
+            // Validar suma de porcentajes para jars tipo percent
+            $totalPercent = 0;
+            foreach ($incomingJars as $jarData) {
+                if (($jarData['type'] ?? 'percent') === 'percent' && ($jarData['active'] ?? true)) {
+                    $totalPercent += (float)($jarData['percent'] ?? 0);
+                }
+            }
+            if ($totalPercent > 100.0 + 1e-6) {
+                DB::rollBack();
+                return response()->json([
+                    'status'=>'FAILED',
+                    'code'=>422,
+                    'message'=>__('Total percent for user exceeds 100%'),
+                    'data'=>['total_percent'=>$totalPercent]
+                ], 422);
+            }
+
+            // Procesar cada jar
+            foreach ($incomingJars as $index => $jarData) {
+                $jarId = $jarData['id'] ?? null;
+
+                $payload = [
+                    'name' => $jarData['name'],
+                    'type' => $jarData['type'] ?? 'percent',
+                    'color' => $jarData['color'] ?? '#6B7280',
+                    'sort_order' => $jarData['sort_order'] ?? ($index + 1),
+                    'active' => $jarData['active'] ?? true,
+                    'user_id' => $userId,
+                ];
+
+                if ($payload['type'] === 'percent') {
+                    $payload['percent'] = (float)($jarData['percent'] ?? 0);
+                    $payload['fixed_amount'] = null;
+                } else {
+                    $payload['fixed_amount'] = (float)($jarData['fixed_amount'] ?? 0);
+                    $payload['percent'] = null;
+                }
+
+                if (isset($jarData['base_scope'])) {
+                    $payload['base_scope'] = $jarData['base_scope'];
+                }
+
+                // Actualizar o crear
+                if ($jarId) {
+                    // Verificar ownership
+                    $existingJar = $this->jarRepo->find($jarId);
+                    if (!$existingJar || $existingJar->user_id !== $userId) {
+                        DB::rollBack();
+                        return response()->json([
+                            'status'=>'FAILED',
+                            'code'=>403,
+                            'message'=>__('Forbidden - Jar does not belong to user'),
+                            'data'=>['jar_id'=>$jarId]
+                        ], 403);
+                    }
+                    $jar = $this->jarRepo->update($existingJar, $payload);
+                } else {
+                    $jar = $this->jarRepo->create($payload);
+                }
+
+                $processedIds[] = $jar->id;
+
+                // Sincronizar base_categories si se proporcionaron
+                if (isset($jarData['base_categories'])) {
+                    $jar->baseCategories()->sync($jarData['base_categories']);
+                }
+
+                // Sincronizar category_ids (categorías asignadas por drag-drop)
+                if (isset($jarData['category_ids'])) {
+                    $targetIds = collect($jarData['category_ids'])->unique()->values()->all();
+                    $currentIds = $jar->categories()->select('categories.id')->pluck('categories.id')->all();
+                    $toAttach = array_values(array_diff($targetIds, $currentIds));
+                    $toDetach = array_values(array_diff($currentIds, $targetIds));
+
+                    // Exclusividad: asegurar que una categoría pertenece a máximo un jar por usuario
+                    if (!empty($toAttach)) {
+                        $conflicts = DB::table('jar_category as jc')
+                            ->join('jars as j', 'j.id', '=', 'jc.jar_id')
+                            ->whereNull('jc.deleted_at')
+                            ->where('j.user_id', $userId)
+                            ->whereIn('jc.category_id', $toAttach)
+                            ->where('jc.jar_id', '!=', $jar->id)
+                            ->get(['jc.id','jc.category_id']);
+
+                        if ($conflicts->count() > 0) {
+                            $conflictIds = $conflicts->pluck('category_id')->unique()->all();
+                            // Soft-detach de otros jars
+                            \App\Models\Entities\Pivots\JarCategory::whereIn('category_id', $conflictIds)
+                                ->whereNull('deleted_at')
+                                ->whereIn('jar_id', function ($q) use ($userId) {
+                                    $q->select('id')->from('jars')->where('user_id', $userId);
+                                })
+                                ->update(['active' => 0, 'deleted_at' => now()]);
+                        }
+                    }
+
+                    // Attach (restore soft-deleted si existe)
+                    foreach ($toAttach as $catId) {
+                        $pivot = \App\Models\Entities\Pivots\JarCategory::withTrashed()
+                            ->where('jar_id', $jar->id)
+                            ->where('category_id', $catId)
+                            ->first();
+                        if ($pivot) {
+                            $pivot->active = 1;
+                            $pivot->deleted_at = null;
+                            $pivot->save();
+                        } else {
+                            $jar->categories()->attach($catId, ['active' => 1]);
+                        }
+                    }
+
+                    // Soft-delete detaches
+                    if (!empty($toDetach)) {
+                        \App\Models\Entities\Pivots\JarCategory::where('jar_id', $jar->id)
+                            ->whereIn('category_id', $toDetach)
+                            ->whereNull('deleted_at')
+                            ->update(['active' => 0, 'deleted_at' => now()]);
+                    }
+                }
+
+                // Recargar relaciones
+                $jar->load(['categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }]);
+                $jar->load(['baseCategories' => function ($q) { $q->select('categories.id', 'categories.name'); }]);
+                $resultJars[] = $jar;
+            }
+
+            // Soft-delete jars del usuario que no están en la lista enviada
+            $existingJarIds = $this->jarRepo->all(['user_id' => $userId, 'per_page' => 1000])
+                ->pluck('id')
+                ->all();
+            $toDelete = array_diff($existingJarIds, $processedIds);
+
+            if (!empty($toDelete)) {
+                foreach ($toDelete as $deleteId) {
+                    $jarToDelete = $this->jarRepo->find($deleteId);
+                    if ($jarToDelete && $jarToDelete->user_id === $userId) {
+                        $this->jarRepo->delete($jarToDelete);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'OK',
+                'code' => 200,
+                'message' => __('Jars synchronized successfully'),
+                'data' => ['jars' => $resultJars]
+            ], 200);
+
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            Log::error('bulkSync error: ' . $ex->getMessage(), ['exception' => $ex]);
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 500,
+                'message' => __('An error has occurred'),
+                'error' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * @group Jar
      * Get
      *
      * all
@@ -194,7 +404,10 @@ class JarController extends Controller
             }
 
             // Recargar con relaciones
-            $jar->load(['categories', 'baseCategories']);
+            $jar->load([
+                'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
+                'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
+            ]);
 
             $response = [
                 'status'  => 'OK',
@@ -279,7 +492,10 @@ class JarController extends Controller
             }
 
             // Recargar con relaciones
-            $jar->load(['categories', 'baseCategories']);
+            $jar->load([
+                'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
+                'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
+            ]);
 
             $response = [
                 'status'  => 'OK',
@@ -431,7 +647,7 @@ class JarController extends Controller
         }
         // Soft-delete aware sync with exclusivity per user
         $targetIds = collect($request->input('category_ids', []))->unique()->values()->all();
-        $currentIds = $jar->categories()->pluck('categories.id')->all();
+        $currentIds = $jar->categories()->select('categories.id')->pluck('categories.id')->all();
         $toAttach = array_values(array_diff($targetIds, $currentIds));
         $toDetach = array_values(array_diff($currentIds, $targetIds));
 
@@ -479,7 +695,7 @@ class JarController extends Controller
                 ->update(['active' => 0, 'deleted_at' => now()]);
         }
 
-        $jar->load(['categories' => function ($q) { $q->wherePivotNull('deleted_at'); }]);
+        $jar->load(['categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }]);
         return response()->json(['status'=>'OK','code'=>200,'message'=>__('Jar categories updated'),'data'=>$jar], 200);
     }
 
@@ -512,7 +728,7 @@ class JarController extends Controller
         }
         // Soft-delete aware sync (no exclusivity for base categories)
         $targetIds = collect($request->input('category_ids', []))->unique()->values()->all();
-        $currentIds = $jar->baseCategories()->pluck('categories.id')->all();
+        $currentIds = $jar->baseCategories()->select('categories.id')->pluck('categories.id')->all();
         $toAttach = array_values(array_diff($targetIds, $currentIds));
         $toDetach = array_values(array_diff($currentIds, $targetIds));
 
@@ -537,7 +753,7 @@ class JarController extends Controller
                 ->update(['active' => 0, 'deleted_at' => now()]);
         }
 
-        $jar->load(['baseCategories' => function ($q) { $q->wherePivotNull('deleted_at'); }]);
+        $jar->load(['baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }]);
         return response()->json(['status'=>'OK','code'=>200,'message'=>__('Jar base categories updated'),'data'=>$jar], 200);
     }
 }

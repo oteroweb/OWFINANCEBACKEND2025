@@ -7,6 +7,7 @@ erDiagram
     timestamp email_verified_at
     varchar password
     decimal balance
+    decimal monthly_income
     bigint currency_id FK
     bigint client_id FK
     boolean active
@@ -15,6 +16,16 @@ erDiagram
     datetime created_at
     datetime updated_at
     bigint role_id FK
+  }
+
+  USER_MONTHLY_INCOME_HISTORY {
+    bigint id PK
+    bigint user_id FK
+    decimal monthly_income
+    date month
+    text notes
+    datetime created_at
+    datetime updated_at
   }
 
   ROLES {
@@ -192,6 +203,8 @@ erDiagram
     varchar type
     decimal fixed_amount
     enum base_scope
+    decimal adjustment
+    varchar refresh_mode
     varchar color
     int sort_order
     date date
@@ -200,6 +213,20 @@ erDiagram
     datetime updated_at
     datetime deleted_at
     bigint user_id FK
+  }
+
+  JAR_ADJUSTMENTS {
+    bigint id PK
+    bigint jar_id FK
+    bigint user_id FK
+    decimal amount
+    enum type
+    text reason
+    decimal previous_available
+    decimal new_available
+    date adjustment_date
+    datetime created_at
+    datetime updated_at
   } date date
     datetime created_at
     datetime updated_at
@@ -471,6 +498,7 @@ erDiagram
   CURRENCIES ||--o{ USERS : default_currency
   CLIENTS ||--o{ USERS : belongs_to
   USERS ||--o{ SESSIONS : has
+  USERS ||--o{ USER_MONTHLY_INCOME_HISTORY : has_history
 
   CURRENCIES ||--o{ ACCOUNTS : uses
   ACCOUNT_TYPES ||--o{ ACCOUNTS : typed_as
@@ -494,6 +522,8 @@ erDiagram
   CURRENCIES ||--o{ USER_CURRENCIES : rated_for_user
 
   USERS ||--o{ JARS : owned_by
+  JARS ||--o{ JAR_ADJUSTMENTS : has_history
+  USERS ||--o{ JAR_ADJUSTMENTS : makes
   JARS ||--o{ JAR_CATEGORY : maps
   CATEGORIES ||--o{ JAR_CATEGORY : maps
   JARS ||--o{ JAR_BASE_CATEGORY : base_of

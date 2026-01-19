@@ -151,16 +151,16 @@ class JarIncomeController extends Controller
     private function getMonthlyIncomeForMonth(int $userId, Carbon $date): float
     {
         $firstDayOfMonth = $date->clone()->startOfMonth()->toDateString();
-        
+
         \Log::info('[JarIncomeController] Getting monthly income', [
             'user_id' => $userId,
             'requested_date' => $date->toDateString(),
             'first_day_of_month' => $firstDayOfMonth,
         ]);
-        
+
         // Try to get historical record for this specific month
         $historicalIncome = UserMonthlyIncomeHistory::getForMonth($userId, $firstDayOfMonth);
-        
+
         if ($historicalIncome !== null) {
             \Log::info('[JarIncomeController] Found historical income', [
                 'income' => $historicalIncome,
@@ -168,10 +168,10 @@ class JarIncomeController extends Controller
             ]);
             return $historicalIncome;
         }
-        
+
         // If no historical record, try to get the most recent one before this month
         $recentIncome = UserMonthlyIncomeHistory::getMostRecentBeforeMonth($userId, $firstDayOfMonth);
-        
+
         if ($recentIncome !== null) {
             \Log::info('[JarIncomeController] Found recent income before month', [
                 'income' => $recentIncome,
@@ -179,16 +179,16 @@ class JarIncomeController extends Controller
             ]);
             return $recentIncome;
         }
-        
+
         // Fallback to current monthly_income
         $user = \App\Models\User::find($userId);
         $fallbackIncome = (float) ($user->monthly_income ?? 0);
-        
+
         \Log::info('[JarIncomeController] Using fallback income', [
             'income' => $fallbackIncome,
             'source' => 'user_current'
         ]);
-        
+
         return $fallbackIncome;
     }
 }

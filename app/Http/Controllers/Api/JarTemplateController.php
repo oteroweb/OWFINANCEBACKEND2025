@@ -105,11 +105,11 @@ class JarTemplateController extends Controller
                 }
             } else {
                 if (method_exists($tj, 'categories')) {
-                    $catIds = $tj->categories()->pluck('categories.id')->toArray();
+                    $catIds = $tj->categories()->select('categories.id')->pluck('categories.id')->toArray();
                     if (!empty($catIds)) { $jar->categories()->sync($catIds); }
                 }
                 if (method_exists($tj, 'baseCategories') && $jar->base_scope === 'categories') {
-                    $baseCatIds = $tj->baseCategories()->pluck('categories.id')->toArray();
+                    $baseCatIds = $tj->baseCategories()->select('categories.id')->pluck('categories.id')->toArray();
                     if (!empty($baseCatIds)) { $jar->baseCategories()->sync($baseCatIds); }
                 }
             }

@@ -93,7 +93,7 @@ class JarBalanceService
 
         // Filter by jar directly or by categories linked to jar
         if ($jar->categories()->exists()) {
-            $query->whereIn('item_transactions.category_id', $jar->categories()->pluck('id'));
+            $query->whereIn('item_transactions.category_id', $jar->categories()->pluck('categories.id'));
         } else {
             $query->where('item_transactions.jar_id', $jar->id);
         }
@@ -127,7 +127,7 @@ class JarBalanceService
         // Apply base_scope filtering
         if ($jar->base_scope === 'categories') {
             // Only sum income from specified base categories
-            $baseCategoryIds = $jar->baseCategories()->pluck('categories.id')->toArray();
+            $baseCategoryIds = $jar->baseCategories()->select('categories.id')->pluck('categories.id')->toArray();
 
             if (!empty($baseCategoryIds)) {
                 $query->whereIn('item_transactions.category_id', $baseCategoryIds);
@@ -142,8 +142,74 @@ class JarBalanceService
     }
 
     /**
-     * Make a manual adjustment to a jar's available balance
+     * Adjust jar balance to reach a specific target available balance
+     * This calculates the difference and applies it as an adjustment
+     *
+     * @param Jar $jar The jar to adjust
+     * @param float $targetBalance The desired available balance (can be negative)
+     * @param string|null $reason Optional reason for the adjustment
+     * @param Carbon|null $date The date for the adjustment
+     * @param int|null $adjustedByUserId The user making the adjustment
+     * @return JarAdjustment The created adjustment record
+     */
+    public function adjustToTargetBalance(
+        Jar $jar,
+        float $targetBalance,
+        ?string $reason = null,
+        ?Carbon $date = null,
+        ?int $adjustedByUserId = null
+    ): JarAdjustment {
+        $date = $date ?? Carbon::now();
+        $adjustedByUserId = $adjustedByUserId ?? auth()->id() ?? $jar->user_id;
+
+        // Calculate current balance before adjustment
+        $previousAvailable = $this->getAvailableBalance($jar, $date);
+
+        // Calculate the adjustment amount needed to reach target
+        // Example: current=420, target=200 -> adjustment = 200 - 420 = -220
+        $adjustmentAmount = $targetBalance - $previousAvailable;
+
+        // If no adjustment needed, still create a record for audit (use 'increment' with 0 amount)
+        if ($adjustmentAmount == 0) {
+            return JarAdjustment::create([
+                'jar_id' => $jar->id,
+                'user_id' => $adjustedByUserId,
+                'amount' => 0,
+                'type' => 'increment', // Using increment for consistency (enum constraint)
+                'reason' => $reason,
+                'previous_available' => $previousAvailable,
+                'new_available' => $previousAvailable,
+                'adjustment_date' => $date->toDateString(),
+            ]);
+        }
+
+        // Determine if adjustment is increment or decrement
+        $type = $adjustmentAmount > 0 ? 'increment' : 'decrement';
+
+        // Update jar's adjustment field
+        $jar->adjustment += $adjustmentAmount;
+        $jar->save();
+
+        // Calculate new balance after adjustment (should equal targetBalance)
+        $newAvailable = $this->getAvailableBalance($jar, $date);
+
+        // Record in audit trail
+        return JarAdjustment::create([
+            'jar_id' => $jar->id,
+            'user_id' => $adjustedByUserId,
+            'amount' => abs($adjustmentAmount),
+            'type' => $type,
+            'reason' => $reason,
+            'previous_available' => $previousAvailable,
+            'new_available' => $newAvailable,
+            'adjustment_date' => $date->toDateString(),
+        ]);
+    }
+
+    /**
+     * Make a manual adjustment to a jar's available balance (incremental)
      * This adjustment applies to the current or specified period
+     * @deprecated Use adjustToTargetBalance instead for target-based adjustments
      */
     public function adjustBalance(
         Jar $jar,

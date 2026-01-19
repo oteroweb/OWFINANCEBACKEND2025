@@ -11,8 +11,8 @@ class JarRepo
     {
     $query = Jar::with([
         'user',
-        'categories' => function ($q) { $q->wherePivotNull('deleted_at'); },
-        'baseCategories' => function ($q) { $q->wherePivotNull('deleted_at'); },
+        'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
+        'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
         ])
             ->whereIn('active', [0,1]);
 
@@ -78,7 +78,13 @@ class JarRepo
     public function withTrashed()
     {
     // #todo(scope): Consider accepting $params to filter by user_id like all(), for consistency.
-    return Jar::withTrashed()->with(['user','categories','baseCategories'])->get();
+    return Jar::withTrashed()
+        ->with([
+            'user',
+            'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
+            'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
+        ])
+        ->get();
     }
 
     public function sumPercentForUser(int $userId, ?int $excludeJarId = null): float

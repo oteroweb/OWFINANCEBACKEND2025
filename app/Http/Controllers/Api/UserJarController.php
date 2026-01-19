@@ -115,7 +115,7 @@ class UserJarController extends Controller
                     // Category sync if provided
                     if (array_key_exists('category_ids', $jarData)) {
                         $targetIds = collect($jarData['category_ids'] ?? [])->map(fn($x)=>(int)$x)->unique()->values()->all();
-                        $currentIds = $jar->categories()->pluck('categories.id')->all();
+                        $currentIds = $jar->categories()->select('categories.id')->pluck('categories.id')->all();
                         $toAttach = array_values(array_diff($targetIds, $currentIds));
                         $toDetach = array_values(array_diff($currentIds, $targetIds));
                         if (!empty($toAttach)) {
@@ -254,7 +254,7 @@ class UserJarController extends Controller
             // Optional category sync
             if ($request->has('category_ids')) {
                 $targetIds = collect($request->input('category_ids', []))->map(fn($x)=>(int)$x)->unique()->values()->all();
-                $currentIds = $jar->categories()->pluck('categories.id')->all();
+                $currentIds = $jar->categories()->select('categories.id')->pluck('categories.id')->all();
                 $toAttach = array_values(array_diff($targetIds, $currentIds));
                 $toDetach = array_values(array_diff($currentIds, $targetIds));
                 if (!empty($toAttach)) {
@@ -659,7 +659,7 @@ class UserJarController extends Controller
         //     $jar->load(['categories'=>fn($q)=>$q->wherePivotNull('deleted_at')]);
         //     return response()->json(['status'=>'OK','code'=>200,'data'=>$jar], 200);
         // }
-        $currentIds = $jar->categories()->pluck('categories.id')->all();
+        $currentIds = $jar->categories()->select('categories.id')->pluck('categories.id')->all();
         $toAttach = array_values(array_diff($targetIds, $currentIds));
         $toDetach = array_values(array_diff($currentIds, $targetIds));
         // Exclusivity: one jar per user per category
@@ -686,7 +686,7 @@ class UserJarController extends Controller
         if (!empty($toDetach)) {
             \App\Models\Entities\Pivots\JarCategory::where('jar_id',$jar->id)->whereIn('category_id',$toDetach)->whereNull('deleted_at')->update(['active'=>0,'deleted_at'=>now()]);
         }
-        $jar->load(['categories'=>fn($q)=>$q->wherePivotNull('deleted_at')]);
+        $jar->load(['categories'=>fn($q)=>$q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at')]);
         return response()->json(['status'=>'OK','code'=>200,'data'=>$jar], 200);
     }
 }
