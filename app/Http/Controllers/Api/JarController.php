@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Repositories\JarRepo;
+use App\Models\Entities\JarSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -48,6 +49,14 @@ class JarController extends Controller
             'jars.*.color' => 'nullable|string|max:16',
             'jars.*.sort_order' => 'nullable|integer',
             'jars.*.active' => 'nullable|boolean',
+            'jars.*.refresh_mode' => 'nullable|in:reset,accumulative',
+            'jars.*.allow_negative_balance' => 'nullable|boolean',
+            'jars.*.negative_limit' => 'nullable|numeric|min:0',
+            'jars.*.start_date' => 'nullable|date',
+            'jars.*.use_global_start_date' => 'nullable|boolean',
+            'jars.*.reset_cycle' => 'nullable|in:none,monthly,quarterly,semiannual,annual',
+            'jars.*.reset_cycle_day' => 'nullable|integer|min:1|max:28',
+            'jars.*.target_amount' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -63,6 +72,7 @@ class JarController extends Controller
         try {
             $incomingJars = $request->input('jars', []);
             $userId = $authUser->id;
+            $settings = JarSetting::firstOrCreate(['user_id' => $userId]);
             $processedIds = [];
             $resultJars = [];
 
@@ -94,6 +104,16 @@ class JarController extends Controller
                     'sort_order' => $jarData['sort_order'] ?? ($index + 1),
                     'active' => $jarData['active'] ?? true,
                     'user_id' => $userId,
+                    'refresh_mode' => $jarData['refresh_mode'] ?? 'reset',
+                    'allow_negative_balance' => $jarData['allow_negative_balance'] ?? $settings->default_allow_negative,
+                    'negative_limit' => array_key_exists('negative_limit', $jarData) ? $jarData['negative_limit'] : $settings->default_negative_limit,
+                    'start_date' => $jarData['start_date'] ?? null,
+                    'use_global_start_date' => array_key_exists('use_global_start_date', $jarData)
+                        ? $jarData['use_global_start_date']
+                        : true,
+                    'reset_cycle' => $jarData['reset_cycle'] ?? $settings->default_reset_cycle,
+                    'reset_cycle_day' => $jarData['reset_cycle_day'] ?? $settings->default_reset_cycle_day,
+                    'target_amount' => $jarData['target_amount'] ?? null,
                 ];
 
                 if ($payload['type'] === 'percent') {
@@ -348,6 +368,14 @@ class JarController extends Controller
             'base_categories.*' => 'integer|exists:categories,id',
             'color' => 'nullable|string|max:16',
             'sort_order' => 'nullable|integer',
+            'refresh_mode' => 'nullable|in:reset,accumulative',
+            'allow_negative_balance' => 'nullable|boolean',
+            'negative_limit' => 'nullable|numeric|min:0',
+            'start_date' => 'nullable|date',
+            'use_global_start_date' => 'nullable|boolean',
+            'reset_cycle' => 'nullable|in:none,monthly,quarterly,semiannual,annual',
+            'reset_cycle_day' => 'nullable|integer|min:1|max:28',
+            'target_amount' => 'nullable|numeric|min:0',
         ], $this->custom_message());
 
         if ($validator->fails()) {
@@ -372,7 +400,24 @@ class JarController extends Controller
 
         try {
             $user = $request->user();
-            $payload = $request->only(['name','type','fixed_amount','percent','base_scope','color','sort_order']);
+            $settings = $user ? JarSetting::firstOrCreate(['user_id' => $user->id]) : null;
+            $payload = $request->only([
+                'name',
+                'type',
+                'fixed_amount',
+                'percent',
+                'base_scope',
+                'color',
+                'sort_order',
+                'refresh_mode',
+                'allow_negative_balance',
+                'negative_limit',
+                'start_date',
+                'use_global_start_date',
+                'reset_cycle',
+                'reset_cycle_day',
+                'target_amount',
+            ]);
             // Defaults to satisfy minimal payloads in tests
             $payload['type'] = $payload['type'] ?? 'percent';
             if ($payload['type'] === 'fixed') {
@@ -381,6 +426,15 @@ class JarController extends Controller
                 $payload['percent'] = $payload['percent'] ?? 0;
             }
             $payload['base_scope'] = $payload['base_scope'] ?? 'all_income'; // #todo: default could be configurable per user
+            $payload['refresh_mode'] = $payload['refresh_mode'] ?? 'reset';
+            $payload['allow_negative_balance'] = $payload['allow_negative_balance']
+                ?? ($settings?->default_allow_negative ?? false);
+            if (!array_key_exists('negative_limit', $payload)) {
+                $payload['negative_limit'] = $settings?->default_negative_limit;
+            }
+            $payload['reset_cycle'] = $payload['reset_cycle'] ?? ($settings?->default_reset_cycle ?? 'none');
+            $payload['reset_cycle_day'] = $payload['reset_cycle_day'] ?? ($settings?->default_reset_cycle_day ?? 1);
+            $payload['use_global_start_date'] = $payload['use_global_start_date'] ?? true;
             $payload['user_id'] = $user?->id;
             $payload['active'] = 1;
 
@@ -451,6 +505,14 @@ class JarController extends Controller
                 'color' => 'nullable|string|max:16',
                 'sort_order' => 'nullable|integer',
                 'active' => 'sometimes|boolean',
+                'refresh_mode' => 'nullable|in:reset,accumulative',
+                'allow_negative_balance' => 'nullable|boolean',
+                'negative_limit' => 'nullable|numeric|min:0',
+                'start_date' => 'nullable|date',
+                'use_global_start_date' => 'nullable|boolean',
+                'reset_cycle' => 'nullable|in:none,monthly,quarterly,semiannual,annual',
+                'reset_cycle_day' => 'nullable|integer|min:1|max:28',
+                'target_amount' => 'nullable|numeric|min:0',
             ]);
             if ($validator->fails()) {
                 return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()], 400);
@@ -468,7 +530,23 @@ class JarController extends Controller
                 ], 422);
             }
 
-            $payload = $request->only(['name','type','fixed_amount','percent','base_scope','color','sort_order']);
+            $payload = $request->only([
+                'name',
+                'type',
+                'fixed_amount',
+                'percent',
+                'base_scope',
+                'color',
+                'sort_order',
+                'refresh_mode',
+                'allow_negative_balance',
+                'negative_limit',
+                'start_date',
+                'use_global_start_date',
+                'reset_cycle',
+                'reset_cycle_day',
+                'target_amount',
+            ]);
             if ($request->exists('active')) { $payload['active'] = $request->boolean('active'); }
 
             $userId = $jar->user_id;

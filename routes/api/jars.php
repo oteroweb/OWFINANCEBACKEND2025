@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\JarController;
 use App\Http\Controllers\Api\JarIncomeController;
 use App\Http\Controllers\Api\JarAdjustmentController;
 use App\Http\Controllers\Api\JarBalanceController;
+use App\Http\Controllers\Api\JarSettingController;
+use App\Http\Controllers\Api\JarWithdrawalController;
 
 Route::group([
     'middleware' => ['api', 'auth:sanctum'],
@@ -16,6 +18,10 @@ Route::group([
     Route::get('/active', [JarController::class, 'allActive']);
     Route::get('/all', [JarController::class, 'withTrashed']);
     Route::get('/', [JarController::class, 'all']);
+
+    // Jar settings (global)
+    Route::get('/settings', [JarSettingController::class, 'show']);
+    Route::put('/settings', [JarSettingController::class, 'update']);
 
     // Income summary endpoint
     Route::get('/income-summary', [JarIncomeController::class, 'getIncomeSummary']);
@@ -31,6 +37,10 @@ Route::group([
     Route::get('/{id}/adjustments', [JarBalanceController::class, 'getAdjustmentHistory']);
     Route::post('/{id}/adjust', [JarBalanceController::class, 'adjustBalance']);
     Route::post('/{id}/reset-adjustment', [JarBalanceController::class, 'resetAdjustmentForNextPeriod']);
+
+    // Withdrawals (usage)
+    Route::get('/{id}/withdrawals', [JarWithdrawalController::class, 'index']);
+    Route::post('/{id}/withdraw', [JarWithdrawalController::class, 'store']);
 
     Route::delete('/{id}', [JarController::class, 'delete']);
 });

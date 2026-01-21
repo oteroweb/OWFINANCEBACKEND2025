@@ -513,7 +513,7 @@ class TransactionController extends Controller
                     'jar_id' => $it['jar_id'] ?? null,
                     'date' => $it['date'] ?? $transaction->date,
                     // Backward-compat: keep legacy category_id, but prefer new item_category_id for ItemCategory linkage
-                    'category_id' => $it['category_id'] ?? null,
+                    'category_id' => $it['category_id'] ?? $request->input('category_id') ?? null,
                     'item_category_id' => $it['item_category_id'] ?? null,
                     'user_id' => $it['user_id'] ?? $transaction->user_id,
                     'custom_name' => $it['custom_name'] ?? null,
@@ -794,7 +794,7 @@ class TransactionController extends Controller
                         'description' => $it['description'] ?? null,
                         'jar_id' => $it['jar_id'] ?? null,
                         'date' => $it['date'] ?? $transaction->date,
-                        'category_id' => $it['category_id'] ?? null,
+                        'category_id' => $it['category_id'] ?? $request->input('category_id') ?? null,
                         'item_category_id' => $it['item_category_id'] ?? null,
                         'user_id' => $it['user_id'] ?? $transaction->user_id,
                         'custom_name' => $it['custom_name'] ?? null,

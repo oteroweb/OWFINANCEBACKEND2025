@@ -80,6 +80,11 @@ class User extends Authenticatable
     {
         return $this->belongsTo(\App\Models\Entities\Client::class);
     }
+
+    public function jarSettings()
+    {
+        return $this->hasOne(\App\Models\Entities\JarSetting::class);
+    }
     public function currency()
     {
         return $this->belongsTo(\App\Models\Entities\Currency::class);

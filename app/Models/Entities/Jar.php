@@ -24,11 +24,23 @@ class Jar extends Model
         'color',
         'adjustment',
         'refresh_mode',
+        'allow_negative_balance',
+        'negative_limit',
+        'start_date',
+        'use_global_start_date',
+        'reset_cycle',
+        'reset_cycle_day',
+        'target_amount',
+        'last_reset_date',
         'status',
     ];
 
     protected $casts = [
         'date' => 'datetime:Y-m-d',
+        'start_date' => 'date:Y-m-d',
+        'allow_negative_balance' => 'boolean',
+        'use_global_start_date' => 'boolean',
+        'reset_cycle_day' => 'integer',
         'created_at' => 'datetime:Y-m-d',
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',
@@ -60,6 +72,16 @@ class Jar extends Model
     public function adjustments()
     {
         return $this->hasMany(JarAdjustment::class);
+    }
+
+    public function withdrawals()
+    {
+        return $this->hasMany(JarWithdrawal::class);
+    }
+
+    public function cycles()
+    {
+        return $this->hasMany(JarCycle::class);
     }
 
     protected static function newFactory()
