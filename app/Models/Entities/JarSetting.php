@@ -14,13 +14,15 @@ class JarSetting extends Model
         'default_negative_limit',
         'default_reset_cycle',
         'default_reset_cycle_day',
+        'leverage_jar_id',
     ];
 
     protected $casts = [
-        'global_start_date' => 'date',
+        'global_start_date' => 'date:Y-m-d',
         'default_allow_negative' => 'boolean',
         'default_negative_limit' => 'decimal:2',
         'default_reset_cycle_day' => 'integer',
+        'leverage_jar_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

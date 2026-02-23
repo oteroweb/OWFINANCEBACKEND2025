@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,6 +21,14 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         },
     )
+    ->withSchedule(function (Schedule $schedule): void {
+        // Materialize jar cycle snapshots on the 1st of each month at 00:15
+        // Caches ending balances so accumulative jars don't need recursive computation.
+        $schedule->command('jars:materialize-cycles')
+            ->monthlyOn(1, '00:15')
+            ->withoutOverlapping()
+            ->runInBackground();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         //
     })

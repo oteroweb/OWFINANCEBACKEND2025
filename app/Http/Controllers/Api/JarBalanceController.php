@@ -139,8 +139,9 @@ class JarBalanceController extends Controller
     /**
      * POST /api/v1/jars/{jarId}/reset-adjustment
      * Reset adjustment for next period (for reset mode jars)
+     * Clears adjustments from jar_adjustments table for the current month.
      */
-    public function resetAdjustmentForNextPeriod(int $jarId): JsonResponse
+    public function resetAdjustmentForNextPeriod(int $jarId, Request $request): JsonResponse
     {
         $userId = auth()->user()->id;
 
@@ -148,7 +149,12 @@ class JarBalanceController extends Controller
             ->where('user_id', $userId)
             ->firstOrFail();
 
-        $this->balanceService->resetAdjustmentForNewPeriod($jar);
+        $date = $request->get('date') ? Carbon::parse($request->get('date')) : null;
+
+        $this->balanceService->resetAdjustmentForNewPeriod($jar, $date);
+
+        // Recalculate balance after clearing adjustments
+        $newBalance = $this->balanceService->getAvailableBalance($jar, $date);
 
         return response()->json([
             'status' => 'OK',
@@ -156,9 +162,63 @@ class JarBalanceController extends Controller
             'message' => 'Adjustment reset for next period',
             'data' => [
                 'jar_id' => $jar->id,
-                'adjustment' => $jar->adjustment,
+                'available_balance' => $newBalance,
                 'refresh_mode' => $jar->refresh_mode,
             ],
+        ]);
+    }
+
+    /**
+     * DELETE /api/v1/jars/{jarId}/adjustments
+     * Clear all adjustments for a specific month
+     *
+     * Query params:
+     * - date (optional): YYYY-MM-DD (defaults to today)
+     */
+    public function clearAdjustments(int $jarId, Request $request): JsonResponse
+    {
+        $userId = auth()->user()->id;
+
+        $jar = Jar::where('id', $jarId)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        $date = $request->get('date') ? Carbon::parse($request->get('date')) : Carbon::now();
+
+        $deleted = $this->balanceService->clearAdjustmentsForMonth($jar, $date);
+
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'message' => 'Adjustments cleared successfully',
+            'data' => [
+                'jar_id' => $jar->id,
+                'deleted' => $deleted,
+                'month' => $date->format('Y-m'),
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/v1/jars/{jarId}/leverage
+     * Try auto leverage and return reason
+     */
+    public function leverage(int $jarId, Request $request): JsonResponse
+    {
+        $userId = auth()->user()->id;
+
+        $jar = Jar::where('id', $jarId)
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        $date = $request->get('date') ? Carbon::parse($request->get('date')) : null;
+
+        $result = $this->balanceService->tryAutoLeverage($jar, $date);
+
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'data' => $result,
         ]);
     }
 }

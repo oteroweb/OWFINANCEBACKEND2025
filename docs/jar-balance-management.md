@@ -6,9 +6,15 @@ Este documento describe la estrategia para gestionar saldos disponibles en jarro
 - **Acumulativo**: El saldo se suma mes a mes (p.ej., Ahorro)
 - **Reset Mensual**: El saldo se reinicia cada mes (p.ej., Diversión)
 
-**Fórmula Simple:**
+**Fórmula Base (sin apalancamiento):**
 ```
-Saldo Disponible = (Monto Asignado - Gastos) + Ajustes Manuales
+Saldo Base = (Monto Asignado - Gastos) + Ajustes Manuales - Retiros
+          + Transferencias Reales Entrantes - Transferencias Reales Salientes
+```
+
+**Saldo Efectivo (con apalancamiento virtual):**
+```
+Saldo Efectivo = Saldo Base + Apalancamiento Entrante - Apalancamiento Saliente
 ```
 
 ---
@@ -23,6 +29,9 @@ adjustment DECIMAL(12,2) DEFAULT 0
 
 -- Modo de refresh del jarro
 refresh_mode ENUM('reset', 'accumulative') DEFAULT 'reset'
+
+-- Apalancamiento específico (origen de cobertura)
+leverage_from_jar_id BIGINT NULL
 ```
 
 ### Tabla `jar_adjustments` (nueva)
@@ -45,6 +54,17 @@ updated_at TIMESTAMP
 INDEX (jar_id, adjustment_date)
 INDEX (user_id, created_at)
 ```
+
+### Tabla `jar_settings` (nuevo)
+
+```sql
+leverage_jar_id BIGINT NULL -- origen global de apalancamiento
+```
+
+### Nota sobre `jar_transfers`
+
+El apalancamiento **no genera filas** en `jar_transfers`. Esa tabla solo registra
+transferencias reales (uso explícito).
 
 ---
 
@@ -115,14 +135,16 @@ POST /api/v1/users/1/jars
 ### 3. Obtener Saldo Actual
 
 ```bash
-GET /api/v1/users/1/jars/1/balance
+GET /api/v1/jars/1/balance
 
 Respuesta:
 {
   "allocated_amount": 500.00,      # Monto asignado (fijo o %)
   "spent_amount": 150.00,          # Gastos del mes
   "adjustment": 100.00,            # Ajuste manual
-  "available_balance": 450.00      # = 500 - 150 + 100
+  "leverage_in": 0.00,              # Apalancamiento entrante (virtual)
+  "leverage_out": 0.00,             # Apalancamiento saliente (virtual)
+  "available_balance": 450.00      # = base +/- apalancamiento
 }
 ```
 

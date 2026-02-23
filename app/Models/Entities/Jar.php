@@ -22,7 +22,7 @@ class Jar extends Model
         'user_id',
         'sort_order',
         'color',
-        'adjustment',
+        // 'adjustment' removed — use jar_adjustments table as single source of truth
         'refresh_mode',
         'allow_negative_balance',
         'negative_limit',
@@ -33,6 +33,7 @@ class Jar extends Model
         'target_amount',
         'last_reset_date',
         'status',
+        'leverage_from_jar_id',
     ];
 
     protected $casts = [
@@ -41,6 +42,7 @@ class Jar extends Model
         'allow_negative_balance' => 'boolean',
         'use_global_start_date' => 'boolean',
         'reset_cycle_day' => 'integer',
+        'leverage_from_jar_id' => 'integer',
         'created_at' => 'datetime:Y-m-d',
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',

@@ -57,6 +57,7 @@ class JarController extends Controller
             'jars.*.reset_cycle' => 'nullable|in:none,monthly,quarterly,semiannual,annual',
             'jars.*.reset_cycle_day' => 'nullable|integer|min:1|max:28',
             'jars.*.target_amount' => 'nullable|numeric|min:0',
+            'jars.*.leverage_from_jar_id' => 'nullable|integer|exists:jars,id',
         ]);
 
         if ($validator->fails()) {
@@ -114,6 +115,7 @@ class JarController extends Controller
                     'reset_cycle' => $jarData['reset_cycle'] ?? $settings->default_reset_cycle,
                     'reset_cycle_day' => $jarData['reset_cycle_day'] ?? $settings->default_reset_cycle_day,
                     'target_amount' => $jarData['target_amount'] ?? null,
+                    'leverage_from_jar_id' => $jarData['leverage_from_jar_id'] ?? null,
                 ];
 
                 if ($payload['type'] === 'percent') {
@@ -143,7 +145,7 @@ class JarController extends Controller
                     }
                     $jar = $this->jarRepo->update($existingJar, $payload);
                 } else {
-                    $jar = $this->jarRepo->create($payload);
+                    $jar = $this->jarRepo->store($payload);
                 }
 
                 $processedIds[] = $jar->id;

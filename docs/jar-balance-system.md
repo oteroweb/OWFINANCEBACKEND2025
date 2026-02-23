@@ -8,9 +8,15 @@ El sistema de saldo de jarros calcula automáticamente el dinero disponible en c
 3. **Ajustes manuales** (sincronización de sistemas anteriores, correcciones)
 4. **Modo de refresco** (reset mensual o acumulativo)
 
-**Fórmula Simple:**
+**Fórmula Base (sin apalancamiento):**
 ```
-Saldo Disponible = (Monto Asignado - Gastos) + Ajustes Manuales
+Saldo Base = (Monto Asignado - Gastos) + Ajustes Manuales - Retiros
+          + Transferencias Reales Entrantes - Transferencias Reales Salientes
+```
+
+**Saldo Efectivo (con apalancamiento virtual):**
+```
+Saldo Efectivo = Saldo Base + Apalancamiento Entrante - Apalancamiento Saliente
 ```
 
 ---
@@ -104,6 +110,26 @@ Un **ajuste manual** es un cambio al saldo **que no es gasto**. Se usa para:
 
 ---
 
+## 🧲 Apalancamiento (Virtual, sin registros)
+
+El apalancamiento **no crea transacciones**. Es un cálculo dinámico del saldo:
+
+- Si un cántaro queda en negativo, **absorbe** el excedente desde su cántaro origen.
+- El origen se determina por:
+  - `jars.leverage_from_jar_id` (configuración específica), o
+  - `jar_settings.leverage_jar_id` (global)
+
+**Reglas:**
+- No se permiten ciclos (el cálculo corta si detecta ciclo).
+- Respeta `allow_negative_balance` y `negative_limit` del origen.
+- Se calcula en tiempo real al pedir balance.
+
+**Campos nuevos en respuesta:**
+- `leverage_in`: monto absorbido por el cántaro
+- `leverage_out`: monto cedido hacia otros
+
+---
+
 ## 💻 Implementación de Base de Datos
 
 ### Cambios en tabla `jars`
@@ -111,6 +137,7 @@ Un **ajuste manual** es un cambio al saldo **que no es gasto**. Se usa para:
 ```sql
 ALTER TABLE jars ADD COLUMN adjustment DECIMAL(12,2) DEFAULT 0;
 ALTER TABLE jars ADD COLUMN refresh_mode VARCHAR(20) DEFAULT 'reset';
+ALTER TABLE jars ADD COLUMN leverage_from_jar_id BIGINT NULL; -- origen específico de apalancamiento
 ```
 
 ### Nueva tabla `jar_adjustments`
@@ -134,6 +161,27 @@ CREATE TABLE jar_adjustments (
     INDEX (jar_id, adjustment_date),
     INDEX (user_id, created_at)
 );
+
+  ### Nueva tabla `jar_settings`
+
+  ```sql
+  CREATE TABLE jar_settings (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    leverage_jar_id BIGINT NULL, -- origen global de apalancamiento
+    global_start_date DATE NULL,
+    default_allow_negative BOOLEAN DEFAULT 0,
+    default_negative_limit DECIMAL(12,2) NULL,
+    default_reset_cycle VARCHAR(20) DEFAULT 'none',
+    default_reset_cycle_day INT DEFAULT 1,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+  );
+  ```
+
+  ### Tabla `jar_transfers` (solo transferencias reales)
+
+  > El apalancamiento **no** genera filas aquí.
 ```
 
 ---
@@ -144,7 +192,7 @@ CREATE TABLE jar_adjustments (
 
 **Endpoint:**
 ```
-GET /api/v1/users/{userId}/jars/{jarId}/balance
+GET /api/v1/jars/{jarId}/balance
 ```
 
 **Query Parameters:**
@@ -152,7 +200,7 @@ GET /api/v1/users/{userId}/jars/{jarId}/balance
 
 **Ejemplo:**
 ```bash
-GET /api/v1/users/1/jars/5/balance?date=2025-01-15
+GET /api/v1/jars/5/balance?date=2025-01-15
 ```
 
 **Respuesta (200 OK):**
@@ -168,6 +216,8 @@ GET /api/v1/users/1/jars/5/balance?date=2025-01-15
     "allocated_amount": 500.00,
     "spent_amount": 150.50,
     "adjustment": 0.00,
+    "leverage_in": 0.00,
+    "leverage_out": 0.00,
     "available_balance": 349.50,
     "period": {
       "month": "January 2025",

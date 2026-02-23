@@ -93,18 +93,12 @@ class JarAdjustmentController extends Controller
                 ], 400);
             }
 
-            // Guardar ajuste anterior para historial
-            $previousAdjustment = $jar->adjustment ?? 0;
-
-            // Usar el servicio para aplicar el ajuste
+            // Usar el servicio para aplicar el ajuste (writes to jar_adjustments table)
             $adjustmentRecord = $this->balanceService->adjustBalance(
                 $jar,
                 $amount,
                 $description
             );
-
-            // Recargar el jar para obtener el nuevo valor
-            $jar->refresh();
 
             // Obtener breakdown completo del balance
             $balance = $this->balanceService->getDetailedBalance($jar);
@@ -115,8 +109,6 @@ class JarAdjustmentController extends Controller
                 'data' => [
                     'jar_id' => $jar->id,
                     'jar_name' => $jar->name,
-                    'adjustment' => $jar->adjustment,
-                    'previous_adjustment' => $previousAdjustment,
                     'balance' => [
                         'asignado' => $balance['allocated_amount'],
                         'gastado' => $balance['spent_amount'],
@@ -184,21 +176,11 @@ class JarAdjustmentController extends Controller
                 ], 404);
             }
 
-            $previousAdjustment = $jar->adjustment ?? 0;
+            $previousAdjustment = $this->balanceService->getAvailableBalance($jar);
 
-            // Calcular el monto necesario para resetear (inverso del ajuste actual)
-            $resetAmount = -$previousAdjustment;
+            // Clear current month adjustments via service
+            $this->balanceService->resetAdjustmentForNewPeriod($jar);
 
-            // Aplicar el ajuste de reseteo
-            if ($resetAmount != 0) {
-                $this->balanceService->adjustBalance(
-                    $jar,
-                    $resetAmount,
-                    'Reseteo de ajuste manual'
-                );
-            }
-
-            $jar->refresh();
             $balance = $this->balanceService->getDetailedBalance($jar);
 
             return response()->json([
@@ -207,8 +189,7 @@ class JarAdjustmentController extends Controller
                 'data' => [
                     'jar_id' => $jar->id,
                     'jar_name' => $jar->name,
-                    'adjustment' => 0,
-                    'previous_adjustment' => $previousAdjustment,
+                    'previous_balance' => $previousAdjustment,
                     'balance' => [
                         'asignado' => $balance['allocated_amount'],
                         'gastado' => $balance['spent_amount'],

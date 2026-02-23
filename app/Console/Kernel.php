@@ -9,10 +9,12 @@ class Kernel extends ConsoleKernel
 {
     /**
      * Define the application's command schedule.
+     * NOTE: In Laravel 12, scheduling is defined in bootstrap/app.php via withSchedule().
+     * This method is kept for reference only.
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Scheduled in bootstrap/app.php
     }
 
     /**
