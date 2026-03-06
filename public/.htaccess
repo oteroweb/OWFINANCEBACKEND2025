@@ -18,7 +18,13 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Do NOT intercept /app/ — served as static SPA
+    # SPA frontend en /app/ — servir index.html para cualquier ruta real de Vue Router
+    RewriteCond %{REQUEST_URI} ^/app/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ /app/index.html [L]
+
+    # Archivos estáticos de /app/ que sí existen — servirlos directamente
     RewriteCond %{REQUEST_URI} ^/app(/.*)?$
     RewriteRule ^ - [L]
 
