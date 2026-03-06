@@ -86,6 +86,11 @@ class Jar extends Model
         return $this->hasMany(JarCycle::class);
     }
 
+    public function monthlyOverrides()
+    {
+        return $this->hasMany(JarMonthlyOverride::class);
+    }
+
     protected static function newFactory()
     {
         return \Database\Factories\JarFactory::new();

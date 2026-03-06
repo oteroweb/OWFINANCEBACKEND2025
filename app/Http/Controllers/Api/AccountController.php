@@ -123,6 +123,7 @@ class AccountController extends Controller
             'initial' => 'required|numeric',
             'account_type_id' => 'required|exists:account_types,id',
             'active' => 'sometimes|boolean',
+            'include_in_global_balance' => 'sometimes|boolean',
         ], $this->custom_message());
 
         if ($validator->fails()) {
@@ -139,6 +140,9 @@ class AccountController extends Controller
             $data = $request->only(['name', 'currency_id', 'initial', 'account_type_id']);
             if ($request->exists('active')) {
                 $data['active'] = $request->boolean('active');
+            }
+            if ($request->exists('include_in_global_balance')) {
+                $data['include_in_global_balance'] = $request->boolean('include_in_global_balance');
             }
             $account = $this->accountRepo->store($data);
 
@@ -189,6 +193,9 @@ class AccountController extends Controller
             $data = $request->only(['name', 'currency_id', 'initial', 'account_type_id']);
             if ($request->exists('active')) {
                 $data['active'] = $request->boolean('active');
+            }
+            if ($request->exists('include_in_global_balance')) {
+                $data['include_in_global_balance'] = $request->boolean('include_in_global_balance');
             }
             $account = $this->accountRepo->update($account, $data);
             $response = [
@@ -490,11 +497,20 @@ class AccountController extends Controller
         }
         $userId = $user->id;
         // Load folders and accounts
-        $folders = AccountFolder::where('user_id', $userId)->get();
+        $folders = AccountFolder::where('user_id', $userId)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
         $accounts = DB::table('account_user')
             ->where('user_id', $userId)
             ->join('accounts', 'account_user.account_id', '=', 'accounts.id')
-            ->select('accounts.id', 'accounts.name as label', 'account_user.folder_id', 'account_user.sort_order')
+            ->select(
+                'accounts.id',
+                'accounts.name as label',
+                'accounts.include_in_global_balance',
+                'account_user.folder_id',
+                'account_user.sort_order'
+            )
             ->whereNull('accounts.deleted_at')
             ->orderBy('account_user.sort_order')
             ->get();
@@ -514,7 +530,12 @@ class AccountController extends Controller
         }
         // Attach accounts
         foreach ($accounts as $acct) {
-            $node = ['id' => $acct->id, 'label' => $acct->label, 'type' => 'account'];
+            $node = [
+                'id'                       => $acct->id,
+                'label'                    => $acct->label,
+                'type'                     => 'account',
+                'include_in_global_balance' => (bool) $acct->include_in_global_balance,
+            ];
             if ($acct->folder_id && isset($folderMap[$acct->folder_id])) {
                 $folderMap[$acct->folder_id]['children'][] = $node;
             } else {
@@ -552,6 +573,92 @@ class AccountController extends Controller
             ];
             return response()->json($response, 500);
         }
+    }
+
+    /**
+     * Batch-update sort_order for an ordered list of account IDs (pivot account_user).
+     * Body: { items: [ { id, sort_order } ] }
+     */
+    public function batchSort(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['status' => 'FAILED', 'code' => 401, 'message' => __('Unauthenticated')], 401);
+        }
+        $items = $request->input('items', []);
+        if (!is_array($items) || empty($items)) {
+            return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => 'items required'], 400);
+        }
+        foreach ($items as $item) {
+            $accountId = $item['id'] ?? null;
+            $order     = $item['sort_order'] ?? 0;
+            if (!$accountId) continue;
+            DB::table('account_user')
+                ->where('user_id', $user->id)
+                ->where('account_id', $accountId)
+                ->update(['sort_order' => (int) $order]);
+        }
+        return response()->json(['status' => 'OK', 'code' => 200], 200);
+    }
+
+    /**
+     * @group Account
+     * Global balance summary: total de todas las cuentas y total del balance configurado.
+     * Returns two totals in the default user currency:
+     *   - total_all: sum of balance_cached for ALL active accounts of the user.
+     *   - total_global_balance: sum of balance_cached only for accounts with include_in_global_balance = true.
+     * Both values are in each account's own currency; for multi-currency setups convert on the frontend.
+     */
+    public function globalBalanceSummary(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['status' => 'FAILED', 'code' => 401, 'message' => __('Unauthenticated')], 401);
+        }
+        $userId = $user->id;
+
+        $rows = DB::table('account_user')
+            ->where('account_user.user_id', $userId)
+            ->join('accounts', 'account_user.account_id', '=', 'accounts.id')
+            ->where('accounts.active', 1)
+            ->whereNull('accounts.deleted_at')
+            ->select(
+                'accounts.id',
+                'accounts.name',
+                'accounts.balance_cached',
+                'accounts.include_in_global_balance',
+                'accounts.currency_id'
+            )
+            ->get();
+
+        $totalAll = 0.0;
+        $totalGlobalBalance = 0.0;
+        $accountsSummary = [];
+
+        foreach ($rows as $row) {
+            $balance = (float) ($row->balance_cached ?? 0);
+            $totalAll += $balance;
+            if ($row->include_in_global_balance) {
+                $totalGlobalBalance += $balance;
+            }
+            $accountsSummary[] = [
+                'id'                       => $row->id,
+                'name'                     => $row->name,
+                'balance'                  => $balance,
+                'include_in_global_balance' => (bool) $row->include_in_global_balance,
+                'currency_id'              => $row->currency_id,
+            ];
+        }
+
+        return response()->json([
+            'status' => 'OK',
+            'code'   => 200,
+            'data'   => [
+                'total_all'            => round($totalAll, 2),
+                'total_global_balance' => round($totalGlobalBalance, 2),
+                'accounts'             => $accountsSummary,
+            ],
+        ], 200);
     }
 
     public function custom_message()

@@ -30,10 +30,7 @@ class JarBalanceController extends Controller
             ->where('user_id', $userId)
             ->firstOrFail();
 
-        $date = null;
-        if ($request->has('date')) {
-            $date = Carbon::parse($request->get('date'));
-        }
+        $date = $this->resolveDateParam($request);
 
         $balance = $this->balanceService->getDetailedBalance($jar, $date);
 
@@ -42,6 +39,58 @@ class JarBalanceController extends Controller
             'code' => 200,
             'data' => $balance,
         ]);
+    }
+
+    /**
+     * GET /api/v1/jars/all-balances?year=Y&month=M
+     * Return available_balance for every active jar of the authenticated user in one request.
+     */
+    public function allBalances(Request $request): JsonResponse
+    {
+        $userId = auth()->user()->id;
+        $date   = $this->resolveDateParam($request);
+
+        $jars = Jar::where('user_id', $userId)
+            ->where('active', true)
+            ->orderBy('id')
+            ->get();
+
+        $results = $jars->map(function (Jar $jar) use ($date) {
+            $b = $this->balanceService->getDetailedBalance($jar, $date);
+            return [
+                'jar_id'            => $b['jar_id'],
+                'jar_name'          => $b['jar_name'],
+                'color'             => $jar->color ?? '#6B7280',
+                'available_balance' => $b['available_balance'],
+                'allocated_amount'  => $b['allocated_amount'],
+            ];
+        });
+
+        return response()->json([
+            'status' => 'OK',
+            'code'   => 200,
+            'data'   => $results,
+        ]);
+    }
+
+    /**
+     * Resolve a Carbon date from request params.
+     * Accepts: ?date=YYYY-MM-DD  OR  ?year=Y&month=M
+     * Falls back to today when nothing is provided.
+     */
+    private function resolveDateParam(Request $request): ?Carbon
+    {
+        if ($request->has('date')) {
+            return Carbon::parse($request->get('date'));
+        }
+        if ($request->has('year') && $request->has('month')) {
+            return Carbon::createFromDate(
+                (int) $request->get('year'),
+                (int) $request->get('month'),
+                1
+            );
+        }
+        return null;
     }
 
     /**

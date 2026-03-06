@@ -177,8 +177,38 @@ class AccountFolderController extends Controller
                 return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => __('Cannot move a folder inside its descendant')], 400);
             }
         }
-        $folder->update(['parent_id' => $newParentId]);
-        return response()->json(['status' => 'OK', 'code' => 200, 'data' => ['id' => (int)$folder->id, 'parent_id' => $folder->parent_id]], 200);
+        $updateData = ['parent_id' => $newParentId];
+        if ($request->has('sort_order')) {
+            $updateData['sort_order'] = (int) $request->input('sort_order', 0);
+        }
+        $folder->update($updateData);
+        return response()->json(['status' => 'OK', 'code' => 200, 'data' => ['id' => (int)$folder->id, 'parent_id' => $folder->parent_id, 'sort_order' => $folder->sort_order]], 200);
+    }
+
+    /**
+     * @group AccountFolder
+     * Batch-update sort_order for an ordered list of folder IDs.
+     * Body: { items: [ { id, sort_order } ] }
+     */
+    public function batchSort(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['status' => 'FAILED', 'code' => 401, 'message' => __('Unauthenticated')], 401);
+        }
+        $items = $request->input('items', []);
+        if (!is_array($items) || empty($items)) {
+            return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => 'items required'], 400);
+        }
+        foreach ($items as $item) {
+            $id = $item['id'] ?? null;
+            $order = $item['sort_order'] ?? 0;
+            if (!$id) continue;
+            AccountFolder::where('id', $id)
+                ->where('user_id', $user->id)
+                ->update(['sort_order' => (int) $order]);
+        }
+        return response()->json(['status' => 'OK', 'code' => 200], 200);
     }
 
     private static function collectDescendants(AccountFolder $folder): array

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\JarSettingController;
 use App\Http\Controllers\Api\JarWithdrawalController;
 use App\Http\Controllers\Api\JarTransferController;
 use App\Http\Controllers\Api\JarSavingsController;
+use App\Http\Controllers\Api\JarMonthlyOverrideController;
 
 Route::group([
     'middleware' => ['api', 'auth:sanctum'],
@@ -28,9 +29,17 @@ Route::group([
 
     // Theoretical savings summary
     Route::get('/theoretical-savings', [JarSavingsController::class, 'getSummary']);
+    Route::get('/theoretical-savings/accumulated', [JarSavingsController::class, 'getAccumulated']);
+
+    // Monthly overrides (variable percent/fixed per month)
+    Route::get('/overrides/month', [JarMonthlyOverrideController::class, 'index']);
+    Route::get('/overrides/validate', [JarMonthlyOverrideController::class, 'validate']);
+    Route::put('/overrides/bulk', [JarMonthlyOverrideController::class, 'bulkUpsert']);
 
     // Income summary endpoint
     Route::get('/income-summary', [JarIncomeController::class, 'getIncomeSummary']);
+    // All-balances bar (single bulk call for all active jars)
+    Route::get('/all-balances', [JarBalanceController::class, 'allBalances']);
 
     Route::get('/{id}', [JarController::class, 'find']);
     Route::put('/{id}', [JarController::class, 'update']);
@@ -45,6 +54,10 @@ Route::group([
     Route::delete('/{id}/adjustments', [JarBalanceController::class, 'clearAdjustments']);
     Route::post('/{id}/reset-adjustment', [JarBalanceController::class, 'resetAdjustmentForNextPeriod']);
     Route::post('/{id}/leverage', [JarBalanceController::class, 'leverage']);
+
+    // Per-jar monthly override
+    Route::put('/{id}/override', [JarMonthlyOverrideController::class, 'upsert']);
+    Route::delete('/{id}/override', [JarMonthlyOverrideController::class, 'destroy']);
 
     // Withdrawals (usage)
     Route::get('/{id}/withdrawals', [JarWithdrawalController::class, 'index']);

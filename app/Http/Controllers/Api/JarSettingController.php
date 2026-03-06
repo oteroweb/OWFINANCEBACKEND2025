@@ -40,6 +40,7 @@ class JarSettingController extends Controller
             'default_reset_cycle' => 'nullable|in:none,monthly,quarterly,semiannual,annual',
             'default_reset_cycle_day' => 'nullable|integer|min:1|max:28',
             'leverage_jar_id' => 'nullable|integer|exists:jars,id',
+            'auto_leverage_enabled' => 'nullable|boolean',
         ]);
 
         $settings = JarSetting::firstOrCreate(['user_id' => $userId]);

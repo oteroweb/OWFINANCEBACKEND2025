@@ -11,6 +11,7 @@ use App\Models\Entities\JarWithdrawal;
 use App\Models\Entities\JarTransfer;
 use App\Models\Entities\UserMonthlyIncomeHistory;
 use App\Models\Entities\JarCycle;
+use App\Models\Entities\JarMonthlyOverride;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -68,33 +69,162 @@ class JarBalanceService
     }
 
     /**
-     * Calculate the allocated amount for a jar based on its type
-     * - Fixed: always returns the fixed_amount
-     * - Percent: calculates percentage of user's income for the month
+     * Calculate the allocated amount for a jar based on its type.
+     * Checks for monthly overrides first (jar_monthly_overrides table).
+     * - Fixed: returns override fixed_amount if set, else jar->fixed_amount
+     * - Percent: returns override percent if set, else jar->percent (applied to monthly income)
      */
     private function calculateAllocatedAmount(Jar $jar, Carbon $date): float
     {
+        $monthStart = $date->clone()->startOfMonth()->toDateString();
+        $override = JarMonthlyOverride::getForMonth($jar->id, $monthStart);
+
         if ($jar->type === 'fixed') {
-            return (float) $jar->fixed_amount;
+            $amount = ($override && $override->fixed_amount !== null)
+                ? (float) $override->fixed_amount
+                : (float) $jar->fixed_amount;
+            return $amount;
         }
 
         if ($jar->type === 'percent') {
-            // For percent jars, use the monthly_income configured for that month
+            $percent = ($override && $override->percent !== null)
+                ? (float) $override->percent
+                : (float) $jar->percent;
             $monthlyIncome = $this->getMonthlyIncomeForMonth($jar->user_id, $date);
-            return $monthlyIncome * ($jar->percent / 100);
+            return $monthlyIncome * ($percent / 100);
         }
 
         return 0;
     }
 
     /**
-     * Get monthly usage components for a jar (allocated, spent, withdrawals)
+     * Get the effective percent for a jar in a given month.
+     * Returns the override percent if set, otherwise the jar's default percent.
+     */
+    public function getEffectivePercent(Jar $jar, Carbon $date): float
+    {
+        $monthStart = $date->clone()->startOfMonth()->toDateString();
+        $override = JarMonthlyOverride::getForMonth($jar->id, $monthStart);
+
+        if ($override && $override->percent !== null) {
+            return (float) $override->percent;
+        }
+
+        return (float) ($jar->percent ?? 0);
+    }
+
+    /**
+     * Get the effective fixed amount for a jar in a given month.
+     * Returns the override fixed_amount if set, otherwise the jar's default.
+     */
+    public function getEffectiveFixedAmount(Jar $jar, Carbon $date): float
+    {
+        $monthStart = $date->clone()->startOfMonth()->toDateString();
+        $override = JarMonthlyOverride::getForMonth($jar->id, $monthStart);
+
+        if ($override && $override->fixed_amount !== null) {
+            return (float) $override->fixed_amount;
+        }
+
+        return (float) ($jar->fixed_amount ?? 0);
+    }
+
+    /**
+     * Validate that the total percentage for all active jars of a user
+     * does not exceed 100% for a given month (considering overrides).
+     *
+     * Returns an array with:
+     *  - valid: bool
+     *  - total_percent: float
+     *  - total_fixed: float
+     *  - jars: array of per-jar details
+     */
+    public function validateMonthlyAllocation(int $userId, Carbon $date): array
+    {
+        $jars = Jar::where('user_id', $userId)
+            ->where('active', 1)
+            ->whereNull('deleted_at')
+            ->orderBy('sort_order')
+            ->get();
+
+        $monthStart = $date->clone()->startOfMonth()->toDateString();
+        $monthlyIncome = $this->getMonthlyIncomeForMonth($userId, $date);
+
+        $totalPercent = 0;
+        $totalFixed = 0;
+        $totalAllocated = 0;
+        $totalEquivalentPercent = 0;
+        $details = [];
+
+        foreach ($jars as $jar) {
+            $override = JarMonthlyOverride::getForMonth($jar->id, $monthStart);
+
+            if ($jar->type === 'percent') {
+                $effectivePercent = ($override && $override->percent !== null)
+                    ? (float) $override->percent
+                    : (float) $jar->percent;
+                $allocated = $monthlyIncome * ($effectivePercent / 100);
+                $totalPercent += $effectivePercent;
+                $totalEquivalentPercent += $effectivePercent;
+                $totalAllocated += $allocated;
+
+                $details[] = [
+                    'jar_id' => $jar->id,
+                    'name' => $jar->name,
+                    'type' => 'percent',
+                    'default_percent' => (float) $jar->percent,
+                    'effective_percent' => $effectivePercent,
+                    'equivalent_percent' => $effectivePercent,
+                    'has_override' => $override !== null && $override->percent !== null,
+                    'allocated' => round($allocated, 2),
+                ];
+            } else {
+                $effectiveFixed = ($override && $override->fixed_amount !== null)
+                    ? (float) $override->fixed_amount
+                    : (float) $jar->fixed_amount;
+                $equivalentPercent = $monthlyIncome > 0
+                    ? round(($effectiveFixed / $monthlyIncome) * 100, 2)
+                    : 0;
+                $totalFixed += $effectiveFixed;
+                $totalAllocated += $effectiveFixed;
+                $totalEquivalentPercent += $equivalentPercent;
+
+                $details[] = [
+                    'jar_id' => $jar->id,
+                    'name' => $jar->name,
+                    'type' => 'fixed',
+                    'default_fixed' => (float) $jar->fixed_amount,
+                    'effective_fixed' => $effectiveFixed,
+                    'equivalent_percent' => $equivalentPercent,
+                    'has_override' => $override !== null && $override->fixed_amount !== null,
+                    'allocated' => round($effectiveFixed, 2),
+                ];
+            }
+        }
+
+        return [
+            'valid' => round($totalEquivalentPercent, 2) <= 100,
+            'total_percent' => round($totalPercent, 2),
+            'total_fixed' => round($totalFixed, 2),
+            'total_equivalent_percent' => round($totalEquivalentPercent, 2),
+            'total_allocated' => round($totalAllocated, 2),
+            'monthly_income' => $monthlyIncome,
+            'remaining_percent' => round(100 - $totalEquivalentPercent, 2),
+            'remaining_income' => round($monthlyIncome - $totalAllocated, 2),
+            'month' => $monthStart,
+            'jars' => $details,
+        ];
+    }
+
+    /**
+     * Get monthly usage components for a jar (allocated, spent, withdrawals, transfers, adjustment)
      */
     public function getMonthlyUsage(Jar $jar, Carbon $date): array
     {
         return [
             'allocated' => $this->calculateAllocatedAmount($jar, $date),
             'spent' => $this->calculateSpentAmount($jar, $date),
+            'adjustment' => $this->getMonthlyAdjustment($jar, $date),
             'withdrawals' => $this->getMonthlyWithdrawals($jar, $date),
             'transfers_in' => $this->getMonthlyTransfersIn($jar, $date),
             'transfers_out' => $this->getMonthlyTransfersOut($jar, $date),
@@ -687,6 +817,11 @@ class JarBalanceService
         $leverageIn = $snapshot['leverage_in'][$jar->id] ?? 0;
         $leverageOut = $snapshot['leverage_out'][$jar->id] ?? 0;
         $cutoffDate = $this->getBalanceCutoffDate($jar, $date);
+        $monthlyIncome = $this->getMonthlyIncomeForMonth($jar->user_id, $date);
+
+        // Check for monthly override
+        $monthStart = $date->clone()->startOfMonth()->toDateString();
+        $override = JarMonthlyOverride::getForMonth($jar->id, $monthStart);
 
         // For accumulative jars, compute previous month balance (carry-over)
         $previousMonthBalance = 0;
@@ -719,6 +854,18 @@ class JarBalanceService
             'auto_transfer_applied' => null,
             'cutoff_date' => $cutoffDate?->toDateString(),
             'reset_cycle' => $jar->reset_cycle,
+            'effective_percent' => $jar->type === 'percent'
+                ? ($override && $override->percent !== null ? (float) $override->percent : (float) $jar->percent)
+                : null,
+            'effective_fixed_amount' => $jar->type === 'fixed'
+                ? ($override && $override->fixed_amount !== null ? (float) $override->fixed_amount : (float) $jar->fixed_amount)
+                : null,
+            'equivalent_percent' => $jar->type === 'fixed'
+                ? ($monthlyIncome > 0
+                    ? round(($allocatedAmount / $monthlyIncome) * 100, 2)
+                    : 0)
+                : ($override && $override->percent !== null ? (float) $override->percent : (float) $jar->percent),
+            'has_monthly_override' => $override !== null,
             'period' => [
                 'month' => $date->format('F Y'),
                 'start' => $date->clone()->startOfMonth()->toDateString(),
@@ -730,6 +877,7 @@ class JarBalanceService
     /**
      * Compute virtual leverage between jars (no DB transfers).
      * Returns effective balances plus leverage in/out per jar.
+     * Only applies leverage if auto_leverage_enabled is true in settings.
      */
     private function buildVirtualLeverageSnapshot(int $userId, Carbon $date): array
     {
@@ -754,6 +902,17 @@ class JarBalanceService
         foreach (array_keys($jarMap) as $jarId) {
             $leverageIn[$jarId] = 0;
             $leverageOut[$jarId] = 0;
+        }
+
+        // Check if auto leverage is enabled. If not, return base balances without processing
+        if (!($settings?->auto_leverage_enabled ?? false)) {
+            return [
+                'base_balances' => $baseBalances,
+                'effective_balances' => $baseBalances,
+                'leverage_in' => $leverageIn,
+                'leverage_out' => $leverageOut,
+                'sources' => $sources,
+            ];
         }
 
         $apply = function (int $jarId, array $stack) use (&$apply, &$effectiveBalances, &$leverageIn, &$leverageOut, $sources, $jarMap) {

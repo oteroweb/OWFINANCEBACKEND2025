@@ -15,6 +15,7 @@ class JarSetting extends Model
         'default_reset_cycle',
         'default_reset_cycle_day',
         'leverage_jar_id',
+        'auto_leverage_enabled',
     ];
 
     protected $casts = [
@@ -23,6 +24,7 @@ class JarSetting extends Model
         'default_negative_limit' => 'decimal:2',
         'default_reset_cycle_day' => 'integer',
         'leverage_jar_id' => 'integer',
+        'auto_leverage_enabled' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

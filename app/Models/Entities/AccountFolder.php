@@ -13,6 +13,7 @@ class AccountFolder extends Model
         'name',
         'user_id',
         'parent_id',
+        'sort_order',
     ];
 
     /**

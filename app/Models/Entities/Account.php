@@ -15,10 +15,11 @@ class Account extends Model
         'name',
         'currency_id',
         'initial',
-    'balance',
+        'balance',
         'account_type_id',
         'active',
-    'balance_cached',
+        'balance_cached',
+        'include_in_global_balance',
     ];
 
     protected $hidden = [
@@ -26,8 +27,9 @@ class Account extends Model
     ];
 
     protected $casts = [
-        'balance_cached' => 'decimal:2',
-        'initial' => 'decimal:2',
+        'balance_cached'            => 'decimal:2',
+        'initial'                   => 'decimal:2',
+        'include_in_global_balance' => 'boolean',
     ];
 
     public function currency()
