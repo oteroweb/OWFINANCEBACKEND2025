@@ -280,10 +280,8 @@ class AccountController extends Controller
         $newBalance = $currentBalance;
         if ($include === false) {
             // Ajustar el initial para alcanzar el saldo objetivo: new_initial = target - sum(transacciones)
-            $sumTx = (float) \App\Models\Entities\Transaction::where('account_id', $account->id)
-                ->where('active', 1)
-                ->where('include_in_balance', 1)
-                ->sum('amount');
+            // Usamos calculateBalance() igual que recalcAndStoreFromInitialByType para que sean consistentes
+            $sumTx = $this->accountRepo->calculateBalance($account->id);
             $newInitial = round($targetBalance - $sumTx, 2);
             $this->accountRepo->update($account, ['initial' => $newInitial]);
             $newBalance = $this->accountRepo->recalcAndStoreFromInitialByType($account->id);
