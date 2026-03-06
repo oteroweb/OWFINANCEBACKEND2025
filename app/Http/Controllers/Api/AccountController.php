@@ -617,19 +617,34 @@ class AccountController extends Controller
         }
         $userId = $user->id;
 
+        // Cuentas activas del usuario con su moneda
         $rows = DB::table('account_user')
             ->where('account_user.user_id', $userId)
             ->join('accounts', 'account_user.account_id', '=', 'accounts.id')
             ->where('accounts.active', 1)
             ->whereNull('accounts.deleted_at')
+            ->leftJoin('currencies', 'accounts.currency_id', '=', 'currencies.id')
             ->select(
                 'accounts.id',
                 'accounts.name',
                 'accounts.balance_cached',
                 'accounts.include_in_global_balance',
-                'accounts.currency_id'
+                'accounts.currency_id',
+                'currencies.code as currency_code',
+                'currencies.symbol as currency_symbol'
             )
             ->get();
+
+        // Tasas actuales del usuario (is_current = true) indexadas por currency_id
+        $userRates = DB::table('user_currencies')
+            ->where('user_id', $userId)
+            ->where('is_current', true)
+            ->select('currency_id', 'current_rate')
+            ->get()
+            ->keyBy('currency_id');
+
+        // Moneda base del usuario (id)
+        $baseCurrencyId = $user->currency_id;
 
         $totalAll = 0.0;
         $totalGlobalBalance = 0.0;
@@ -637,16 +652,36 @@ class AccountController extends Controller
 
         foreach ($rows as $row) {
             $balance = (float) ($row->balance_cached ?? 0);
-            $totalAll += $balance;
-            if ($row->include_in_global_balance) {
-                $totalGlobalBalance += $balance;
+            $currId  = $row->currency_id;
+            $code    = $row->currency_code ?? 'USD';
+
+            // Convertir a moneda base (USD) usando tasa del usuario
+            // Tasa = unidades de la moneda por 1 USD → converted = balance / rate
+            if ($currId === $baseCurrencyId || strtoupper($code) === 'USD') {
+                $converted = $balance;
+            } elseif (isset($userRates[$currId])) {
+                $rate = (float) $userRates[$currId]->current_rate;
+                $converted = $rate > 0 ? $balance / $rate : $balance;
+            } else {
+                // Sin tasa: incluir sin convertir (el frontend lo mostrará como aviso)
+                $converted = $balance;
             }
+
+            $totalAll += $converted;
+            if ($row->include_in_global_balance) {
+                $totalGlobalBalance += $converted;
+            }
+
             $accountsSummary[] = [
-                'id'                       => $row->id,
-                'name'                     => $row->name,
-                'balance'                  => $balance,
+                'id'                        => $row->id,
+                'name'                      => $row->name,
+                'balance'                   => $balance,
+                'balance_usd'               => round($converted, 2),
                 'include_in_global_balance' => (bool) $row->include_in_global_balance,
-                'currency_id'              => $row->currency_id,
+                'currency_id'               => $currId,
+                'currency_code'             => $code,
+                'currency_symbol'           => $row->currency_symbol ?? '',
+                'has_rate'                  => $currId === $baseCurrencyId || strtoupper($code) === 'USD' || isset($userRates[$currId]),
             ];
         }
 
