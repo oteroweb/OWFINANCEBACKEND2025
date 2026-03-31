@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use App\Models\User;
+use App\Models\Role;
 
 class AuthController extends Controller
 {
@@ -90,6 +92,56 @@ class AuthController extends Controller
             'role' => $user->role->slug ?? null,
             'data' => $payload,
         ]);
+    }
+
+    /**
+     * Register a new user account
+     */
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'name'                  => 'required|string|max:255',
+            'email'                 => 'required|email|unique:users,email',
+            'password'              => 'required|string|min:6|confirmed',
+            'currency_id'           => 'nullable|integer|exists:currencies,id',
+        ]);
+
+        // Assign default 'user' role
+        $userRole = Role::where('slug', 'user')->first();
+        if (!$userRole) {
+            return response()->json([
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => 'Rol de usuario no configurado en el sistema.',
+            ], 500);
+        }
+
+        $user = User::create([
+            'name'        => $data['name'],
+            'email'       => $data['email'],
+            'password'    => Hash::make($data['password']),
+            'role_id'     => $userRole->id,
+            'currency_id' => $data['currency_id'] ?? null,
+            'active'      => true,
+        ]);
+
+        $token = $user->createToken('api')->plainTextToken;
+
+        $user->load(['role', 'currency']);
+
+        $payload = $user->toArray();
+        $payload['role_slug'] = $user->role->slug ?? null;
+        $payload['role_name'] = $user->role->name ?? null;
+        $payload['rates']     = [];
+
+        return response()->json([
+            'status'  => 'OK',
+            'code'    => 201,
+            'message' => 'Cuenta creada exitosamente.',
+            'token'   => $token,
+            'role'    => $user->role->slug ?? null,
+            'data'    => $payload,
+        ], 201);
     }
 
     /**
