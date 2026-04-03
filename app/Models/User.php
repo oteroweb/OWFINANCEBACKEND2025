@@ -85,6 +85,11 @@ class User extends Authenticatable
     {
         return $this->hasOne(\App\Models\Entities\JarSetting::class);
     }
+
+    public function settings()
+    {
+        return $this->hasOne(\App\Models\Entities\UserSetting::class);
+    }
     public function currency()
     {
         return $this->belongsTo(\App\Models\Entities\Currency::class);

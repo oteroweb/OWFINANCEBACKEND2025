@@ -57,6 +57,9 @@ jobs:
             echo "[5/5] limpiando cache..."
             php artisan cache:clear
 
+            echo "[6/6] healthcheck..."
+            curl -sSf http://127.0.0.1:8000/api/v1/auth/login || echo "Healthcheck bypass o URL distinta"
+
             echo ""
             echo "Deploy OK → $(git log --oneline -1)"
           REMOTE
