@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TransactionTypeController;
 
 Route::group([
-    'middleware' => ['api'],
+    'middleware' => ['api', 'auth:sanctum'],
     'prefix'     => 'transaction_types',
 ], function () {
     Route::post('/', [TransactionTypeController::class, 'save']);

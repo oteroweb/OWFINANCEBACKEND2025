@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\PaymentTransactionTaxController;
 
 Route::group([
-    'middleware' => ['api'],
+    'middleware' => ['api', 'auth:sanctum'],
     'prefix'     => 'payment-transaction-taxes',
 ], function () {
     Route::post('/', [PaymentTransactionTaxController::class, 'save']);

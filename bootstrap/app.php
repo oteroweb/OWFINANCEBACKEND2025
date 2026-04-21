@@ -31,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => null);
+        $middleware->alias([
+            'ai.budget' => \App\Http\Middleware\AiTokenBudgetMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Unify API error responses for authentication/authorization

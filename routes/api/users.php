@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\UserJarController;
 use App\Http\Controllers\Api\JarBalanceController;
 
 Route::group([
+    'middleware' => ['auth:sanctum'],
     'prefix' => 'users',
 ], function () {
     Route::post('/', [UserController::class, 'save']);
