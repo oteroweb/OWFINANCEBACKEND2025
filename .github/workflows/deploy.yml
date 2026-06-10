@@ -1,12 +1,15 @@
 name: Deploy Backend → appfinanzas.blockshift.website
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch: {}
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    if: false  # PAUSED — MVP production stabilization. Remove this line to re-enable.
     runs-on: ubuntu-latest
 
     steps:
