@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class AiUsageLog extends Model
 {
+    protected $table = 'ai_usage_log';
+
     protected $fillable = [
         'user_id',
         'feature',

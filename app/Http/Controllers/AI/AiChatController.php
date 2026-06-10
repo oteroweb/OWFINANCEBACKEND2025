@@ -28,7 +28,7 @@ class AiChatController extends Controller
         $user = $request->user();
 
         // Get or create conversation
-        $conversation = $validated['conversation_id']
+        $conversation = ($validated['conversation_id'] ?? null)
             ? AiConversation::where('id', $validated['conversation_id'])
                              ->where('user_id', $user->id)
                              ->firstOrFail()
