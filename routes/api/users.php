@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\UserJarController;
 use App\Http\Controllers\Api\JarBalanceController;
 
 Route::group([
+    'middleware' => ['auth:sanctum'],
     'prefix' => 'users',
 ], function () {
     Route::post('/', [UserController::class, 'save']);
@@ -19,11 +20,8 @@ Route::group([
 
     // User-scoped jar utilities (protected)
     Route::group(['middleware' => ['auth:sanctum']], function () {
-        // Perfil del usuario autenticado y actualización
-    Route::get('/profile', [UserController::class, 'profile']); // includes accounts + rates
-        Route::match(['put', 'patch'], '/profile', [UserController::class, 'updateProfile']);
-        // Si es admin, puede actualizar el perfil de cualquier usuario por ID
-        Route::match(['put', 'patch'], '/profile/{id}', [UserController::class, 'updateProfile'])->whereNumber('id');
+        // Jars vinculados a usuarios específicos
+
         Route::get('/{userId}/jars', [UserJarController::class, 'listJars']);
         Route::get('/{userId}/jars/summary', [UserJarController::class, 'summary']);
         Route::get('/{userId}/jars/{jarId}/items', [UserJarController::class, 'jarItems']);

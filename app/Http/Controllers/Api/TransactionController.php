@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Repositories\TransactionRepo;
+use App\Services\TransactionBulkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -1089,5 +1090,72 @@ class TransactionController extends Controller
             return (float) $current->current_rate;
         }
         return 1.0; // fallback
+    }
+
+    /**
+     * @group Transaction
+     * Post
+     *
+     * Bulk save transactions
+     * @bodyParam mode string optional The mode of input: table|excel|text. Example: table
+     * @bodyParam dry_run boolean optional If true, validate only without persisting. Example: false
+     * @bodyParam rows array required Array of transaction objects to create
+     */
+    public function bulkSave(Request $request)
+    {
+        try {
+            // Basic validation
+            $validator = Validator::make($request->all(), [
+                'mode' => 'nullable|in:table,excel,text',
+                'dry_run' => 'nullable|boolean',
+                'rows' => 'required|array|min:1',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'FAILED',
+                    'code' => 400,
+                    'message' => __('Incorrect Params'),
+                    'data' => $validator->errors()->getMessages(),
+                ], 400);
+            }
+
+            $user = $request->user();
+            if (!$user) {
+                return response()->json([
+                    'status' => 'FAILED',
+                    'code' => 401,
+                    'message' => __('Unauthenticated'),
+                ], 401);
+            }
+
+            $rows = $request->input('rows', []);
+            $dryRun = $request->boolean('dry_run', false);
+
+            // Process bulk via service
+            $bulkService = app(TransactionBulkService::class);
+            $result = $bulkService->processBulk($rows, $user, $dryRun);
+
+            $statusCode = $result['failed'] > 0 && $result['created'] === 0 ? 422 : 200;
+            $status = $result['failed'] > 0 && $result['created'] === 0 ? 'FAILED' : 'OK';
+            $message = $dryRun
+                ? __('Bulk validation completed')
+                : __('Bulk processed');
+
+            return response()->json([
+                'status' => $status,
+                'code' => $statusCode,
+                'message' => $message,
+                'data' => $result,
+            ], $statusCode);
+
+        } catch (\Exception $ex) {
+            Log::error('Bulk transaction error', ['error' => $ex->getMessage()]);
+            return response()->json([
+                'status' => 'FAILED',
+                'code' => 500,
+                'message' => __('An error has occurred'),
+            ], 500);
+        }
     }
 }

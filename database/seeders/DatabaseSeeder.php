@@ -38,5 +38,6 @@ class DatabaseSeeder extends Seeder
             PaymentTransactionTaxSeeder::class,
             AccountTaxSeeder::class,
         ]);
+        $this->call(AiUserSettingsSeeder::class);
     }
 }

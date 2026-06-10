@@ -19,6 +19,14 @@ class AccountRepo
             $query->where('active', $active);
         }
 
+        // Auto-filter by authenticated user if user_id is not explicitly provided
+        if (empty($params['user_id']) && \auth()->check()) {
+            $authenticatedUserId = \auth()->id();
+            $query->whereHas('users', function ($q) use ($authenticatedUserId) {
+                $q->where('users.id', $authenticatedUserId);
+            });
+        }
+
         // Optional filters
         if (!empty($params['currency_id'])) {
             $query->where('currency_id', $params['currency_id']);
@@ -167,6 +175,14 @@ class AccountRepo
     {
         $query = Account::where('active', 1)
             ->with(['currency', 'accountType', 'users']);
+
+        // Auto-filter by authenticated user if user_id is not explicitly provided
+        if (empty($params['user_id']) && \auth()->check()) {
+            $authenticatedUserId = \auth()->id();
+            $query->whereHas('users', function ($q) use ($authenticatedUserId) {
+                $q->where('users.id', $authenticatedUserId);
+            });
+        }
 
         if (!empty($params['currency_id'])) {
             $query->where('currency_id', $params['currency_id']);

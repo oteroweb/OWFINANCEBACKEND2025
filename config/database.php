@@ -58,7 +58,9 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PHP_VERSION_ID >= 80500
+                    ? 1011 // PDO::MYSQL_ATTR_SSL_CA value; constant deprecated in PHP 8.5
+                    : \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
@@ -78,7 +80,9 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PHP_VERSION_ID >= 80500
+                    ? 1011 // PDO::MYSQL_ATTR_SSL_CA value; constant deprecated in PHP 8.5
+                    : \PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 

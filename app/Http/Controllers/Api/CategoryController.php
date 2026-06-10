@@ -22,10 +22,11 @@ class CategoryController extends Controller
      * @group Category
      * Get all categories
      */
-    public function all()
+    public function all(Request $request)
     {
         try {
-            $categories = $this->categoryRepo->all();
+            $user = $request->user();
+            $categories = $this->categoryRepo->all($user ? $user->id : null);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -48,10 +49,11 @@ class CategoryController extends Controller
      * @group Category
      * Get all active categories
      */
-    public function allActive()
+    public function allActive(Request $request)
     {
         try {
-            $categories = $this->categoryRepo->allActive();
+            $user = $request->user();
+            $categories = $this->categoryRepo->allActive($user ? $user->id : null);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -75,10 +77,11 @@ class CategoryController extends Controller
      * Get
      * @urlParam id integer required The ID of the category. Example: 1
      */
-    public function find($id)
+    public function find($id, Request $request)
     {
         try {
-            $category = $this->categoryRepo->find($id);
+            $user = $request->user();
+            $category = $this->categoryRepo->find($id, $user ? $user->id : null);
             if (isset($category->id)) {
                 $response = [
                     'status'  => 'OK',

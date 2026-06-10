@@ -1,16 +1,23 @@
-name: Deploy Backend → appfinanzas.blockshift.website
+name: Deploy Backend
 
 on:
-  workflow_dispatch: {}
-
-concurrency:
-  group: deploy-backend
-  cancel-in-progress: true
+  push:
+    branches: [main, stage, dev]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Entorno (prod|stage|dev)'
+        required: true
+        default: 'stage'
+        type: choice
+        options: [prod, stage, dev]
 
 jobs:
   deploy:
-    if: false  # PAUSED — MVP production stabilization. Remove this line to re-enable.
     runs-on: ubuntu-latest
+
+    env:
+      DEPLOY_ENV: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'prod') || (github.ref == 'refs/heads/stage' && 'stage') || 'dev' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -34,16 +41,30 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Añadir known_hosts
-        run: ssh-keyscan -H 178.156.160.70 >> ~/.ssh/known_hosts
+        run: ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy en servidor
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_BRANCH: ${{ secrets.DEPLOY_BRANCH }}
+          DEPLOY_BACKEND_DIR: ${{ secrets.DEPLOY_BACKEND_DIR }}
+          DEPLOY_SITE_URL: ${{ secrets.DEPLOY_SITE_URL }}
         run: |
-          ssh appfinan1@178.156.160.70 /bin/bash << 'REMOTE'
+          echo "════════════════════════════════════════════════════════"
+          echo "  DEPLOY BACKEND (${DEPLOY_ENV})"
+          echo "  Servidor: ${DEPLOY_USER}@${DEPLOY_HOST}"
+          echo "  Branch:   ${DEPLOY_BRANCH}"
+          echo "════════════════════════════════════════════════════════"
+
+          ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" /bin/bash << REMOTE
             set -e
-            cd ~/OWFINANCEBACKEND2025
+            cd "\$HOME/${DEPLOY_BACKEND_DIR}"
 
             echo "[1/5] git pull..."
-            git pull origin main
+            git pull origin "${DEPLOY_BRANCH}"
 
             echo "[2/5] composer install..."
             composer install --no-dev --prefer-dist --no-interaction --quiet 2>/dev/null || true
@@ -61,5 +82,5 @@ jobs:
             php artisan cache:clear
 
             echo ""
-            echo "Deploy OK → $(git log --oneline -1)"
+            echo "Deploy OK → \$(git log --oneline -1)"
           REMOTE

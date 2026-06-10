@@ -4,7 +4,7 @@
   use App\Http\Controllers\Api\AccountTypeController;
 
   Route::group([
-    'middleware' => ['api'],
+    'middleware' => ['api', 'auth:sanctum'],
     'prefix'     => 'account_types',
 ], function () {
   //Account Type ROUTES 

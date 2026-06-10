@@ -1,0 +1,7 @@
+PROVIDER="gemini"
+FILE_PATTERNS="*.php,*.md,*.json"
+EXCLUDE_PATTERNS="vendor/*,node_modules/*,bootstrap/cache/*,storage/*,.scribe/*"
+RULES_FILE="../AGENTS.md"
+STRICT_MODE="false"
+TIMEOUT="300"
+PR_BASE_BRANCH="dev"

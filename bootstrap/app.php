@@ -1,5 +1,7 @@
 <?php
 
+error_reporting(E_ALL & ~E_DEPRECATED);
+
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,7 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
             ->runInBackground();
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->redirectGuestsTo(fn () => null);
+        $middleware->alias([
+            'ai.budget' => \App\Http\Middleware\AiTokenBudgetMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Unify API error responses for authentication/authorization

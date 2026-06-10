@@ -9,6 +9,7 @@
 ], function () {
   //Transaction ROUTES
     Route::post('/', [TransactionController::class, 'save']);
+    Route::post('/bulk', [TransactionController::class, 'bulkSave']);
     Route::get('/active', [TransactionController::class, 'allActive']);
     Route::get('/all', [TransactionController::class, 'withTrashed']);
     Route::get('/', [TransactionController::class, 'all']);

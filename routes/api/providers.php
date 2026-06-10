@@ -4,7 +4,7 @@
   use App\Http\Controllers\Api\ProviderController;
 
   Route::group([
-    'middleware' => ['api'],
+    'middleware' => ['api', 'auth:sanctum'],
     'prefix'     => 'providers',
 ], function () {
   //Provider ROUTES 

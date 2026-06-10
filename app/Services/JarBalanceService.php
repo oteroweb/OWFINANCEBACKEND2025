@@ -576,9 +576,11 @@ class JarBalanceService
 
         // FIX: Especificar tabla explícitamente para evitar ambigüedad
         $query = ItemTransaction::query()
-            ->leftJoin('transactions', 'transactions.id', '=', 'item_transactions.transaction_id')
+            ->join('transactions', 'transactions.id', '=', 'item_transactions.transaction_id')
             ->where('item_transactions.user_id', $jar->user_id)
-            ->whereBetween('item_transactions.date', [$startOfMonth, $endOfMonth]);
+            ->whereBetween('item_transactions.date', [$startOfMonth, $endOfMonth])
+            ->whereNull('transactions.deleted_at')
+            ->where('transactions.active', 1);
 
         // Filter by jar directly or by categories linked to jar
         if ($jar->categories()->exists()) {

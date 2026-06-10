@@ -6,19 +6,31 @@ use App\Models\Entities\Category;
 
 class CategoryRepo
 {
-    public function all()
+    public function all($userId = null)
     {
-        return Category::all();
+        $query = Category::query();
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        return $query->get();
     }
 
-    public function allActive()
+    public function allActive($userId = null)
     {
-        return Category::where('active', 1)->get();
+        $query = Category::where('active', 1);
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        return $query->get();
     }
 
-    public function find($id)
+    public function find($id, $userId = null)
     {
-        return Category::find($id);
+        $query = Category::query();
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        return $query->find($id);
     }
 
     public function store(array $data)
