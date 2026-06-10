@@ -26,7 +26,7 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'FAILED',
                 'code' => 401,
-                'message' => __('Invalid credentials'),
+                'message' => 'Credenciales inválidas',
             ], 401);
         }
 
@@ -92,7 +92,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'OK',
             'code' => 200,
-            'message' => __('Authenticated'),
+            'message' => 'Autenticado correctamente',
             'token' => $token,
             // Compat: top-level role string para clientes que esperan auth.role
             'role' => $user->role->slug ?? null,

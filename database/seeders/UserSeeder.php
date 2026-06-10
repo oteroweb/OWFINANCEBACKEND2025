@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
             'email' => 'admin@demo.com',
         ], [
             'name' => 'Administrador',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('S$ratoga.1990'),
             'role_id' => $adminRole->id,
             'currency_id' => $randomCurrency(),
         ]);
@@ -36,7 +36,7 @@ class UserSeeder extends Seeder
             'email' => 'user@demo.com',
         ], [
             'name' => 'Usuario',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('S$ratoga.1990'),
             'role_id' => $userRole->id,
             'currency_id' => $randomCurrency(),
         ]);
@@ -44,7 +44,7 @@ class UserSeeder extends Seeder
             'email' => 'guest@demo.com',
         ], [
             'name' => 'Invitado',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('S$ratoga.1990'),
             'role_id' => $guestRole->id,
             'currency_id' => $randomCurrency(),
         ]);
@@ -52,7 +52,7 @@ class UserSeeder extends Seeder
             'email' => 'otero@demo.com',
         ], [
             'name' => 'Jose Otero',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('S$ratoga.1990'),
             // 'client_id' => 1, // Assuming a client with ID 1 exists
             'currency_id' => Currency::where('code', 'USD')->first()->id,
             'role_id' => $userRole->id,
