@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Entities\Account;
@@ -157,6 +160,64 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['status' => 'OK', 'code' => 200, 'message' => 'Sesión cerrada correctamente']);
+    }
+
+    /** Envía email con enlace para restablecer contraseña. */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json([
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => 'Si el correo existe en nuestro sistema, recibirás el enlace de recuperación en minutos.',
+            ]);
+        }
+
+        // Don't leak whether the email exists or not
+        return response()->json([
+            'status'  => 'OK',
+            'code'    => 200,
+            'message' => 'Si el correo existe en nuestro sistema, recibirás el enlace de recuperación en minutos.',
+        ]);
+    }
+
+    /** Restablece la contraseña con el token del email. */
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token'                 => 'required|string',
+            'email'                 => 'required|email',
+            'password'              => 'required|min:8|confirmed',
+            'password_confirmation' => 'required',
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user, string $password) {
+                $user->forceFill(['password' => Hash::make($password)])
+                     ->setRememberToken(Str::random(60));
+                $user->save();
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json([
+                'status'  => 'OK',
+                'code'    => 200,
+                'message' => 'Contraseña restablecida correctamente. Ya puedes iniciar sesión.',
+            ]);
+        }
+
+        return response()->json([
+            'status'  => 'ERROR',
+            'code'    => 422,
+            'message' => 'El enlace de restablecimiento no es válido o ha expirado.',
+        ], 422);
     }
 
     /**
