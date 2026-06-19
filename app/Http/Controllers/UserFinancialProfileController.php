@@ -29,6 +29,7 @@ class UserFinancialProfileController extends Controller
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            // Perfil financiero
             'occupation'        => ['nullable', 'string', Rule::in(['employee', 'freelancer', 'entrepreneur', 'student', 'retired', 'other'])],
             'income_range'      => ['nullable', 'string', Rule::in(['<500', '500-1500', '1500-4000', '>4000'])],
             'living_situation'  => ['nullable', 'string', Rule::in(['solo', 'pareja', 'familia', 'roommates'])],
@@ -39,6 +40,10 @@ class UserFinancialProfileController extends Controller
             'dream'             => ['nullable', 'string', 'max:500'],
             'emotional_keyword' => ['nullable', 'string', Rule::in(['tranquilo', 'libre', 'seguro', 'control', 'prospero'])],
             'onboarding_profile_completed' => ['nullable', 'boolean'],
+            // Configuración del Asesor IA
+            'advisor_name'        => ['nullable', 'string', 'max:60'],
+            'advisor_personality' => ['nullable', 'string', Rule::in(['formal', 'friendly', 'coach'])],
+            'advisor_enabled'     => ['nullable', 'boolean'],
         ]);
 
         $user    = $request->user();
