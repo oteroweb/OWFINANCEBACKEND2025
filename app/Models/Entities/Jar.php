@@ -13,6 +13,7 @@ class Jar extends Model
 
     protected $fillable = [
         'name',
+        'description',
         'percent',
         'type',
         'fixed_amount',
