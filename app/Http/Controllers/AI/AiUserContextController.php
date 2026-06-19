@@ -126,7 +126,7 @@ class AiUserContextController extends Controller
             $context['recent_transactions'] = [];
         }
 
-        // AI user settings
+        // AI user settings + perfil financiero narrativo
         try {
             $aiSettings = AiUserSetting::where('user_id', $user->id)->first();
             if ($aiSettings) {
@@ -136,9 +136,42 @@ class AiUserContextController extends Controller
                     'context_window_months' => $aiSettings->context_window_months,
                     'preferred_currency'    => $aiSettings->preferred_currency,
                 ];
+
+                if ($aiSettings->onboarding_profile_completed) {
+                    $context['user_financial_profile'] = array_filter([
+                        'occupation'         => $aiSettings->occupation,
+                        'income_range'       => $aiSettings->income_range,
+                        'living_situation'   => $aiSettings->living_situation,
+                        'debt_situation'     => $aiSettings->debt_situation,
+                        'emergency_fund'     => $aiSettings->emergency_fund,
+                        'money_relationship' => $aiSettings->money_relationship,
+                        'main_goal'          => $aiSettings->main_goal,
+                        'dream'              => $aiSettings->dream,
+                        'emotional_keyword'  => $aiSettings->emotional_keyword,
+                    ], fn($v) => $v !== null);
+                }
             }
         } catch (\Throwable $e) {
             // no ai settings yet
+        }
+
+        // Cántaros con descripción/propósito
+        try {
+            $jarsWithDesc = \App\Models\Entities\Jar::where('user_id', $user->id)
+                ->where('active', true)
+                ->whereNotNull('description')
+                ->where('description', '!=', '')
+                ->get(['id', 'name', 'percent', 'description', 'color']);
+
+            if ($jarsWithDesc->isNotEmpty()) {
+                $context['jars_context'] = $jarsWithDesc->map(fn($j) => [
+                    'name'        => $j->name,
+                    'percent'     => $j->percent,
+                    'description' => $j->description,
+                ])->values()->toArray();
+            }
+        } catch (\Throwable $e) {
+            // jars context not critical
         }
 
         return $context;

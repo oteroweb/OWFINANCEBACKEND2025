@@ -6,7 +6,7 @@ return [
     | AI Feature → Provider mapping
     |--------------------------------------------------------------------------
     | Set AI_EXTRACTION_PROVIDER and AI_ADVISOR_PROVIDER in .env
-    | Options: anthropic | gemini | openai | groq
+    | Options: anthropic | gemini | openai | groq | opencode-go
     */
     'features' => [
         'extraction' => env('AI_EXTRACTION_PROVIDER', 'anthropic'),
@@ -58,6 +58,21 @@ return [
                 'output'      => 0.60,
                 'cache_read'  => 0.075,
                 'cache_write' => 0.15,
+            ],
+        ],
+
+        'opencode-go' => [
+            'key'      => env('OPENCODE_GO_API_KEY'),
+            'base_url' => 'https://opencode.ai/zen/go/v1',
+            'models'   => [
+                'extraction' => env('AI_OPENCODE_EXTRACTION_MODEL', 'deepseek-v4-flash'),
+                'advisor'    => env('AI_OPENCODE_ADVISOR_MODEL', 'deepseek-v4-flash'),
+            ],
+            'pricing' => [ // flat $10/mes, costo por token = 0
+                'input'       => 0.00,
+                'output'      => 0.00,
+                'cache_read'  => 0.00,
+                'cache_write' => 0.00,
             ],
         ],
 

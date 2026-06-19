@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\Entities\Account;
+use App\Models\Entities\AccountType;
+use App\Models\Entities\Currency;
 
 class AuthController extends Controller
 {
@@ -127,6 +130,9 @@ class AuthController extends Controller
 
         $token = $user->createToken('api')->plainTextToken;
 
+        // Auto-create default "Billetera" account for new users (Lite implicit wallet)
+        $this->createDefaultAccount($user);
+
         $user->load(['role', 'currency']);
 
         $payload = $user->toArray();
@@ -151,5 +157,35 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
         return response()->json(['status' => 'OK', 'code' => 200, 'message' => 'Sesión cerrada correctamente']);
+    }
+
+    /**
+     * Auto-create a default "Billetera" (Efectivo) account for a newly registered user.
+     * Silently skips on any error — account creation is best-effort.
+     */
+    private function createDefaultAccount(User $user): void
+    {
+        try {
+            $accountType = AccountType::where('name', 'Efectivo')->first()
+                        ?? AccountType::first();
+            if (!$accountType) return;
+
+            $currencyId = $user->currency_id
+                       ?? Currency::where('code', 'USD')->value('id')
+                       ?? Currency::first()?->id;
+            if (!$currencyId) return;
+
+            $account = Account::create([
+                'name'            => 'Billetera',
+                'currency_id'     => $currencyId,
+                'account_type_id' => $accountType->id,
+                'initial'         => 0,
+                'active'          => true,
+            ]);
+
+            $account->users()->attach($user->id, ['is_owner' => 1, 'sort_order' => 0]);
+        } catch (\Throwable) {
+            // Non-critical — user can create accounts manually
+        }
     }
 }

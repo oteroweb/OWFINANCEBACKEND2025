@@ -7,6 +7,7 @@ use App\Services\AI\Providers\AnthropicProvider;
 use App\Services\AI\Providers\GeminiProvider;
 use App\Services\AI\Providers\OpenAiProvider;
 use App\Services\AI\Providers\GroqProvider;
+use App\Services\AI\Providers\OpenCodeGoProvider;
 use InvalidArgumentException;
 
 class AiProviderFactory
@@ -32,8 +33,9 @@ class AiProviderFactory
             'anthropic' => new AnthropicProvider($cfg['key'], $extractionModel, $advisorModel, $feature),
             'gemini'    => new GeminiProvider($cfg['key'], $extractionModel, $advisorModel, $feature),
             'openai'    => new OpenAiProvider($cfg['key'], $extractionModel, $advisorModel, $feature),
-            'groq'      => new GroqProvider($cfg['key'], $extractionModel, $advisorModel, $feature),
-            default     => throw new InvalidArgumentException("Unknown AI provider: {$providerName}"),
+            'groq'        => new GroqProvider($cfg['key'], $extractionModel, $advisorModel, $feature),
+            'opencode-go' => new OpenCodeGoProvider($cfg['key'], $extractionModel, $advisorModel, $feature),
+            default       => throw new InvalidArgumentException("Unknown AI provider: {$providerName}"),
         };
     }
 
