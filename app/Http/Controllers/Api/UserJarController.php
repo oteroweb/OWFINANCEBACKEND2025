@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\JarPercentLock;
 
 class UserJarController extends Controller
 {
@@ -69,6 +70,9 @@ class UserJarController extends Controller
             if (!empty($dups)) {
                 return response()->json(['status'=>'FAILED','code'=>422,'message'=>__('Each category can belong to only one jar in the same request'), 'data'=>['duplicate_category_ids'=>$dups]], 422);
             }
+            // OWF-061: serialize same-user jar mutations.
+            $jarLock = JarPercentLock::acquire($userId);
+            try {
             // Validate percent total using ONLY the payload (full replacement semantics)
             $idsProvidedOnly = $idsProvided; // from earlier
             $existingActives = \App\Models\Entities\Jar::where('user_id',$userId)
@@ -188,6 +192,9 @@ class UserJarController extends Controller
                 DB::rollBack();
                 return response()->json(['status'=>'FAILED','code'=>500,'message'=>$e->getMessage()], 500);
             }
+            } finally {
+                $jarLock->release();
+            }
         }
         // Legacy single-jar mode below
         $rules = [
@@ -215,6 +222,9 @@ class UserJarController extends Controller
         $data = $request->only(['name','type','fixed_amount','percent','base_scope','color','sort_order']);
         $willBeActive = $request->exists('is_active') ? $request->boolean('is_active') : null; // null = keep for updates, true by default for creates
         $type = $data['type'];
+        // OWF-061: serialize same-user jar mutations.
+        $jarLock = JarPercentLock::acquire($userId);
+        try {
         // Percent sum validation
         if ($type === 'percent') {
             if ($id) {
@@ -297,6 +307,9 @@ class UserJarController extends Controller
             DB::rollBack();
             return response()->json(['status'=>'FAILED','code'=>500,'message'=>$e->getMessage()], 500);
         }
+        } finally {
+            $jarLock->release();
+        }
     }
     // PUT /users/:userId/jars/bulk
     // Body: { jars: [ {id?, name, type, percent?, fixed_amount?, base_scope?, color?, sort_order?, is_active?}, ... ] }
@@ -329,6 +342,9 @@ class UserJarController extends Controller
                 return response()->json(['status'=>'FAILED','code'=>422,'message'=>"Fixed amount is required for fixed jars (index $idx)"], 422);
             }
         }
+        // OWF-061: serialize same-user jar mutations.
+        $jarLock = JarPercentLock::acquire($userId);
+        try {
         // Build proposed final state
         $current = \App\Models\Entities\Jar::where('user_id', $userId)->get(['id','type','percent','active'])->keyBy('id');
         $proposed = $current->map(function($j){ return [
@@ -394,6 +410,9 @@ class UserJarController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             return response()->json(['status'=>'FAILED','code'=>500,'message'=>$e->getMessage()], 500);
+        }
+        } finally {
+            $jarLock->release();
         }
     }
     // GET /users/:userId/jars
@@ -564,25 +583,32 @@ class UserJarController extends Controller
         $payload['active'] = $request->boolean('is_active', true);
         $payload['base_scope'] = $payload['base_scope'] ?? 'all_income';
 
-         $exclusive = $request->boolean('exclusive', false);
-        // Optionally enforce exclusivity before sum validation
-        if (($payload['type'] ?? null) === 'percent' && ($payload['active'] ?? false) && $exclusive) {
-            \App\Models\Entities\Jar::where('user_id', $userId)
-                ->where('type','percent')
-                ->where('active',1)
-                ->update(['active'=>0]);
-        }
+        $exclusive = $request->boolean('exclusive', false);
 
-        // Validate percent sum if type percent
-        if (($payload['type'] ?? null) === 'percent') {
-            $sum = \App\Models\Entities\Jar::where('user_id', $userId)->where('type','percent')->where('active',1)->sum('percent');
-            $newTotal = round($sum + (float)($payload['percent'] ?? 0), 2);
-            if ($newTotal > 100.0 + 1e-6) {
-                return response()->json(['status'=>'FAILED','code'=>422,'message'=>__('Total percent for user exceeds 100%'), 'data'=>['current_percent_total'=>$sum,'attempt_total'=>$newTotal]], 422);
-            }
-        }
-        $jar = \App\Models\Entities\Jar::create($payload);
-        return response()->json(['status'=>'OK','code'=>200,'data'=>$jar], 200);
+        $response = JarPercentLock::withUserLock($userId, function () use ($payload, $userId, $exclusive) {
+            return DB::transaction(function () use ($payload, $userId, $exclusive) {
+                // Optionally enforce exclusivity before sum validation
+                if (($payload['type'] ?? null) === 'percent' && ($payload['active'] ?? false) && $exclusive) {
+                    \App\Models\Entities\Jar::where('user_id', $userId)
+                        ->where('type','percent')
+                        ->where('active',1)
+                        ->update(['active'=>0]);
+                }
+
+                // Validate percent sum if type percent
+                if (($payload['type'] ?? null) === 'percent') {
+                    $sum = \App\Models\Entities\Jar::where('user_id', $userId)->where('type','percent')->where('active',1)->sum('percent');
+                    $newTotal = round($sum + (float)($payload['percent'] ?? 0), 2);
+                    if ($newTotal > 100.0 + 1e-6) {
+                        return response()->json(['status'=>'FAILED','code'=>422,'message'=>__('Total percent for user exceeds 100%'), 'data'=>['current_percent_total'=>$sum,'attempt_total'=>$newTotal]], 422);
+                    }
+                }
+                $jar = \App\Models\Entities\Jar::create($payload);
+                return response()->json(['status'=>'OK','code'=>200,'data'=>$jar], 200);
+            });
+        });
+
+        return $response;
     }
 
     // PUT /users/:userId/jars/:id
@@ -613,18 +639,25 @@ class UserJarController extends Controller
         }
         $data = $request->only(['name','type','fixed_amount','percent','base_scope','color','sort_order']);
         if ($request->exists('is_active')) { $data['active'] = $request->boolean('is_active'); }
-        if (($data['type'] ?? $jar->type) === 'percent' && $request->has('percent')) {
-        // $newType = $request->input('type', $jar->type);
-        // $willBeActive = $request->exists('is_active') ? $request->boolean('is_active') : (bool)$jar->active;
-        // if ($newType === 'percent' && $request->has('percent') && $willBeActive) {
-            $sum = \App\Models\Entities\Jar::where('user_id', $userId)->where('type','percent')->where('active',1)->where('id','!=',$jar->id)->sum('percent');
-            $newTotal = round($sum + (float)$request->input('percent'), 2);
-            if ($newTotal > 100.0 + 1e-6) {
-                return response()->json(['status'=>'FAILED','code'=>422,'message'=>__('Total percent for user exceeds 100%'), 'data'=>['current_percent_total'=>$sum,'attempt_total'=>$newTotal]], 422);
-            }
-        }
-        $jar->update($data);
-        return response()->json(['status'=>'OK','code'=>200,'data'=>$jar], 200);
+
+        $response = JarPercentLock::withUserLock($userId, function () use ($data, $request, $jar, $userId) {
+            return DB::transaction(function () use ($data, $request, $jar, $userId) {
+                $newType = $data['type'] ?? $jar->type;
+                // OWF-066: only enforce the percent-sum cap when the jar will be active.
+                $willBeActive = $request->exists('is_active') ? $request->boolean('is_active') : (bool)$jar->active;
+                if ($newType === 'percent' && $request->has('percent') && $willBeActive) {
+                    $sum = \App\Models\Entities\Jar::where('user_id', $userId)->where('type','percent')->where('active',1)->where('id','!=',$jar->id)->sum('percent');
+                    $newTotal = round($sum + (float)$request->input('percent'), 2);
+                    if ($newTotal > 100.0 + 1e-6) {
+                        return response()->json(['status'=>'FAILED','code'=>422,'message'=>__('Total percent for user exceeds 100%'), 'data'=>['current_percent_total'=>$sum,'attempt_total'=>$newTotal]], 422);
+                    }
+                }
+                $jar->update($data);
+                return response()->json(['status'=>'OK','code'=>200,'data'=>$jar], 200);
+            });
+        });
+
+        return $response;
     }
 
     // DELETE /users/:userId/jars/:id

@@ -12,16 +12,31 @@ class DreamController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $dreams = Dream::where('user_id', $user->id)
-            ->orderBy('priority')
-            ->orderBy('created_at')
-            ->get();
 
-        $totalSaved  = $dreams->sum('saved_amount');
-        $totalTarget = $dreams->sum('target_amount');
+        $allowedSorts = ['priority', 'created_at', 'progress', 'target_amount', 'saved_amount', 'name'];
+        $sortBy = in_array($request->query('sort_by'), $allowedSorts) ? $request->query('sort_by') : 'priority';
+        $desc   = filter_var($request->query('descending', 'false'), FILTER_VALIDATE_BOOLEAN);
+
+        $query = Dream::where('user_id', $user->id);
+
+        if ($sortBy === 'progress') {
+            // progress is computed; sort by saved_amount/target_amount ratio via raw
+            $query->orderByRaw('CASE WHEN target_amount > 0 THEN (saved_amount / target_amount) ELSE 0 END ' . ($desc ? 'DESC' : 'ASC'));
+        } else {
+            $query->orderBy($sortBy, $desc ? 'desc' : 'asc');
+        }
+        $query->orderBy('created_at');
+
+        // Meta always computed over ALL dreams (not limited by per_page)
+        $all = Dream::where('user_id', $user->id)->get();
+        $totalSaved  = $all->sum('saved_amount');
+        $totalTarget = $all->sum('target_amount');
         $globalProgress = $totalTarget > 0
             ? round(($totalSaved / $totalTarget) * 100, 1)
             : 0;
+
+        $perPage = (int) $request->query('per_page', 0);
+        $dreams  = $perPage > 0 ? $query->limit($perPage)->get() : $query->get();
 
         return response()->json([
             'status' => 'OK',
@@ -30,8 +45,8 @@ class DreamController extends Controller
                 'total_saved'       => $totalSaved,
                 'total_target'      => $totalTarget,
                 'global_progress'   => $globalProgress,
-                'count'             => $dreams->count(),
-                'completed_count'   => $dreams->where('is_completed', true)->count(),
+                'count'             => $all->count(),
+                'completed_count'   => $all->where('is_completed', true)->count(),
             ],
         ]);
     }

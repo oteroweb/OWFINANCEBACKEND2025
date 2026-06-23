@@ -44,6 +44,21 @@ class TransactionBulkService
             $clientRowId = $rowData['client_row_id'] ?? null;
 
             try {
+                // Resolve account_name → account_id in each payment if missing
+                if (isset($rowData['payments']) && is_array($rowData['payments'])) {
+                    foreach ($rowData['payments'] as &$pm) {
+                        if (empty($pm['account_id']) && !empty($pm['account_name'])) {
+                            $acc = Account::where('user_id', $user->id)
+                                ->where('name', $pm['account_name'])
+                                ->first();
+                            if ($acc) {
+                                $pm['account_id'] = $acc->id;
+                            }
+                        }
+                    }
+                    unset($pm);
+                }
+
                 // Validate row structure
                 $validator = $this->validateRow($rowData);
 

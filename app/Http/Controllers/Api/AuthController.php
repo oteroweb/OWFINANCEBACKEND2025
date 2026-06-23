@@ -39,6 +39,10 @@ class AuthController extends Controller
 
         $token = $user->createToken('api')->plainTextToken;
 
+        // OWF-065: ensure pre-existing users (migrated/seeded) have the implicit "Billetera"
+        // account so Lite flows (/transactions, /jars) are usable. No-op if already present.
+        $this->createDefaultAccount($user);
+
         // Load related data and build compact rates array (current per currency, prefer official)
         $user->load([
             'client', 'role', 'currency',
@@ -227,6 +231,10 @@ class AuthController extends Controller
     private function createDefaultAccount(User $user): void
     {
         try {
+            // OWF-065: idempotent — only create if the user has no accounts yet.
+            if ($user->accounts()->exists()) {
+                return;
+            }
             $accountType = AccountType::where('name', 'Efectivo')->first()
                         ?? AccountType::first();
             if (!$accountType) return;
@@ -242,6 +250,7 @@ class AuthController extends Controller
                 'account_type_id' => $accountType->id,
                 'initial'         => 0,
                 'active'          => true,
+                'is_default'      => true,
             ]);
 
             $account->users()->attach($user->id, ['is_owner' => 1, 'sort_order' => 0]);

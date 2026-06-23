@@ -18,6 +18,7 @@ class Account extends Model
         'balance',
         'account_type_id',
         'active',
+        'is_default',
         'balance_cached',
         'include_in_global_balance',
     ];
@@ -30,6 +31,7 @@ class Account extends Model
         'balance_cached'            => 'decimal:2',
         'initial'                   => 'decimal:2',
         'include_in_global_balance' => 'boolean',
+        'is_default'                => 'boolean',
     ];
 
     public function currency()

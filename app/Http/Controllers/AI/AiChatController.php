@@ -200,19 +200,56 @@ class AiChatController extends Controller
             fn($c) => "- {$c['category_name']}: \${$c['total']}"
         )->join("\n") ?: "Sin datos";
 
+        // OWF-063: usar el nombre personalizado del asesor si el usuario lo configuró.
+        $advisorName = $context['ai_preferences']['advisor_name'] ?? 'Asesor IA';
+
+        // OWF-063: inyectar el perfil financiero del onboarding (metas, sueño, relación con
+        // el dinero...) para que el asesor pueda razonar sobre los objetivos del usuario.
+        $profileLabels = [
+            'occupation'         => 'Ocupación',
+            'income_range'       => 'Rango de ingresos',
+            'living_situation'   => 'Situación de vivienda',
+            'debt_situation'     => 'Situación de deudas',
+            'emergency_fund'     => 'Fondo de emergencia',
+            'money_relationship' => 'Relación con el dinero',
+            'main_goal'          => 'Meta principal',
+            'dream'              => 'Sueño',
+            'emotional_keyword'  => 'Palabra emocional',
+        ];
+        $profileLines = collect($context['user_financial_profile'] ?? [])
+            ->map(fn($value, $key) => '- ' . ($profileLabels[$key] ?? ucfirst(str_replace('_', ' ', $key))) . ": {$value}")
+            ->join("\n");
+        $profileBlock = $profileLines !== ''
+            ? "\nPERFIL FINANCIERO DEL USUARIO (onboarding):\n{$profileLines}\n"
+            : '';
+
+        // OWF-063: inyectar los cántaros activos con su propósito (description), de modo que
+        // el asesor conecte sus consejos al "para qué" de cada cántaro. (corrige OWF-049)
+        $jarsLines = collect($context['jars_context'] ?? [])->map(function ($j) {
+            $label = $j['name'] ?? 'Cántaro';
+            $pct   = isset($j['percent']) ? " ({$j['percent']}%)" : '';
+            $desc  = isset($j['description']) && $j['description'] !== '' ? " — {$j['description']}" : '';
+            return "- {$label}{$pct}{$desc}";
+        })->join("\n");
+        $jarsBlock = $jarsLines !== ''
+            ? "\nCÁNTAROS DEL USUARIO (con su propósito):\n{$jarsLines}\n"
+            : '';
+
         return <<<SYSTEM
 Eres el Asesor IA personal de {$name} en OwFinance, una app de finanzas personales.
-Tu nombre es Asesor IA. Eres empático, claro, y usas términos financieros en español.
+Tu nombre es {$advisorName}. Eres empático, claro, y usas términos financieros en español.
 
 CONTEXTO FINANCIERO (actualizado hoy {$today}):
 - Balance total cuentas: \${$totalBalance}
 - {$month}: Gastos \${$monthExpenses} | Ingresos \${$monthIncomes} | Neto \${$monthNet}
 - Top categorías de gasto este mes:
 {$topCats}
-
+{$profileBlock}{$jarsBlock}
 INSTRUCCIONES:
 - Responde siempre en español, de forma concisa y útil
 - Basa tus análisis en los datos financieros reales del usuario
+- Cuando el usuario tenga cántaros con propósito, conecta tus consejos al "para qué" de cada uno
+- Cuando el usuario tenga perfil financiero (meta principal, sueño, relación con el dinero), personaliza en torno a eso
 - Para registrar transacciones, indica al usuario que use los botones de la app
 - No reveles datos sensibles de otros usuarios (no los tienes)
 - Si el usuario pregunta por proyecciones, basa en datos históricos disponibles

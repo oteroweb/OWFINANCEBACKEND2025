@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Services\JarPercentLock;
 
 class JarController extends Controller
 {
@@ -69,10 +70,14 @@ class JarController extends Controller
             ], 400);
         }
 
-        DB::beginTransaction();
+        $userId = $authUser->id;
+        // OWF-061: serialize same-user jar mutations so the percent-sum invariant
+        // cannot be violated by concurrent requests.
+        $jarLock = JarPercentLock::acquire($userId);
         try {
-            $incomingJars = $request->input('jars', []);
-            $userId = $authUser->id;
+            DB::beginTransaction();
+            try {
+                $incomingJars = $request->input('jars', []);
             $settings = JarSetting::firstOrCreate(['user_id' => $userId]);
             $processedIds = [];
             $resultJars = [];
@@ -247,6 +252,9 @@ class JarController extends Controller
                 'message' => __('An error has occurred'),
                 'error' => $ex->getMessage()
             ], 500);
+        }
+        } finally {
+            $jarLock->release();
         }
     }
 
@@ -440,38 +448,47 @@ class JarController extends Controller
             $payload['user_id'] = $user?->id;
             $payload['active'] = 1;
 
-            if (($payload['type'] ?? null) === 'percent') {
-                $sum = $this->jarRepo->sumPercentForUser($payload['user_id'] ?? 0);
-                $newTotal = round($sum + (float)($payload['percent'] ?? 0), 2);
-                if ($newTotal > 100.0 + 1e-6) { // #todo(option): strict mode to require exactly 100%
-                    return response()->json([
-                        'status'=>'FAILED','code'=>422,
-                        'message'=>__('Total percent for user exceeds 100%'),
-                        'data'=>['current_percent_total'=>$sum,'attempt_total'=>$newTotal]
-                    ], 422);
-                }
-            }
+            $lockedUserId = (int)($payload['user_id'] ?? 0);
 
-            $jar = $this->jarRepo->store($payload);
+            $response = JarPercentLock::withUserLock($lockedUserId, function () use ($payload, $request, $lockedUserId) {
+                return DB::transaction(function () use ($payload, $request, $lockedUserId) {
+                    if (($payload['type'] ?? null) === 'percent') {
+                        $sum = $this->jarRepo->sumPercentForUser($lockedUserId);
+                        $newTotal = round($sum + (float)($payload['percent'] ?? 0), 2);
+                        if ($newTotal > 100.0 + 1e-6) { // #todo(option): strict mode to require exactly 100%
+                            return response()->json([
+                                'status'=>'FAILED','code'=>422,
+                                'message'=>__('Total percent for user exceeds 100%'),
+                                'data'=>['current_percent_total'=>$sum,'attempt_total'=>$newTotal]
+                            ], 422);
+                        }
+                    }
 
-            // Sincronizar base_categories si se proporcionaron
-            if ($request->filled('base_categories')) {
-                $jar->baseCategories()->sync($request->input('base_categories'));
-            }
+                    $jar = $this->jarRepo->store($payload);
 
-            // Recargar con relaciones
-            $jar->load([
-                'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
-                'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
-            ]);
+                    // Sincronizar base_categories si se proporcionaron
+                    if ($request->filled('base_categories')) {
+                        $jar->baseCategories()->sync($request->input('base_categories'));
+                    }
 
-            $response = [
-                'status'  => 'OK',
-                'code'    => 200,
-                'message' => __('Jar saved correctly'),
-                'data'    => $jar,
-            ];
-            return response()->json($response, 200);
+                    // Recargar con relaciones
+                    $jar->load([
+                        'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
+                        'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
+                    ]);
+
+                    return [
+                        'status'  => 'OK',
+                        'code'    => 200,
+                        'message' => __('Jar saved correctly'),
+                        'data'    => $jar,
+                    ];
+                });
+            });
+
+            return $response instanceof \Illuminate\Http\JsonResponse
+                ? $response
+                : response()->json($response, 200);
         } catch (\Exception $ex) {
             Log::error($ex);
             $response = [
@@ -552,38 +569,46 @@ class JarController extends Controller
             if ($request->exists('active')) { $payload['active'] = $request->boolean('active'); }
 
             $userId = $jar->user_id;
-            if (($payload['type'] ?? $jar->type) === 'percent' && array_key_exists('percent', $payload)) {
-                $sum = $this->jarRepo->sumPercentForUser($userId, $jar->id);
-                $newTotal = round($sum + (float)($payload['percent'] ?? $jar->percent), 2);
-                if ($newTotal > 100.0 + 1e-6) {
-                    return response()->json([
-                        'status'=>'FAILED','code'=>422,
-                        'message'=>__('Total percent for user exceeds 100%'),
-                        'data'=>['current_percent_total'=>$sum,'attempt_total'=>$newTotal]
-                    ], 422);
-                }
-            }
 
-            $jar = $this->jarRepo->update($jar, $payload);
+            $response = JarPercentLock::withUserLock($userId, function () use ($payload, $request, $jar, $userId) {
+                return DB::transaction(function () use ($payload, $request, $jar, $userId) {
+                    if (($payload['type'] ?? $jar->type) === 'percent' && array_key_exists('percent', $payload)) {
+                        $sum = $this->jarRepo->sumPercentForUser($userId, $jar->id);
+                        $newTotal = round($sum + (float)($payload['percent'] ?? $jar->percent), 2);
+                        if ($newTotal > 100.0 + 1e-6) {
+                            return response()->json([
+                                'status'=>'FAILED','code'=>422,
+                                'message'=>__('Total percent for user exceeds 100%'),
+                                'data'=>['current_percent_total'=>$sum,'attempt_total'=>$newTotal]
+                            ], 422);
+                        }
+                    }
 
-            // Sincronizar base_categories si se proporcionaron
-            if ($request->has('base_categories')) {
-                $jar->baseCategories()->sync($request->input('base_categories'));
-            }
+                    $jar = $this->jarRepo->update($jar, $payload);
 
-            // Recargar con relaciones
-            $jar->load([
-                'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
-                'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
-            ]);
+                    // Sincronizar base_categories si se proporcionaron
+                    if ($request->has('base_categories')) {
+                        $jar->baseCategories()->sync($request->input('base_categories'));
+                    }
 
-            $response = [
-                'status'  => 'OK',
-                'code'    => 200,
-                'message' => __('Jar updated'),
-                'data'    => $jar,
-            ];
-            return response()->json($response, 200);
+                    // Recargar con relaciones
+                    $jar->load([
+                        'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
+                        'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
+                    ]);
+
+                    return [
+                        'status'  => 'OK',
+                        'code'    => 200,
+                        'message' => __('Jar updated'),
+                        'data'    => $jar,
+                    ];
+                });
+            });
+
+            return $response instanceof \Illuminate\Http\JsonResponse
+                ? $response
+                : response()->json($response, 200);
         }
         $response = [
             'status'  => 'FAILED',

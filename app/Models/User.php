@@ -9,10 +9,20 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+
+    /**
+     * OWF-062: route password-reset emails through the custom notification so the
+     * reset link points to the SPA (/reset-password) instead of the backend.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +32,9 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'phone',
+        'occupation',
+        'city',
+        'country',
         'email',
         'password',
         'role_id',
