@@ -117,14 +117,15 @@ class UserController extends Controller
     public function save(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required',
-            'client_id' => 'nullable|exists:clients,id',
-            'active' => 'sometimes|boolean',
+            'name'        => 'required',
+            'email'       => 'required|email|unique:users,email',
+            'password'    => 'required',
+            'client_id'   => 'nullable|exists:clients,id',
+            'active'      => 'sometimes|boolean',
             'currency_id' => 'nullable|exists:currencies,id',
+            'role_id'     => 'sometimes|nullable|exists:roles,id',
         ]);
-    $data['password'] = Hash::make($data['password']);
+        $data['password'] = Hash::make($data['password']);
         $data['active'] = $request->boolean('active', true);
         $user = $this->repo->store($data);
         return response()->json([
@@ -150,11 +151,12 @@ class UserController extends Controller
     {
         $user = $this->repo->find($id);
         $data = $request->validate([
-            'name' => 'sometimes|string',
-            'email' => 'sometimes|email|unique:users,email,' . $id,
-            'password' => 'sometimes|string',
-            'client_id' => 'sometimes|nullable|exists:clients,id',
-            'active' => 'sometimes|boolean',
+            'name'        => 'sometimes|string',
+            'email'       => 'sometimes|email|unique:users,email,' . $id,
+            'password'    => 'sometimes|string',
+            'client_id'   => 'sometimes|nullable|exists:clients,id',
+            'active'      => 'sometimes|boolean',
+            'role_id'     => 'sometimes|nullable|exists:roles,id',
         ]);
         if ($request->exists('active')) {
             $data['active'] = $request->boolean('active');

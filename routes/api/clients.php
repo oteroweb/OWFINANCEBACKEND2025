@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ClientController;
 
 Route::group([
-    'middleware' => ['api', 'auth:sanctum'],
+    'middleware' => ['api', 'auth:sanctum', 'App\\Http\\Middleware\\CheckRole:admin'],
     'prefix'     => 'clients',
 ], function () {
     Route::post('/', [ClientController::class, 'save']);

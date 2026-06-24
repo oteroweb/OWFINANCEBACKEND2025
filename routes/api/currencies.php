@@ -4,7 +4,7 @@
   use App\Http\Controllers\Api\CurrencyController;
 
   Route::group([
-    'middleware' => ['api', 'auth:sanctum'],
+    'middleware' => ['api', 'auth:sanctum', 'App\\Http\\Middleware\\CheckRole:admin'],
     'prefix'     => 'currencies',
 ], function () {
   //Currency ROUTES 

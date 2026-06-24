@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\UserJarController;
 use App\Http\Controllers\Api\JarBalanceController;
 
 Route::group([
-    'middleware' => ['auth:sanctum'],
+    'middleware' => ['auth:sanctum', 'App\\Http\\Middleware\\CheckRole:admin'],
     'prefix' => 'users',
 ], function () {
     Route::post('/', [UserController::class, 'save']);
