@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->enum('feature', ['voice', 'ocr', 'auto_ia', 'advisor']);
-            $table->string('provider_name', 20)->default('anthropic');
+            $table->string('provider_name', 100)->default('anthropic');
             $table->string('model_used');
             $table->integer('input_tokens')->default(0);
             $table->integer('output_tokens')->default(0);

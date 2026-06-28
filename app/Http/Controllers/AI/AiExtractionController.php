@@ -116,8 +116,8 @@ PROMPT;
         AiUsageLog::create([
             'user_id'               => $userId,
             'feature'               => $featureMap[$source] ?? 'auto_ia',
-            'provider_name'         => $providerName,
-            'model_used'            => $modelUsed,
+            'provider_name'         => substr($providerName, 0, 100),
+            'model_used'            => substr($modelUsed, 0, 100),
             'input_tokens'          => $usage['input_tokens'],
             'output_tokens'         => $usage['output_tokens'],
             'cache_read_tokens'     => $usage['cache_read_tokens'],
