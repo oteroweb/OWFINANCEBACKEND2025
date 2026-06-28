@@ -26,7 +26,7 @@ class AiExtractionController extends Controller
         $userMessage  = $this->buildUserMessage($validated);
 
         try {
-            $provider = AiProviderFactory::make('extraction');
+            $provider = AiProviderFactory::makeWithRuntimeFallback('extraction');
             $result   = $provider->extract($systemPrompt, $userMessage);
         } catch (\Throwable $e) {
             Log::error('AI extraction failed', ['error' => $e->getMessage()]);
@@ -116,8 +116,8 @@ PROMPT;
         AiUsageLog::create([
             'user_id'               => $userId,
             'feature'               => $featureMap[$source] ?? 'auto_ia',
-            'provider_name'         => $providerName,
-            'model_used'            => $modelUsed,
+            'provider_name'         => substr($providerName, 0, 100),
+            'model_used'            => substr($modelUsed, 0, 100),
             'input_tokens'          => $usage['input_tokens'],
             'output_tokens'         => $usage['output_tokens'],
             'cache_read_tokens'     => $usage['cache_read_tokens'],
