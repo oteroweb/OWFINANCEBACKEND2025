@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Entities\Jar;
 
 class Category extends Model
 {
@@ -24,6 +25,8 @@ class Category extends Model
     'sort_order',
     ];
 
+    protected $appends = ['jar_slug'];
+
     protected $casts = [
         'date'       => 'datetime:Y-m-d',
         'created_at' => 'datetime:Y-m-d',
@@ -31,6 +34,26 @@ class Category extends Model
         'deleted_at' => 'datetime:Y-m-d',
     'include_in_balance' => 'boolean',
     ];
+
+    private static array $JAR_SLUG_MAP = [
+        'Vivienda'        => 'necesidades',
+        'Supermercado'    => 'necesidades',
+        'Servicios'       => 'necesidades',
+        'Transporte'      => 'necesidades',
+        'Salud'           => 'necesidades',
+        'Restaurantes'    => 'diversion',
+        'Entretenimiento' => 'diversion',
+        'Ropa'            => 'diversion',
+        'Suscripciones'   => 'diversion',
+        'Educación'       => 'educacion',
+        'Inversión'       => 'ahorro',
+        'Otros'           => 'reservas',
+    ];
+
+    public function getJarSlugAttribute(): ?string
+    {
+        return self::$JAR_SLUG_MAP[$this->name] ?? null;
+    }
 
     public function parent()
     {
@@ -50,6 +73,11 @@ class Category extends Model
     public function transactionType()
     {
         return $this->belongsTo(TransactionType::class, 'transaction_type_id');
+    }
+
+    public function jars()
+    {
+        return $this->belongsToMany(Jar::class, 'jar_category');
     }
 
     protected static function newFactory()

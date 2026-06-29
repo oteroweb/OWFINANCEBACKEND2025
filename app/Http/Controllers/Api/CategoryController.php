@@ -31,7 +31,7 @@ class CategoryController extends Controller
                 'status'  => 'OK',
                 'code'    => 200,
                 'message' => __('Category Obtained Correctly'),
-                'data'    => $categories,
+                'data'    => $this->formatCategories($categories),
             ];
             return response()->json($response, 200);
         } catch (\Exception $ex) {
@@ -58,7 +58,7 @@ class CategoryController extends Controller
                 'status'  => 'OK',
                 'code'    => 200,
                 'message' => __('Data Obtained Correctly'),
-                'data'    => $categories,
+                'data'    => $this->formatCategories($categories),
             ];
             return response()->json($response, 200);
         } catch (\Exception $ex) {
@@ -499,5 +499,42 @@ class CategoryController extends Controller
                 $node['type'] = 'category';
             }
         }
+    }
+
+    private function formatCategories($categories): array
+    {
+        return $categories->map(function ($cat) {
+            return array_merge($cat->toArray(), [
+                'jar_slug' => self::jarSlugForCategory($cat->name),
+            ]);
+        })->values()->all();
+    }
+
+    /**
+     * Canonical mapping: category name → jar slug.
+     * The frontend uses jar_slug to find the matching jar in the user's jar list by name.
+     */
+    private static function jarSlugForCategory(string $name): ?string
+    {
+        $map = [
+            // Necesidades básicas
+            'Vivienda'        => 'necesidades',
+            'Supermercado'    => 'necesidades',
+            'Servicios'       => 'necesidades',
+            'Transporte'      => 'necesidades',
+            'Salud'           => 'necesidades',
+            // Diversión
+            'Restaurantes'    => 'diversion',
+            'Entretenimiento' => 'diversion',
+            'Ropa'            => 'diversion',
+            'Suscripciones'   => 'diversion',
+            // Educación
+            'Educación'       => 'educacion',
+            // Ahorro
+            'Inversión'       => 'ahorro',
+            // Reservas
+            'Otros'           => 'reservas',
+        ];
+        return $map[$name] ?? null;
     }
 }

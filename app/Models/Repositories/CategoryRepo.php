@@ -10,7 +10,9 @@ class CategoryRepo
     {
         $query = Category::query();
         if ($userId) {
-            $query->where('user_id', $userId);
+            $query->where(function ($q) use ($userId) {
+                $q->whereNull('user_id')->orWhere('user_id', $userId);
+            });
         }
         return $query->get();
     }
@@ -19,7 +21,9 @@ class CategoryRepo
     {
         $query = Category::where('active', 1);
         if ($userId) {
-            $query->where('user_id', $userId);
+            $query->where(function ($q) use ($userId) {
+                $q->whereNull('user_id')->orWhere('user_id', $userId);
+            });
         }
         return $query->get();
     }
