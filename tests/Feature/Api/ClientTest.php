@@ -8,6 +8,12 @@ use App\Models\Entities\Client;
 
 class ClientTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     use RefreshDatabase;
 
     public function test_client_crud_flow()

@@ -8,6 +8,12 @@ use App\Models\Entities\Tax;
 
 class TaxTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     use RefreshDatabase;
 
     public function test_tax_crud_flow()

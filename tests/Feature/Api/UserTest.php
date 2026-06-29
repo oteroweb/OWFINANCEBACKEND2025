@@ -8,6 +8,12 @@ use App\Models\User;
 
 class UserTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     use RefreshDatabase;
 
     public function test_user_crud_flow()

@@ -8,6 +8,12 @@ use App\Models\Entities\ItemCategory;
 
 class ItemCategoryTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     use RefreshDatabase;
 
     public function test_item_category_crud_flow()

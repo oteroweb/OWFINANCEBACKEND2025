@@ -79,7 +79,7 @@ class AiChatController extends Controller
             $modelUsed    = '';
 
             try {
-                $provider     = AiProviderFactory::make('advisor');
+                $provider     = AiProviderFactory::makeWithRuntimeFallback('advisor');
                 $providerName = $provider->name();
                 $modelUsed    = $provider->model();
 

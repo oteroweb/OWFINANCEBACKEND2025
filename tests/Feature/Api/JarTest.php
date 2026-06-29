@@ -95,8 +95,7 @@ class JarTest extends TestCase
      */
     public function test_percent_sum_invariant_blocks_over_100_percent()
     {
-        $user = \App\Models\User::factory()->create();
-        \Laravel\Sanctum\Sanctum::actingAs($user, ['*']);
+        $user = $this->actingAsAdmin();
 
         $base = '/api/v1/users/' . $user->id . '/jars';
 
@@ -123,8 +122,7 @@ class JarTest extends TestCase
      */
     public function test_percent_sum_skipped_when_deactivating_jar()
     {
-        $user = \App\Models\User::factory()->create();
-        \Laravel\Sanctum\Sanctum::actingAs($user, ['*']);
+        $user = $this->actingAsAdmin();
 
         $base = '/api/v1/users/' . $user->id . '/jars';
 

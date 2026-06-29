@@ -8,6 +8,12 @@ use App\Models\Entities\AccountType;
 
 class AccountTypeTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     use RefreshDatabase;
 
     public function test_account_type_crud_flow()

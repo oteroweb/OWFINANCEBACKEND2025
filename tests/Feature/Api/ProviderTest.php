@@ -8,6 +8,12 @@ use App\Models\Entities\Provider;
 
 class ProviderTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     use RefreshDatabase;
 
     public function test_provider_crud_flow()

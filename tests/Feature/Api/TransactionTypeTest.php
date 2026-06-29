@@ -8,6 +8,12 @@ use App\Models\Entities\TransactionType;
 
 class TransactionTypeTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     use RefreshDatabase;
 
     public function test_transaction_type_crud()

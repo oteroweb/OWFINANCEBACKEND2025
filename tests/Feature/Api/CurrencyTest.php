@@ -9,6 +9,12 @@ use App\Models\Entities\Currency;
 
 class CurrencyTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->actingAsAdmin();
+    }
+
     use RefreshDatabase;
     /**
      * Test cambiar el estado de una currency.
