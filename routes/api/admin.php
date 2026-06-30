@@ -58,4 +58,5 @@ Route::middleware(['auth:sanctum', 'App\\Http\\Middleware\\CheckRole:admin'])->p
     Route::put('/users/{id}/password',              [UserAdminController::class, 'changePassword']);
     Route::delete('/users/{id}/tokens',             [UserAdminController::class, 'revokeTokens']);
     Route::post('/users/{id}/reset-password-email', [UserAdminController::class, 'sendResetEmail']);
+    Route::put('/users/{id}/profile',               [UserAdminController::class, 'updateProfile']);
 });

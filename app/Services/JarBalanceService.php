@@ -267,8 +267,10 @@ class JarBalanceService
         $endOfMonth = $date->clone()->endOfMonth()->toDateString();
 
         // Sum adjustments ONLY for this specific month
+        // Use whereDate() to normalize dates — SQLite stores them as datetime strings
         $adjustments = JarAdjustment::where('jar_id', $jar->id)
-            ->whereBetween('adjustment_date', [$startOfMonth, $endOfMonth])
+            ->whereDate('adjustment_date', '>=', $startOfMonth)
+            ->whereDate('adjustment_date', '<=', $endOfMonth)
             ->get();
 
         $totalAdjustment = 0;
@@ -292,7 +294,8 @@ class JarBalanceService
         $endOfMonth = $date->clone()->endOfMonth()->toDateString();
 
         return (float) JarWithdrawal::where('jar_id', $jar->id)
-            ->whereBetween('withdrawal_date', [$startOfMonth, $endOfMonth])
+            ->whereDate('withdrawal_date', '>=', $startOfMonth)
+            ->whereDate('withdrawal_date', '<=', $endOfMonth)
             ->sum('amount');
     }
 
@@ -309,7 +312,8 @@ class JarBalanceService
                 $q->whereNull('transfer_type')
                     ->orWhere('transfer_type', 'manual');
             })
-            ->whereBetween('transfer_date', [$startOfMonth, $endOfMonth])
+            ->whereDate('transfer_date', '>=', $startOfMonth)
+            ->whereDate('transfer_date', '<=', $endOfMonth)
             ->sum('amount');
     }
 
@@ -326,7 +330,8 @@ class JarBalanceService
                 $q->whereNull('transfer_type')
                     ->orWhere('transfer_type', 'manual');
             })
-            ->whereBetween('transfer_date', [$startOfMonth, $endOfMonth])
+            ->whereDate('transfer_date', '>=', $startOfMonth)
+            ->whereDate('transfer_date', '<=', $endOfMonth)
             ->sum('amount');
     }
 
@@ -773,7 +778,8 @@ class JarBalanceService
         $endOfMonth = $date->clone()->endOfMonth()->toDateString();
 
         $deleted = JarAdjustment::where('jar_id', $jar->id)
-            ->whereBetween('adjustment_date', [$startOfMonth, $endOfMonth])
+            ->whereDate('adjustment_date', '>=', $startOfMonth)
+            ->whereDate('adjustment_date', '<=', $endOfMonth)
             ->delete();
 
         if ($deleted > 0) {

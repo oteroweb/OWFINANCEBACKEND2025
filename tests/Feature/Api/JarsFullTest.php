@@ -139,8 +139,11 @@ class JarsFullTest extends TestCase
     public function test_jar_withdrawal()
     {
         $id = $this->makeJar();
-        // Fund the jar first so withdrawal succeeds
-        $this->postJson('/api/v1/jars/' . $id . '/adjust', ['target_balance' => 500.00]);
+        // Fund the jar: set target_balance=500 so withdrawal can proceed
+        $this->postJson('/api/v1/jars/' . $id . '/adjust', [
+            'target_balance' => 500.00,
+            'reason'         => 'Fondeo para test',
+        ])->assertStatus(200);
 
         $res = $this->postJson('/api/v1/jars/' . $id . '/withdraw', [
             'amount' => 200.00,
@@ -163,8 +166,11 @@ class JarsFullTest extends TestCase
     {
         $j1 = $this->makeJar('Origen',  30);
         $j2 = $this->makeJar('Destino', 20);
-        // Fund j1 first
-        $this->postJson('/api/v1/jars/' . $j1 . '/adjust', ['target_balance' => 500.00]);
+        // Fund j1: set target_balance=500 so transfer can proceed
+        $this->postJson('/api/v1/jars/' . $j1 . '/adjust', [
+            'target_balance' => 500.00,
+            'reason'         => 'Fondeo para test',
+        ])->assertStatus(200);
 
         // Route {id} = destination jar; from_jar_id in body = source jar
         $res = $this->postJson('/api/v1/jars/' . $j2 . '/transfer', [

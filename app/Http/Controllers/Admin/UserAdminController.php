@@ -132,6 +132,40 @@ class UserAdminController extends Controller
         ]);
     }
 
+    // OWF-169 — PUT /admin/users/:id/profile
+    public function updateProfile(Request $request, int $id): JsonResponse
+    {
+        $user = User::with('role')->findOrFail($id);
+
+        $request->validate([
+            'name'        => 'sometimes|string|max:255',
+            'email'       => "sometimes|email|unique:users,email,{$id}",
+            'role_id'     => 'sometimes|nullable|integer|exists:roles,id',
+            'layout_mode' => 'sometimes|nullable|string|in:lite,pro',
+            'active'      => 'sometimes|boolean',
+        ]);
+
+        if ($request->has('name'))   $user->name   = $request->name;
+        if ($request->has('email'))  $user->email  = $request->email;
+        if ($request->has('role_id')) $user->role_id = $request->role_id;
+        if ($request->has('active')) $user->active  = $request->boolean('active');
+        $user->save();
+
+        if ($request->has('layout_mode')) {
+            UserSetting::updateOrCreate(
+                ['user_id' => $id],
+                ['layout_mode' => $request->layout_mode]
+            );
+        }
+
+        return response()->json([
+            'status'  => 'OK',
+            'code'    => 200,
+            'message' => 'Perfil actualizado',
+            'data'    => $user->fresh(['role']),
+        ]);
+    }
+
     // OWF-144 — POST /admin/users/:id/reset-password-email
     public function sendResetEmail(Request $request, int $id): JsonResponse
     {
