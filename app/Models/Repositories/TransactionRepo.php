@@ -23,7 +23,8 @@ class TransactionRepo {
                 'provider','rate','user','account','transactionType','category',
                 'itemTransactions', 'itemTransactions.category', 'itemTransactions.itemCategory',
                 // Include payment rate relation so each payment contains its rate object
-                'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency'
+                'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency',
+                'tags',
             ]);
 
         // Restricción por usuario autenticado (no admin)
@@ -118,6 +119,19 @@ class TransactionRepo {
             $tids = array_filter(array_map('trim', $tids));
             if (!empty($tids)) {
                 $query->whereIn('id', $tids);
+            }
+        }
+
+        // tag_ids filter: transactions that have ALL specified tags
+        if (!empty($params['tag_ids'])) {
+            $tagIds = is_array($params['tag_ids']) ? $params['tag_ids'] : explode(',', $params['tag_ids']);
+            $tagIds = array_values(array_filter(array_map('intval', $tagIds)));
+            if (!empty($tagIds)) {
+                foreach ($tagIds as $tagId) {
+                    $query->whereHas('tags', function ($q) use ($tagId) {
+                        $q->where('tags.id', $tagId);
+                    });
+                }
             }
         }
 
@@ -243,7 +257,8 @@ class TransactionRepo {
             ->with([
                 'provider','rate','user','account','transactionType','category',
                 'itemTransactions','itemTransactions.category','itemTransactions.itemCategory',
-                'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency'
+                'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency',
+                'tags',
             ]);
 
         if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
@@ -324,6 +339,19 @@ class TransactionRepo {
             $tids = array_filter(array_map('trim', $tids));
             if (!empty($tids)) {
                 $query->whereIn('id', $tids);
+            }
+        }
+
+        // tag_ids filter: transactions that have ALL specified tags
+        if (!empty($params['tag_ids'])) {
+            $tagIds = is_array($params['tag_ids']) ? $params['tag_ids'] : explode(',', $params['tag_ids']);
+            $tagIds = array_values(array_filter(array_map('intval', $tagIds)));
+            if (!empty($tagIds)) {
+                foreach ($tagIds as $tagId) {
+                    $query->whereHas('tags', function ($q) use ($tagId) {
+                        $q->where('tags.id', $tagId);
+                    });
+                }
             }
         }
 
@@ -441,7 +469,8 @@ class TransactionRepo {
         return Transaction::with([
             'provider','rate','user','account','transactionType','category',
             'itemTransactions','itemTransactions.category','itemTransactions.itemCategory',
-            'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency'
+            'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency',
+            'tags',
         ])->find($id);
     }
     public function store($data) {

@@ -39,5 +39,6 @@ class DatabaseSeeder extends Seeder
             AccountTaxSeeder::class,
         ]);
         $this->call(AiUserSettingsSeeder::class);
+        $this->call(TagSeeder::class);
     }
 }

@@ -14,6 +14,7 @@ use App\Models\Entities\PaymentTransaction;
 use App\Models\Entities\Tax;
 use App\Models\Entities\UserCurrency;
 use App\Models\Entities\Account;
+use App\Models\Entities\Tag;
 
 class TransactionController extends Controller
 {
@@ -39,7 +40,9 @@ class TransactionController extends Controller
                 // nuevos filtros
                 'account_ids', 'transaction_ids', 'payments_account_id',
                 // periodos (extendidos)
-                'period_type', 'month', 'quarter', 'semester', 'year', 'week', 'fortnight'
+                'period_type', 'month', 'quarter', 'semester', 'year', 'week', 'fortnight',
+                // tags filter
+                'tag_ids'
             ]);
             // Support multiple and single payment account filters
             // Preferred: payment_account_ids=1,2,3 (or payments_account_ids)
@@ -78,6 +81,13 @@ class TransactionController extends Controller
                     $filtered = array_values(array_intersect($incoming, $allowedAccountIds));
                     $params['account_ids'] = $filtered; // si queda vacío no retornará nada
                 }
+            }
+            // Parse tag_ids filter: accept comma-separated string or array
+            if (!empty($params['tag_ids'])) {
+                $tagIds = is_array($params['tag_ids'])
+                    ? $params['tag_ids']
+                    : preg_split('/[\s,]+/', (string)$params['tag_ids'], -1, PREG_SPLIT_NO_EMPTY);
+                $params['tag_ids'] = array_values(array_filter(array_map('intval', $tagIds)));
             }
             $transaction = $this->transactionRepo->all($params, $authUser);
             $response = [
@@ -235,6 +245,9 @@ class TransactionController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'active' => 'sometimes|boolean',
             'include_in_balance' => 'sometimes|boolean',
+            // Tags
+            'tags' => 'nullable|array',
+            'tags.*' => 'integer|exists:tags,id',
             // Nested: items and payments
             'items' => 'nullable|array',
             'items.*.item_id' => 'nullable|exists:items,id',
@@ -250,6 +263,10 @@ class TransactionController extends Controller
             'items.*.item_category_id' => 'nullable|exists:item_categories,id',
             'items.*.user_id' => 'nullable|exists:users,id',
             'items.*.custom_name' => 'nullable|string|max:150',
+            'items.*.tags' => 'nullable|array',
+            'items.*.tags.*' => 'integer|exists:tags,id',
+            'items.*.is_fee' => 'nullable|boolean',
+            'items.*.fee_type' => 'nullable|string|max:50',
             // Payments (siempre requeridos)
             'payments' => 'required|array|min:1',
             'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
@@ -489,7 +506,10 @@ class TransactionController extends Controller
             }
             $transaction= $this->transactionRepo->store($data);
 
-                $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate']);
+            // Sync transaction-level tags
+            $transaction->tags()->sync($request->input('tags', []));
+
+                $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate','tags']);
             foreach ($items as $it) {
                 // applies_to validation for item taxes
                 if (!empty($it['tax_id'])) {
@@ -518,9 +538,15 @@ class TransactionController extends Controller
                     'item_category_id' => $it['item_category_id'] ?? null,
                     'user_id' => $it['user_id'] ?? $transaction->user_id,
                     'custom_name' => $it['custom_name'] ?? null,
+                    'is_fee' => $it['is_fee'] ?? false,
+                    'fee_type' => $it['fee_type'] ?? null,
                     'active' => 1,
                 ];
-                ItemTransaction::create($payload);
+                $itemTransaction = ItemTransaction::create($payload);
+                // Sync item-level tags
+                if (!empty($it['tags'])) {
+                    $itemTransaction->tags()->sync($it['tags']);
+                }
             }
 
             // Create Payment Transactions
@@ -536,7 +562,7 @@ class TransactionController extends Controller
             }
 
             // Reload with relations (including account inside payment transactions)
-            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate']);
+            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate','tags']);
             DB::commit();
 
             // Recalcular y persistir balances de todas las cuentas afectadas por los payments
@@ -604,6 +630,9 @@ class TransactionController extends Controller
                 'category_id' => 'sometimes|nullable|exists:categories,id',
                 'active' => 'sometimes|boolean',
                 'include_in_balance' => 'sometimes|boolean',
+                // tags
+                'tags' => 'nullable|array',
+                'tags.*' => 'integer|exists:tags,id',
                 // items
                 'items' => 'sometimes|array',
                 'items.*.item_id' => 'nullable|exists:items,id',
@@ -619,6 +648,10 @@ class TransactionController extends Controller
                 'items.*.item_category_id' => 'nullable|exists:item_categories,id',
                 'items.*.user_id' => 'nullable|exists:users,id',
                 'items.*.custom_name' => 'nullable|string|max:150',
+                'items.*.tags' => 'nullable|array',
+                'items.*.tags.*' => 'integer|exists:tags,id',
+                'items.*.is_fee' => 'nullable|boolean',
+                'items.*.fee_type' => 'nullable|string|max:50',
                 // payments
                 'payments' => 'sometimes|array|min:1',
                 'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
@@ -768,6 +801,11 @@ class TransactionController extends Controller
             DB::beginTransaction();
             $transaction = $this->transactionRepo->update($transaction, $data);
 
+            // Sync transaction-level tags if provided
+            if ($request->has('tags')) {
+                $transaction->tags()->sync($request->input('tags', []));
+            }
+
             // Si vienen items en el payload, reescribir el conjunto de itemTransactions (estrategia replace)
             if (is_array($itemsUpd)) {
                 // Soft delete existentes y recrear
@@ -784,7 +822,7 @@ class TransactionController extends Controller
                             ], 422);
                         }
                     }
-                    ItemTransaction::create([
+                    $itemTransaction = ItemTransaction::create([
                         'transaction_id' => $transaction->id,
                         'item_id' => $it['item_id'] ?? null,
                         'quantity' => $it['quantity'] ?? 1,
@@ -799,8 +837,14 @@ class TransactionController extends Controller
                         'item_category_id' => $it['item_category_id'] ?? null,
                         'user_id' => $it['user_id'] ?? $transaction->user_id,
                         'custom_name' => $it['custom_name'] ?? null,
+                        'is_fee' => $it['is_fee'] ?? false,
+                        'fee_type' => $it['fee_type'] ?? null,
                         'active' => 1,
                     ]);
+                    // Sync item-level tags
+                    if (!empty($it['tags'])) {
+                        $itemTransaction->tags()->sync($it['tags']);
+                    }
                 }
             }
 
@@ -840,7 +884,7 @@ class TransactionController extends Controller
             }
 
             // Recargar relaciones y confirmar cambios
-            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate']);
+            $transaction->load(['provider','rate','user','account','transactionType','category','itemTransactions','paymentTransactions.account','paymentTransactions.userCurrency','paymentTransactions.rate','tags']);
             DB::commit();
 
             // Recalcular balances afectados y retornarlos

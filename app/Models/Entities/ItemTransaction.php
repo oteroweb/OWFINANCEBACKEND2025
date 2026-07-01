@@ -5,6 +5,7 @@ namespace App\Models\Entities;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Entities\Tag;
 
 class ItemTransaction extends Model
 {
@@ -27,6 +28,8 @@ class ItemTransaction extends Model
         'item_category_id',
         'user_id',
         'custom_name',
+        'is_fee',
+        'fee_type',
     ];
 
     protected $casts = [
@@ -34,6 +37,7 @@ class ItemTransaction extends Model
         'created_at' => 'datetime:Y-m-d',
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',
+        'is_fee'     => 'boolean',
     ];
 
     protected static function newFactory()
@@ -79,5 +83,11 @@ class ItemTransaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // Relationship: an item transaction can have many tags
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'item_transaction_tags');
     }
 }

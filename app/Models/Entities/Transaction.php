@@ -12,6 +12,7 @@ use App\Models\Entities\User;
 use App\Models\Entities\Account;
 use App\Models\Entities\ItemTransaction;
 use App\Models\Entities\PaymentTransaction;
+use App\Models\Entities\Tag;
 
 class Transaction extends Model
 {
@@ -80,6 +81,12 @@ class Transaction extends Model
     public function paymentTransactions()
     {
         return $this->hasMany(PaymentTransaction::class);
+    }
+
+    // Relationship: a transaction can have many tags
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'transaction_tags');
     }
 
 
