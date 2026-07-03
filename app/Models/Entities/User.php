@@ -58,6 +58,11 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class);
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role && in_array($this->role->slug ?? '', ['admin', 'superadmin'], true);
+    }
+
     /**
      * The accounts that belong to the user.
      */

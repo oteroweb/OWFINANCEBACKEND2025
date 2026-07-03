@@ -353,14 +353,15 @@ class TransactionController extends Controller
                 }
             }
 
-            // Derive transaction amount from items if provided
+            // Derive transaction amount from items if provided.
+            // items[].amount is the LINE TOTAL (qty × unit_price already resolved by the client).
+            // We do NOT multiply by quantity here — that would double-count.
             $derivedAmount = null;
             if (!empty($items)) {
                 $sum = 0.0;
                 foreach ($items as $it) {
-                    $qty = isset($it['quantity']) ? (float) $it['quantity'] : 1.0;
                     $amt = isset($it['amount']) ? (float) $it['amount'] : 0.0;
-                    $sum += ($amt * $qty);
+                    $sum += $amt;
                 }
                 $derivedAmount = round($sum, 2);
             }
