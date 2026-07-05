@@ -8,7 +8,7 @@ class CategoryRepo
 {
     public function all($userId = null)
     {
-        $query = Category::query();
+        $query = Category::query()->with('jars');
         if ($userId) {
             $query->where(function ($q) use ($userId) {
                 $q->whereNull('user_id')->orWhere('user_id', $userId);
@@ -19,7 +19,7 @@ class CategoryRepo
 
     public function allActive($userId = null)
     {
-        $query = Category::where('active', 1);
+        $query = Category::where('active', 1)->with('jars');
         if ($userId) {
             $query->where(function ($q) use ($userId) {
                 $q->whereNull('user_id')->orWhere('user_id', $userId);

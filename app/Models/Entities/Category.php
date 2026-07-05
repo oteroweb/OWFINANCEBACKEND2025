@@ -50,8 +50,24 @@ class Category extends Model
         'Otros'           => 'reservas',
     ];
 
+    // Reverse of the frontend's JAR_SLUG_NAMES (src/utils/txCatalog.ts) — jar name → slug.
+    private static array $JAR_NAME_TO_SLUG = [
+        'Necesidades básicas' => 'necesidades',
+        'Diversión'           => 'diversion',
+        'Ahorro'              => 'ahorro',
+        'Educación'           => 'educacion',
+        'Reservas'            => 'reservas',
+    ];
+
     public function getJarSlugAttribute(): ?string
     {
+        // Real assignment via jar_category pivot takes precedence over the legacy name map,
+        // so custom/user-created categories (e.g. "Familia") resolve correctly.
+        $assignedJar = $this->relationLoaded('jars') ? $this->jars->first() : $this->jars()->first();
+        if ($assignedJar && isset(self::$JAR_NAME_TO_SLUG[$assignedJar->name])) {
+            return self::$JAR_NAME_TO_SLUG[$assignedJar->name];
+        }
+
         return self::$JAR_SLUG_MAP[$this->name] ?? null;
     }
 

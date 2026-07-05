@@ -503,38 +503,9 @@ class CategoryController extends Controller
 
     private function formatCategories($categories): array
     {
-        return $categories->map(function ($cat) {
-            return array_merge($cat->toArray(), [
-                'jar_slug' => self::jarSlugForCategory($cat->name),
-            ]);
-        })->values()->all();
-    }
-
-    /**
-     * Canonical mapping: category name → jar slug.
-     * The frontend uses jar_slug to find the matching jar in the user's jar list by name.
-     */
-    private static function jarSlugForCategory(string $name): ?string
-    {
-        $map = [
-            // Necesidades básicas
-            'Vivienda'        => 'necesidades',
-            'Supermercado'    => 'necesidades',
-            'Servicios'       => 'necesidades',
-            'Transporte'      => 'necesidades',
-            'Salud'           => 'necesidades',
-            // Diversión
-            'Restaurantes'    => 'diversion',
-            'Entretenimiento' => 'diversion',
-            'Ropa'            => 'diversion',
-            'Suscripciones'   => 'diversion',
-            // Educación
-            'Educación'       => 'educacion',
-            // Ahorro
-            'Inversión'       => 'ahorro',
-            // Reservas
-            'Otros'           => 'reservas',
-        ];
-        return $map[$name] ?? null;
+        // jar_slug is already computed by Category::getJarSlugAttribute() (an $appends
+        // accessor that checks the real jar_category pivot before the legacy name map),
+        // so toArray() carries the correct value — no need to recompute it here.
+        return $categories->map(fn ($cat) => $cat->toArray())->values()->all();
     }
 }
