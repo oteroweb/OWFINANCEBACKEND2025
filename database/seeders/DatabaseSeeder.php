@@ -40,5 +40,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $this->call(AiUserSettingsSeeder::class);
         $this->call(TagSeeder::class);
+        $this->call(TestUsersSeeder::class);
     }
 }
