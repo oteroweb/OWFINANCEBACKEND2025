@@ -15,6 +15,10 @@ return [
         'http://127.0.0.1:9000',
         'http://localhost:3000',
         'http://127.0.0.1:3000',
+        // App nativa (Capacitor) — origen sintético del WebView, no un dominio real
+        'capacitor://localhost', // iOS
+        'https://localhost',     // Android (androidScheme: 'https' en capacitor.config.js)
+        'http://localhost',      // fallback por si algún target usa http
     ],
 
     'allowed_origins_patterns' => [],

@@ -25,7 +25,7 @@ class Category extends Model
     'sort_order',
     ];
 
-    protected $appends = ['jar_slug'];
+    protected $appends = ['jar_slug', 'assigned_jar_id'];
 
     protected $casts = [
         'date'       => 'datetime:Y-m-d',
@@ -69,6 +69,17 @@ class Category extends Model
         }
 
         return self::$JAR_SLUG_MAP[$this->name] ?? null;
+    }
+
+    // El id real del cántaro asignado vía jar_category. El frontend debe usar
+    // ESTO (match directo por id) para derivar el cántaro de una transacción,
+    // no jar_slug → nombre canónico → buscar por nombre: ese doble mapeo por
+    // nombre se rompe en cuanto el usuario renombra un cántaro (jar_slug/
+    // JAR_NAME_TO_SLUG arriba son solo para agrupar/colorear en la UI).
+    public function getAssignedJarIdAttribute(): ?int
+    {
+        $assignedJar = $this->relationLoaded('jars') ? $this->jars->first() : $this->jars()->first();
+        return $assignedJar?->id;
     }
 
     public function parent()
