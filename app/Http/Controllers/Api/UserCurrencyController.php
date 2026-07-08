@@ -12,14 +12,19 @@ class UserCurrencyController extends Controller
 {
     public function index(Request $request)
     {
+        $auth = $request->user();
+        $userId = $request->filled('user_id') ? $request->input('user_id') : ($auth->id ?? null);
+        if ($auth && !$auth->isAdmin() && (int)$userId !== (int)$auth->id) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden')], 403);
+        }
+
         $query = UserCurrency::with('currency');
-        if ($request->filled('user_id')) { $query->where('user_id', $request->input('user_id')); }
+        if ($userId) { $query->where('user_id', $userId); }
         if ($request->filled('currency_id')) { $query->where('currency_id', $request->input('currency_id')); }
         if ($request->filled('is_current')) { $query->where('is_current', filter_var($request->input('is_current'), FILTER_VALIDATE_BOOLEAN)); }
         $pagination = $query->paginate($request->input('per_page', 15));
 
         // Compact latest current rate per currency (prefer official, then latest)
-        $userId = $request->input('user_id') ?? ($request->user()->id ?? null);
         $compact = [];
         if ($userId) {
             $currentRates = UserCurrency::with('currency')
@@ -50,6 +55,7 @@ class UserCurrencyController extends Controller
 
     public function store(Request $request)
     {
+        $auth = $request->user();
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
             'currency_id' => 'required|exists:currencies,id',
@@ -61,6 +67,7 @@ class UserCurrencyController extends Controller
             return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()],400);
         }
         $data = $validator->validated();
+        if ($auth && !$auth->isAdmin()) { $data['user_id'] = $auth->id; }
         $record = UserCurrency::firstOrCreate([
             'user_id' => $data['user_id'],
             'currency_id' => $data['currency_id'],
@@ -78,6 +85,10 @@ class UserCurrencyController extends Controller
     public function update(Request $request, $id)
     {
         $record = UserCurrency::findOrFail($id);
+        $auth = $request->user();
+        if ($auth && !$auth->isAdmin() && (int)$record->user_id !== (int)$auth->id) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden')], 403);
+        }
         $validator = Validator::make($request->all(), [
             'current_rate' => 'sometimes|numeric|min:0',
             'is_current' => 'sometimes|boolean',
@@ -92,9 +103,13 @@ class UserCurrencyController extends Controller
         return response()->json(['status'=>'OK','code'=>200,'message'=>__('Updated'),'data'=>$record]);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $record = UserCurrency::findOrFail($id);
+        $auth = $request->user();
+        if ($auth && !$auth->isAdmin() && (int)$record->user_id !== (int)$auth->id) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden')], 403);
+        }
         $record->delete();
         return response()->json(['status'=>'OK','code'=>200,'message'=>__('Deleted')]);
     }

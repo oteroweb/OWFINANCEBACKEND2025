@@ -19,6 +19,11 @@ class AccountRepo
             $query->where('active', $active);
         }
 
+        // Non-admins can never widen the scope beyond their own user_id via the param
+        if (\auth()->check() && !\auth()->user()->isAdmin()) {
+            $params['user_id'] = \auth()->id();
+        }
+
         // Auto-filter by authenticated user if user_id is not explicitly provided
         if (empty($params['user_id']) && \auth()->check()) {
             $authenticatedUserId = \auth()->id();
@@ -175,6 +180,11 @@ class AccountRepo
     {
         $query = Account::where('active', 1)
             ->with(['currency', 'accountType', 'users']);
+
+        // Non-admins can never widen the scope beyond their own user_id via the param
+        if (\auth()->check() && !\auth()->user()->isAdmin()) {
+            $params['user_id'] = \auth()->id();
+        }
 
         // Auto-filter by authenticated user if user_id is not explicitly provided
         if (empty($params['user_id']) && \auth()->check()) {
