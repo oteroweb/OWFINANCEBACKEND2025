@@ -88,15 +88,16 @@ class AiProviderFactory
     {
         $em = $cfg['models']['extraction'];
         $am = $cfg['models']['advisor'];
+        $vm = $cfg['models']['vision'] ?? null;
 
         return match ($providerName) {
             'anthropic'   => new AnthropicProvider($cfg['key'], $em, $am, $feature),
             'gemini'      => new GeminiProvider($cfg['key'], $em, $am, $feature),
             'openai'      => new OpenAiProvider($cfg['key'], $em, $am, $feature),
-            'groq'        => new GroqProvider($cfg['key'], $em, $am, $feature),
-            'opencode-go' => new OpenCodeGoProvider($cfg['key'], $em, $am, $feature),
-            'openrouter'  => new OpenRouterProvider($cfg['key'], $em, $am, $feature),
-            'xai'         => new XaiProvider($cfg['key'], $em, $am, $feature),
+            'groq'        => new GroqProvider($cfg['key'], $em, $am, $feature, $vm),
+            'opencode-go' => new OpenCodeGoProvider($cfg['key'], $em, $am, $feature, $vm),
+            'openrouter'  => new OpenRouterProvider($cfg['key'], $em, $am, $feature, $vm),
+            'xai'         => new XaiProvider($cfg['key'], $em, $am, $feature, $vm),
             default       => throw new InvalidArgumentException("Unknown AI provider: {$providerName}"),
         };
     }

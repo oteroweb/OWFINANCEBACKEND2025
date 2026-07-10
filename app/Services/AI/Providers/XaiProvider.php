@@ -7,20 +7,35 @@ use Illuminate\Support\Facades\Http;
 
 class XaiProvider implements AiProviderInterface
 {
+    use HandlesVisionInput;
+
     private string $baseUrl = 'https://api.x.ai/v1';
+    private string $activeModel;
 
     public function __construct(
         private readonly string $apiKey,
         private readonly string $extractionModel,
         private readonly string $advisorModel,
-        private readonly string $feature = 'extraction'
-    ) {}
+        private readonly string $feature = 'extraction',
+        private readonly ?string $visionModel = null,
+    ) {
+        $this->activeModel = $extractionModel;
+    }
 
     public function extract(string $systemPrompt, array $userMessage): array
     {
-        $text = is_array($userMessage)
-            ? implode(' ', array_column(array_filter($userMessage, fn($m) => isset($m['text'])), 'text'))
-            : $userMessage;
+        $useVision = $this->visionModel && $this->hasVisionContent($userMessage);
+
+        if ($useVision) {
+            $this->activeModel = $this->visionModel;
+            $userContent = $this->toOpenAiVisionContent($userMessage);
+        } else {
+            $this->activeModel = $this->extractionModel;
+            $userContent = implode(' ', array_column(
+                array_filter($userMessage, fn($m) => isset($m['text'])),
+                'text'
+            ));
+        }
 
         $response = Http::withHeaders([
             'Authorization' => "Bearer {$this->apiKey}",
@@ -28,11 +43,11 @@ class XaiProvider implements AiProviderInterface
         ])
             ->timeout(30)
             ->post("{$this->baseUrl}/chat/completions", [
-                'model'      => $this->extractionModel,
+                'model'      => $this->activeModel,
                 'max_tokens' => 1024,
                 'messages'   => [
                     ['role' => 'system', 'content' => $systemPrompt . "\n\nResponde ÚNICAMENTE con JSON válido."],
-                    ['role' => 'user',   'content' => $text],
+                    ['role' => 'user',   'content' => $userContent],
                 ],
             ]);
 
@@ -51,7 +66,7 @@ class XaiProvider implements AiProviderInterface
                 'cache_read_tokens'     => 0,
                 'cache_creation_tokens' => 0,
             ],
-            'model' => $this->extractionModel,
+            'model' => $this->activeModel,
         ];
     }
 
@@ -103,6 +118,9 @@ class XaiProvider implements AiProviderInterface
 
     public function model(): string
     {
-        return $this->feature === 'advisor' ? $this->advisorModel : $this->extractionModel;
+        if ($this->feature === 'advisor') {
+            return $this->advisorModel;
+        }
+        return $this->activeModel;
     }
 }

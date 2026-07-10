@@ -35,6 +35,7 @@ return [
             'models'   => [
                 'extraction' => env('AI_OPENCODE_EXTRACTION_MODEL', 'deepseek-v4-flash'),
                 'advisor'    => env('AI_OPENCODE_ADVISOR_MODEL', 'deepseek-v4-flash'),
+                'vision'     => env('AI_OPENCODE_VISION_MODEL', null),
             ],
             'pricing' => [ // $10/mes fijo, costo por token = 0
                 'input'       => 0.00,
@@ -50,6 +51,7 @@ return [
             'models' => [
                 'extraction' => env('AI_GROQ_EXTRACTION_MODEL', 'llama-3.3-70b-versatile'),
                 'advisor'    => env('AI_GROQ_ADVISOR_MODEL', 'llama-3.3-70b-versatile'),
+                'vision'     => env('AI_GROQ_VISION_MODEL', 'llama-3.2-90b-vision-preview'),
             ],
             'pricing' => [ // USD per 1M tokens (free tier: 14,400 req/día)
                 'input'       => 0.59,
@@ -66,6 +68,7 @@ return [
             'models'   => [
                 'extraction' => env('AI_OPENROUTER_EXTRACTION_MODEL', 'meta-llama/llama-3.3-70b-instruct:free'),
                 'advisor'    => env('AI_OPENROUTER_ADVISOR_MODEL', 'meta-llama/llama-3.3-70b-instruct:free'),
+                'vision'     => env('AI_OPENROUTER_VISION_MODEL', 'meta-llama/llama-3.2-90b-vision-instruct:free'),
             ],
             'pricing' => [ // modelos :free = $0; otros varía
                 'input'       => 0.00,
@@ -97,6 +100,7 @@ return [
             'models'   => [
                 'extraction' => env('AI_XAI_EXTRACTION_MODEL', 'grok-3-mini'),
                 'advisor'    => env('AI_XAI_ADVISOR_MODEL', 'grok-3-mini'),
+                'vision'     => env('AI_XAI_VISION_MODEL', 'grok-2-vision-1212'),
             ],
             'pricing' => [ // USD per 1M tokens
                 'input'       => 0.30,
