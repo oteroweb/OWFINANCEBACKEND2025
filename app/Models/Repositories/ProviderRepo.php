@@ -11,8 +11,13 @@ class ProviderRepo {
         $query = Provider::whereIn('active', [1, 0])
             ->with(['user']);
 
-        // Relation filters
-        if (!empty($params['user_id'])) {
+        // Scope para no-admin: solo providers globales (user_id null) + propios.
+        if (!empty($params['owned_by'])) {
+            $ownerId = $params['owned_by'];
+            $query->where(function ($q) use ($ownerId) {
+                $q->whereNull('user_id')->orWhere('user_id', $ownerId);
+            });
+        } elseif (!empty($params['user_id'])) {
             $query->where('user_id', $params['user_id']);
         } elseif (!empty($params['user'])) {
             $needle = $params['user'];
@@ -48,7 +53,12 @@ class ProviderRepo {
         $query = Provider::where('active', 1)
             ->with(['user']);
 
-        if (!empty($params['user_id'])) {
+        if (!empty($params['owned_by'])) {
+            $ownerId = $params['owned_by'];
+            $query->where(function ($q) use ($ownerId) {
+                $q->whereNull('user_id')->orWhere('user_id', $ownerId);
+            });
+        } elseif (!empty($params['user_id'])) {
             $query->where('user_id', $params['user_id']);
         } elseif (!empty($params['user'])) {
             $needle = $params['user'];

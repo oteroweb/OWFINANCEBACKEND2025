@@ -24,6 +24,11 @@ class ProviderController extends Controller
     public function all(Request $request) {
         try {
             $params = $request->only(['page','per_page','sort_by','descending','search','user_id','user']);
+            $auth = $request->user();
+            if ($auth && !$auth->isAdmin()) {
+                unset($params['user_id'], $params['user']);
+                $params['owned_by'] = $auth->id;
+            }
             $provider = $this->ProviderRepo->all($params);
             $response = [
                 'status'  => 'OK',
@@ -51,6 +56,11 @@ class ProviderController extends Controller
     public function allActive(Request $request) {
         try {
             $params = $request->only(['page','per_page','sort_by','descending','search','user_id','user']);
+            $auth = $request->user();
+            if ($auth && !$auth->isAdmin()) {
+                unset($params['user_id'], $params['user']);
+                $params['owned_by'] = $auth->id;
+            }
             $provider = $this->ProviderRepo->allActive($params);
             $response = [
                 'status'  => 'OK',
@@ -125,7 +135,7 @@ class ProviderController extends Controller
     public function save(Request $request) {
         $validator = Validator::make($request->all(), [
             'name' =>'required|max:35|',
-            'address' =>'required|max:35|',
+            'address' =>'nullable|max:35|',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -137,9 +147,11 @@ class ProviderController extends Controller
             return response()->json($response);
         }
         try {
+            $auth = $request->user();
+            $userId = ($auth && !$auth->isAdmin()) ? $auth->id : $request->input('user_id');
             $data = [
                 'name'=> $request->input('name'),
-                'address'=> $request->input('address'),
+                'address'=> $request->input('address', ''),
                 'email'=> $request->input('email', 'provider@example.com'),
                 'phone'=> $request->input('phone', '1234567890'),
                 'website'=> $request->input('website', 'http://example'),
@@ -150,7 +162,7 @@ class ProviderController extends Controller
                 'postal_code'=> $request->input('postal_code', '10001'),
                 'state'=> $request->input('state', 'California'),
                 'active'=> 1,
-                'user_id' => $request->input('user_id')
+                'user_id' => $userId,
             ];
             $provider= $this->ProviderRepo->store($data);
             $response = [
