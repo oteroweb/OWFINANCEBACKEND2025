@@ -33,9 +33,18 @@ class AiExtractionController extends Controller
             return response()->json(['error' => 'AI service unavailable'], 503);
         }
 
-        $content      = $result['content'];
-        $usage        = $result['usage'];
-        $extracted    = json_decode($content, true) ?? [];
+        $content = $result['content'];
+        $usage   = $result['usage'];
+        // OWF-308: el chain ya valida que el content sea JSON parseable antes de aceptar la
+        // respuesta de un proveedor (ver AiProviderChain::parseJsonContent) — se reusa el mismo
+        // parser acá (en vez del `json_decode($content, true) ?? []` anterior) para no volver a
+        // introducir el mismo fallo silencioso si algún día `extract()` deja de pasar por el chain.
+        try {
+            $extracted = \App\Services\AI\AiProviderChain::parseJsonContent($content);
+        } catch (\Throwable $e) {
+            Log::error('AI extraction returned invalid JSON after all providers', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'AI service unavailable'], 503);
+        }
         $processingMs = now()->valueOf() - $startMs;
 
         $extraction = AiExtraction::create([

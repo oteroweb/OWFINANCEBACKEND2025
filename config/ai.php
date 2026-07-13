@@ -82,8 +82,8 @@ return [
             'key'   => env('GEMINI_API_KEY'),
             'label' => 'Google Gemini',
             'models' => [
-                'extraction' => env('AI_GEMINI_EXTRACTION_MODEL', 'gemini-2.0-flash'),
-                'advisor'    => env('AI_GEMINI_ADVISOR_MODEL', 'gemini-2.0-flash'),
+                'extraction' => env('AI_GEMINI_EXTRACTION_MODEL', 'gemini-2.5-flash'),
+                'advisor'    => env('AI_GEMINI_ADVISOR_MODEL', 'gemini-2.5-flash'),
             ],
             'pricing' => [ // gratis hasta 1M tokens/día en free tier
                 'input'       => 0.075,
