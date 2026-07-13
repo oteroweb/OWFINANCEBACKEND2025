@@ -29,8 +29,13 @@ class AiProviderChain implements AiProviderInterface
                 // así que el fallback a groq/openrouter/gemini NUNCA se activaba, y el usuario
                 // recibía un 200 con `data` completamente vacío (monto/moneda/descripción null).
                 self::parseJsonContent($result['content'] ?? '');
-                // Tag which provider actually responded
+                // OWF-309: taggear el proveedor Y modelo REALES que respondieron — antes el
+                // controller usaba `$chain->name()`/`$chain->model()` (siempre el string de la
+                // cadena completa "opencode-go+groq+..." y el modelo del PRIMER proveedor
+                // configurado, sin importar cuál realmente contestó), haciendo que los logs de
+                // AiExtraction/AiUsageLog fueran engañosos apenas ocurriera un fallback real.
                 $result['provider'] = $provider->name();
+                $result['model']    = $provider->model();
                 return $result;
             } catch (\Throwable $e) {
                 \Log::warning("AI chain: provider '{$provider->name()}' failed extraction: " . $e->getMessage());
@@ -73,7 +78,12 @@ class AiProviderChain implements AiProviderInterface
 
         foreach ($this->providers as $provider) {
             try {
-                return $provider->streamChat($systemPrompt, $messages, $onDelta);
+                $result = $provider->streamChat($systemPrompt, $messages, $onDelta);
+                // OWF-309: mismo fix que extract() — taggear el proveedor/modelo REALES que
+                // respondieron, no el string de la cadena completa.
+                $result['provider'] = $provider->name();
+                $result['model']    = $provider->model();
+                return $result;
             } catch (\Throwable $e) {
                 \Log::warning("AI chain: provider '{$provider->name()}' failed streamChat: " . $e->getMessage());
                 $lastError = $e;

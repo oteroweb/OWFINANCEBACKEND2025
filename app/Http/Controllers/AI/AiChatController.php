@@ -110,9 +110,7 @@ class AiChatController extends Controller
             $modelUsed    = '';
 
             try {
-                $provider     = AiProviderFactory::makeWithRuntimeFallback('advisor');
-                $providerName = $provider->name();
-                $modelUsed    = $provider->model();
+                $provider = AiProviderFactory::makeWithRuntimeFallback('advisor');
 
                 $result = $provider->streamChat(
                     $systemPrompt,
@@ -126,6 +124,13 @@ class AiChatController extends Controller
                 );
 
                 $usage = $result['usage'];
+                // OWF-309: leer provider/model REALES del resultado (tagueados en
+                // AiProviderChain::streamChat tras la respuesta) en vez de `$provider->name()`/
+                // `model()` ANTES de la llamada — esos siempre devolvían el string de la cadena
+                // completa y el modelo del primer proveedor configurado, sin importar cuál
+                // realmente respondió, haciendo los logs de uso engañosos ante cualquier fallback.
+                $providerName = $result['provider'] ?? $provider->name();
+                $modelUsed    = $result['model']    ?? $provider->model();
 
             } catch (\Throwable $e) {
                 Log::error('AI chat streaming error', ['error' => $e->getMessage()]);

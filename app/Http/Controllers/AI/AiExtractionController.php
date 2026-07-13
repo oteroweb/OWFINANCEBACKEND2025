@@ -35,6 +35,13 @@ class AiExtractionController extends Controller
 
         $content = $result['content'];
         $usage   = $result['usage'];
+        // OWF-309: el chain (`$provider`, ver AiProviderFactory::makeWithRuntimeFallback) no es
+        // el proveedor que realmente respondió — es el wrapper de la cadena completa. Su
+        // name()/model() siempre devuelven el string de TODOS los proveedores configurados y el
+        // modelo del primero, sin importar cuál contestó. `$result['provider']`/`['model']`
+        // (agregados en AiProviderChain::extract()) sí identifican al proveedor real ganador.
+        $actualProvider = $result['provider'] ?? $provider->name();
+        $actualModel    = $result['model'] ?? $provider->model();
         // OWF-308: el chain ya valida que el content sea JSON parseable antes de aceptar la
         // respuesta de un proveedor (ver AiProviderChain::parseJsonContent) — se reusa el mismo
         // parser acá (en vez del `json_decode($content, true) ?? []` anterior) para no volver a
@@ -53,14 +60,14 @@ class AiExtractionController extends Controller
             'raw_input'         => $validated['input'],
             'extracted_data'    => $extracted,
             'confidence_score'  => $extracted['confidence'] ?? null,
-            'model_used'        => $provider->model(),
+            'model_used'        => $actualModel,
             'input_tokens'      => $usage['input_tokens'],
             'output_tokens'     => $usage['output_tokens'],
             'cache_read_tokens' => $usage['cache_read_tokens'],
             'processing_ms'     => $processingMs,
         ]);
 
-        $this->logUsage($user->id, $validated['source'], $usage, $provider->name(), $provider->model());
+        $this->logUsage($user->id, $validated['source'], $usage, $actualProvider, $actualModel);
 
         return response()->json([
             'extraction_id' => $extraction->id,
