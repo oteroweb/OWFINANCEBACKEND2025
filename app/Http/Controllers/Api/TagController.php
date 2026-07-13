@@ -7,6 +7,7 @@ use App\Models\Entities\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class TagController extends Controller
 {
@@ -64,24 +65,6 @@ class TagController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name'  => 'required|string|max:100',
-            'slug'  => [
-                'required',
-                'string',
-                'max:100',
-                // slug must be unique per user (system slugs are globally unique via DB constraint)
-                function ($attribute, $value, $fail) use ($user) {
-                    $exists = Tag::where('slug', $value)
-                        ->where(function ($q) use ($user) {
-                            $q->where('type', 'system')
-                              ->orWhere('user_id', $user->id);
-                        })
-                        ->whereNull('deleted_at')
-                        ->exists();
-                    if ($exists) {
-                        $fail(__('The slug already exists for this user or as a system tag.'));
-                    }
-                },
-            ],
             'color' => 'nullable|string|max:50',
             'icon'  => 'nullable|string|max:50',
         ]);
@@ -96,8 +79,10 @@ class TagController extends Controller
         }
 
         try {
+            $slug = $this->uniqueSlugFor($request->input('name'), $user->id);
+
             $tag = Tag::create([
-                'slug'    => $request->input('slug'),
+                'slug'    => $slug,
                 'name'    => $request->input('name'),
                 'color'   => $request->input('color'),
                 'icon'    => $request->input('icon'),
@@ -120,6 +105,32 @@ class TagController extends Controller
                 'message' => __('An error has occurred') . '.',
             ], 500);
         }
+    }
+
+    /**
+     * Builds a slug from the given name, unique within the user's own tags
+     * and the global system tags. Appends -2, -3, ... on collision.
+     */
+    private function uniqueSlugFor(string $name, int $userId): string
+    {
+        $base = Str::slug($name) ?: 'etiqueta';
+        $slug = $base;
+        $suffix = 2;
+
+        while (
+            Tag::where('slug', $slug)
+                ->where(function ($q) use ($userId) {
+                    $q->where('type', 'system')
+                      ->orWhere('user_id', $userId);
+                })
+                ->whereNull('deleted_at')
+                ->exists()
+        ) {
+            $slug = "{$base}-{$suffix}";
+            $suffix++;
+        }
+
+        return $slug;
     }
 
     /**
