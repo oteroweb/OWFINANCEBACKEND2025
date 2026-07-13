@@ -64,9 +64,10 @@ class TagController extends Controller
         $user = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'name'  => 'required|string|max:100',
-            'color' => 'nullable|string|max:50',
-            'icon'  => 'nullable|string|max:50',
+            'name'        => 'required|string|max:100',
+            'color'       => 'nullable|string|max:50',
+            'icon'        => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -82,13 +83,14 @@ class TagController extends Controller
             $slug = $this->uniqueSlugFor($request->input('name'), $user->id);
 
             $tag = Tag::create([
-                'slug'    => $slug,
-                'name'    => $request->input('name'),
-                'color'   => $request->input('color'),
-                'icon'    => $request->input('icon'),
-                'type'    => 'user',
-                'user_id' => $user->id,
-                'active'  => 1,
+                'slug'        => $slug,
+                'name'        => $request->input('name'),
+                'color'       => $request->input('color'),
+                'icon'        => $request->input('icon'),
+                'description' => $request->input('description'),
+                'type'        => 'user',
+                'user_id'     => $user->id,
+                'active'      => 1,
             ]);
 
             return response()->json([
