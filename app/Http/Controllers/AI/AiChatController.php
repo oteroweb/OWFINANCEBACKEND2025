@@ -15,6 +15,23 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AiChatController extends Controller
 {
     /**
+     * OWF-310: `ob_flush()` lanza un ErrorException ("Failed to flush buffer. No buffer
+     * to flush") cuando no hay un output buffer activo en ese momento — depende de la
+     * config del servidor (LiteSpeed en prod) y no siempre hay uno abierto pese a estar
+     * en una respuesta streamed. Esa excepción ocurría FUERA de cualquier try/catch (en
+     * el flujo normal tras enviar el evento SSE), así que quedaba sin capturar: PHP
+     * abortaba la respuesta a mitad de stream y adjuntaba su página HTML de error 500
+     * al final — el cliente recibía un JSON de error válido seguido de HTML crudo.
+     */
+    private static function flushOutput(): void
+    {
+        if (ob_get_level() > 0) {
+            ob_flush();
+        }
+        flush();
+    }
+
+    /**
      * POST /api/v1/ai/chat
      * Body: { message: string, conversation_id?: int }
      */
@@ -73,8 +90,7 @@ class AiChatController extends Controller
                 header("X-Accel-Buffering: no");
                 echo "data: " . json_encode(["type" => "delta", "text" => $blockResponse]) . "\n\n";
                 echo "data: " . json_encode(["type" => "done", "conversation_id" => null]) . "\n\n";
-                ob_flush();
-                flush();
+                self::flushOutput();
             }, 200, [
                 "Content-Type"      => "text/event-stream",
                 "Cache-Control"     => "no-cache",
@@ -118,8 +134,7 @@ class AiChatController extends Controller
                     function (string $text) use (&$fullResponse) {
                         $fullResponse .= $text;
                         echo "data: " . json_encode(['type' => 'delta', 'text' => $text]) . "\n\n";
-                        ob_flush();
-                        flush();
+                        self::flushOutput();
                     }
                 );
 
@@ -135,8 +150,7 @@ class AiChatController extends Controller
             } catch (\Throwable $e) {
                 Log::error('AI chat streaming error', ['error' => $e->getMessage()]);
                 echo "data: " . json_encode(['type' => 'error', 'message' => 'Servicio no disponible']) . "\n\n";
-                ob_flush();
-                flush();
+                self::flushOutput();
                 return;
             }
 
@@ -178,8 +192,7 @@ class AiChatController extends Controller
                 'conversation_id' => $conversation->id,
                 'processing_ms'   => $processingMs,
             ]) . "\n\n";
-            ob_flush();
-            flush();
+            self::flushOutput();
 
         }, 200, [
             'Content-Type'      => 'text/event-stream',
