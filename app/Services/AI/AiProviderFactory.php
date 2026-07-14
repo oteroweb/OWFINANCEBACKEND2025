@@ -102,6 +102,59 @@ class AiProviderFactory
         };
     }
 
+    /**
+     * OWF-311: transcribe audio a texto vía Groq Whisper. Se usa un método dedicado (no
+     * el chain de chat/extracción) porque la transcripción es un tipo de llamada distinto
+     * (multipart/audio, no chat completions) — Groq es el único proveedor con key
+     * funcionando de forma confiable en este momento y su Whisper es rápido y barato.
+     * Reemplaza la dependencia de `SpeechRecognition`/`webkitSpeechRecognition` del
+     * navegador, que no es confiable cross-browser (Brave la bloquea, iOS Safari nunca la
+     * implementó) — grabar el audio con MediaRecorder y transcribir en el servidor sí
+     * funciona en cualquier navegador/plataforma, incluyendo el build de Capacitor iOS.
+     */
+    public static function transcribeAudio(string $audioBase64, string $mimeType = 'audio/webm'): string
+    {
+        $cfg = config('ai.providers.groq');
+        if (!$cfg || empty($cfg['key'])) {
+            throw new \RuntimeException('Transcripción de audio no disponible: Groq no está configurado.');
+        }
+
+        $model     = $cfg['models']['transcription'] ?? 'whisper-large-v3-turbo';
+        $audioData = base64_decode($audioBase64, true);
+        if ($audioData === false) {
+            throw new \RuntimeException('Audio inválido: no se pudo decodificar base64.');
+        }
+
+        $extension = match (true) {
+            str_contains($mimeType, 'webm') => 'webm',
+            str_contains($mimeType, 'mp4')  => 'mp4',
+            str_contains($mimeType, 'ogg')  => 'ogg',
+            str_contains($mimeType, 'wav')  => 'wav',
+            default                          => 'webm',
+        };
+
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'Authorization' => "Bearer {$cfg['key']}",
+        ])
+            ->timeout(30)
+            ->attach('file', $audioData, "audio.{$extension}")
+            ->post('https://api.groq.com/openai/v1/audio/transcriptions', [
+                'model'    => $model,
+                'language' => 'es',
+            ]);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Groq transcription API error: ' . $response->body());
+        }
+
+        $text = trim((string) ($response->json('text') ?? ''));
+        if ($text === '') {
+            throw new \RuntimeException('La transcripción resultó vacía — intenta hablar más claro o más cerca del micrófono.');
+        }
+
+        return $text;
+    }
+
     /** @deprecated Use makeWithRuntimeFallback() for new code */
     public static function estimateCost(string $providerName, array $usage): float
     {

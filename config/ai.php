@@ -49,9 +49,10 @@ return [
             'key'   => env('GROQ_API_KEY'),
             'label' => 'Groq',
             'models' => [
-                'extraction' => env('AI_GROQ_EXTRACTION_MODEL', 'llama-3.3-70b-versatile'),
-                'advisor'    => env('AI_GROQ_ADVISOR_MODEL', 'llama-3.3-70b-versatile'),
-                'vision'     => env('AI_GROQ_VISION_MODEL', 'llama-3.2-90b-vision-preview'),
+                'extraction'    => env('AI_GROQ_EXTRACTION_MODEL', 'llama-3.3-70b-versatile'),
+                'advisor'       => env('AI_GROQ_ADVISOR_MODEL', 'llama-3.3-70b-versatile'),
+                'vision'        => env('AI_GROQ_VISION_MODEL', 'llama-3.2-90b-vision-preview'),
+                'transcription' => env('AI_GROQ_TRANSCRIPTION_MODEL', 'whisper-large-v3-turbo'),
             ],
             'pricing' => [ // USD per 1M tokens (free tier: 14,400 req/día)
                 'input'       => 0.59,

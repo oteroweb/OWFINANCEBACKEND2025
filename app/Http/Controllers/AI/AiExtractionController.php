@@ -14,13 +14,35 @@ class AiExtractionController extends Controller
     public function extract(Request $request)
     {
         $validated = $request->validate([
-            'source' => 'required|in:voice,ocr,auto',
-            'input'  => 'required|string|max:5000',
-            'image'  => 'nullable|string',
+            'source'     => 'required|in:voice,ocr,auto',
+            // OWF-311: 'input' ahora es opcional cuando source=voice trae 'audio' —
+            // se transcribe en el servidor y el resultado pasa a ser el 'input' real.
+            'input'      => 'nullable|string|max:5000',
+            'image'      => 'nullable|string',
+            'audio'      => 'nullable|string',
+            'audio_mime' => 'nullable|string|max:50',
         ]);
+
+        if (empty($validated['input']) && empty($validated['audio']) && empty($validated['image'])) {
+            return response()->json(['error' => 'Falta input, audio o image.'], 422);
+        }
 
         $user    = $request->user();
         $startMs = now()->valueOf();
+
+        $transcribedFrom = null;
+        if ($validated['source'] === 'voice' && !empty($validated['audio']) && empty($validated['input'])) {
+            try {
+                $validated['input'] = AiProviderFactory::transcribeAudio(
+                    $validated['audio'],
+                    $validated['audio_mime'] ?? 'audio/webm'
+                );
+                $transcribedFrom = 'groq-whisper';
+            } catch (\Throwable $e) {
+                Log::error('Audio transcription failed', ['error' => $e->getMessage()]);
+                return response()->json(['error' => 'No se pudo transcribir el audio. Intenta de nuevo.'], 503);
+            }
+        }
 
         $systemPrompt = $this->buildSystemPrompt();
         $userMessage  = $this->buildUserMessage($validated);
@@ -73,6 +95,10 @@ class AiExtractionController extends Controller
             'extraction_id' => $extraction->id,
             'data'          => $extracted,
             'processing_ms' => $processingMs,
+            // OWF-311: cuando el input vino de audio transcrito en el servidor, el
+            // frontend ya no tiene el texto de antemano (antes lo tenía vía
+            // SpeechRecognition del navegador) — se lo devolvemos para mostrar "escuché: …".
+            'transcript'     => $transcribedFrom ? $validated['input'] : null,
         ]);
     }
 
