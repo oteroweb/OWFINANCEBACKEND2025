@@ -75,7 +75,8 @@ class OpenCodeGoProvider implements AiProviderInterface
             array_map(fn($m) => ['role' => $m['role'], 'content' => $m['content']], $messages)
         );
 
-        $usage = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_tokens' => 0, 'cache_creation_tokens' => 0];
+        $usage     = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_tokens' => 0, 'cache_creation_tokens' => 0];
+        $rawOutput = '';
 
         $curlHandle = curl_init();
         curl_setopt_array($curlHandle, [
@@ -87,7 +88,8 @@ class OpenCodeGoProvider implements AiProviderInterface
                 'stream'   => true,
                 'messages' => $outMessages,
             ]),
-            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($onDelta, &$usage) {
+            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($onDelta, &$usage, &$rawOutput) {
+                $rawOutput .= $data;
                 foreach (explode("\n", $data) as $line) {
                     if (!str_starts_with($line, 'data: ') || trim($line) === 'data: [DONE]') continue;
                     $json = json_decode(substr($line, 6), true);
@@ -104,7 +106,23 @@ class OpenCodeGoProvider implements AiProviderInterface
             CURLOPT_RETURNTRANSFER => false,
         ]);
         curl_exec($curlHandle);
+        // OWF-310: el callback de arriba solo procesa líneas SSE ("data: ..."). Si el
+        // proveedor responde con un error plano (ej. `{"type":"error",...}` sin formato
+        // SSE, como hace OpenCode Zen cuando la cuenta no tiene crédito), esas líneas se
+        // descartaban en silencio y esta función retornaba como si hubiera tenido éxito
+        // — sin lanzar excepción, así que AiProviderChain nunca hacía fallback a groq/etc,
+        // y el error crudo del proveedor terminaba filtrándose sin el mensaje amigable del
+        // controller. Ahora se valida el código HTTP real antes de dar por buena la llamada.
+        $httpCode = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
         curl_close($curlHandle);
+
+        if ($curlErr) {
+            throw new \RuntimeException("OpenCode Go streamChat transport error: {$curlErr}");
+        }
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new \RuntimeException("OpenCode Go streamChat HTTP {$httpCode}: " . substr($rawOutput, 0, 300));
+        }
 
         return ['usage' => $usage, 'model' => $this->advisorModel];
     }
