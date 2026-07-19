@@ -10,6 +10,7 @@ use App\Models\Entities\UserCurrency;
 use App\Services\AI\AiProviderFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AiExtractionController extends Controller
 {
@@ -46,7 +47,11 @@ class AiExtractionController extends Controller
             }
         }
 
-        $systemPrompt = $this->buildSystemPrompt();
+        // OWF-319 (capa 1): cuentas del usuario, usadas tanto para que el modelo intente
+        // resolver la cuenta mencionada como para el fallback determinístico en PHP.
+        $accounts = $user->accounts()->with('currency')->get();
+
+        $systemPrompt = $this->buildSystemPrompt($accounts);
         $userMessage  = $this->buildUserMessage($validated);
 
         try {
@@ -88,6 +93,30 @@ class AiExtractionController extends Controller
         // las tasas que el usuario ya configuró en /user/config (user_currencies).
         $this->attachBcvEquivalent($extracted, $user->id);
 
+        // OWF-319 (capa 1): solo Gasto/Ingreso entran al slot-filling de cuenta — Transferir
+        // ya tiene su propio flujo de 2 cuentas fuera de este endpoint, y Ajuste/OCR de
+        // factura no lo necesitan igual de forma directa en el MVP.
+        $missingFields = [];
+        $missingFieldOptions = [];
+        if (in_array($extracted['type'] ?? null, ['expense', 'income'], true)) {
+            $resolvedAccountId = $this->resolveAccountId(
+                $accounts,
+                $extracted['account_id'] ?? null,
+                $validated['input'] ?? ''
+            );
+            $extracted['account_id'] = $resolvedAccountId;
+
+            if ($resolvedAccountId === null && $accounts->count() > 1) {
+                $missingFields[] = 'account_id';
+                $missingFieldOptions['account_id'] = $accounts->map(fn($a) => [
+                    'id'       => $a->id,
+                    'label'    => $a->name,
+                    'balance'  => (float) ($a->balance_cached ?? $a->balance ?? 0),
+                    'currency' => optional($a->currency)->code ?? 'USD',
+                ])->values()->toArray();
+            }
+        }
+
         $processingMs = now()->valueOf() - $startMs;
 
         $extraction = AiExtraction::create([
@@ -101,6 +130,8 @@ class AiExtractionController extends Controller
             'output_tokens'     => $usage['output_tokens'],
             'cache_read_tokens' => $usage['cache_read_tokens'],
             'processing_ms'     => $processingMs,
+            'missing_fields'    => $missingFields,
+            'resolved'          => empty($missingFields),
         ]);
 
         $this->logUsage($user->id, $validated['source'], $usage, $actualProvider, $actualModel);
@@ -113,15 +144,109 @@ class AiExtractionController extends Controller
             // frontend ya no tiene el texto de antemano (antes lo tenía vía
             // SpeechRecognition del navegador) — se lo devolvemos para mostrar "escuché: …".
             'transcript'     => $transcribedFrom ? $validated['input'] : null,
+            // OWF-319 (capa 1): campos que el usuario debe completar antes de poder guardar
+            // (hoy solo account_id) — vacío significa que ya se puede confirmar.
+            'missing_fields'        => $missingFields,
+            'missing_field_options' => $missingFieldOptions,
         ]);
     }
 
-    private function buildSystemPrompt(): string
+    /**
+     * POST /ai/extract-transaction/{extraction}/answer — OWF-319 (capa 1). Resuelve un
+     * campo faltante (hoy solo account_id) por respuesta directa del usuario (tap en un
+     * chip, o una segunda transcripción que sí trajo la cuenta) SIN volver a llamar a
+     * ningún proveedor de IA — es una actualización de datos en PHP puro, clave para que
+     * responder "¿con qué cuenta fue?" sea instantáneo y no consuma presupuesto de IA.
+     */
+    public function answer(Request $request, int $extraction)
+    {
+        $validated = $request->validate([
+            'field' => 'required|string|in:account_id',
+            'value' => 'required|integer',
+        ]);
+
+        $user = $request->user();
+        $record = AiExtraction::where('id', $extraction)->where('user_id', $user->id)->first();
+        if (!$record) {
+            return response()->json(['error' => 'Extracción no encontrada'], 404);
+        }
+
+        if ($validated['field'] === 'account_id') {
+            $ownsAccount = $user->accounts()->where('accounts.id', $validated['value'])->exists();
+            if (!$ownsAccount) {
+                return response()->json(['error' => 'Cuenta inválida'], 422);
+            }
+        }
+
+        $extracted = $record->extracted_data ?? [];
+        $extracted[$validated['field']] = $validated['value'];
+
+        $missingFields = array_values(array_diff($record->missing_fields ?? [], [$validated['field']]));
+
+        $record->update([
+            'extracted_data' => $extracted,
+            'missing_fields' => $missingFields,
+            'resolved'       => empty($missingFields),
+        ]);
+
+        return response()->json([
+            'extraction_id'         => $record->id,
+            'data'                  => $extracted,
+            'processing_ms'         => 0,
+            'transcript'            => null,
+            'missing_fields'        => $missingFields,
+            'missing_field_options' => [],
+        ]);
+    }
+
+    /**
+     * OWF-319 (capa 1): resuelve el `account_id` de una transacción cuando la IA no lo
+     * devolvió con certeza. Orden de resolución: (1) si el usuario tiene una sola cuenta,
+     * esa siempre gana — nunca hace falta preguntar; (2) si el modelo ya devolvió un
+     * account_id válido (existe entre las cuentas del usuario), se respeta; (3) fallback
+     * determinístico: normaliza el texto crudo (minúsculas, sin tildes) y busca que el
+     * nombre de alguna cuenta (normalizado igual) aparezca literalmente mencionado.
+     */
+    private function resolveAccountId($accounts, ?int $modelAccountId, string $rawText): ?int
+    {
+        if ($accounts->count() === 1) {
+            return $accounts->first()->id;
+        }
+
+        if ($modelAccountId !== null && $accounts->contains('id', $modelAccountId)) {
+            return $modelAccountId;
+        }
+
+        // Match por PALABRA, no por nombre completo — "con Banesco" debe matchear una
+        // cuenta llamada "Banesco Ahorro" (el usuario rara vez dice el nombre completo de
+        // la cuenta tal cual la registró). Se ignoran palabras muy cortas (<4 letras) para
+        // no matchear de más con conectores/artículos ("de", "con", "mi", etc.).
+        $needle = Str::lower(Str::ascii($rawText));
+        foreach ($accounts as $account) {
+            $words = preg_split('/\s+/', Str::lower(Str::ascii((string) $account->name)), -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($words as $word) {
+                if (mb_strlen($word) >= 4 && str_contains($needle, $word)) {
+                    return $account->id;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function buildSystemPrompt($accounts): string
     {
         $today = now()->toDateString();
 
+        $accountsList = $accounts->isEmpty()
+            ? 'El usuario no tiene cuentas registradas.'
+            : $accounts->map(fn($a) => "- id={$a->id}: \"{$a->name}\" (" . (optional($a->currency)->code ?? 'USD') . ')')->implode("\n");
+
         return <<<PROMPT
 Eres un asistente de finanzas personales. Tu tarea es extraer datos de una transacción financiera a partir del texto del usuario.
+
+Cuentas del usuario (para resolver "account_id" si el texto menciona una de estas cuentas por nombre):
+{$accountsList}
 
 Responde ÚNICAMENTE con un JSON válido con esta estructura:
 {
@@ -131,6 +256,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura:
   "description": "descripción corta",
   "category_suggestion": "categoría sugerida",
   "merchant": "nombre del comercio o entidad mencionada, o null",
+  "account_id": null,
   "date": "YYYY-MM-DD",
   "confidence": 0.95
 }
@@ -140,6 +266,7 @@ Reglas:
 - amount: número positivo siempre
 - currency: la moneda EN LA QUE EL USUARIO EXPRESÓ el monto tal cual (si dice "45 dólares", currency=USD y amount=45 — no conviertas la cifra a otra moneda, eso lo hace el sistema después con las tasas reales del usuario)
 - merchant: nombre propio del comercio/entidad si se menciona (ej. "Banesco", "Farmatodo"), sin el resto de la frase — null si no se menciona ninguno
+- account_id: el id de la cuenta de la lista de arriba SOLO si el texto la menciona claramente por nombre — usa null si no estás seguro, NUNCA inventes un id
 - date: hoy si no se especifica (hoy es {$today})
 - confidence: qué tan seguro estás de la extracción (0.0 a 1.0)
 - Si no puedes extraer un campo, usa null

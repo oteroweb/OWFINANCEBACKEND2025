@@ -20,12 +20,18 @@ class AiExtraction extends Model
         'output_tokens',
         'cache_read_tokens',
         'processing_ms',
+        'missing_fields',
+        'direct_create',
+        'resolved',
     ];
 
     protected $casts = [
         'extracted_data'   => 'array',
         'confidence_score' => 'float',
         'was_confirmed'    => 'boolean',
+        'missing_fields'   => 'array',
+        'direct_create'    => 'boolean',
+        'resolved'         => 'boolean',
     ];
 
     public function user()
