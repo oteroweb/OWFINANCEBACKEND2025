@@ -117,6 +117,12 @@ class AiExtractionController extends Controller
             }
         }
 
+        // OWF-319 (capa 3): comando de voz "crear directo" — si el usuario lo dijo Y ya no
+        // falta ningún campo, el frontend guarda inmediato sin pasar por la revisión
+        // editable. Detectado acá (no en el frontend) para que sea la fuente de verdad,
+        // sin depender de que el cliente tenga la lógica actualizada.
+        $directCreate = empty($missingFields) && $this->detectDirectCreateCommand($validated['input'] ?? '');
+
         $processingMs = now()->valueOf() - $startMs;
 
         $extraction = AiExtraction::create([
@@ -131,6 +137,7 @@ class AiExtractionController extends Controller
             'cache_read_tokens' => $usage['cache_read_tokens'],
             'processing_ms'     => $processingMs,
             'missing_fields'    => $missingFields,
+            'direct_create'     => $directCreate,
             'resolved'          => empty($missingFields),
         ]);
 
@@ -148,7 +155,40 @@ class AiExtractionController extends Controller
             // (hoy solo account_id) — vacío significa que ya se puede confirmar.
             'missing_fields'        => $missingFields,
             'missing_field_options' => $missingFieldOptions,
+            // OWF-319 (capa 3): true si el usuario pidió crear directo Y no falta nada —
+            // el frontend guarda sin pasar por la revisión editable.
+            'direct_create'  => $directCreate,
         ]);
+    }
+
+    /**
+     * OWF-319 (capa 3): detecta si el usuario pidió explícitamente saltar la revisión y
+     * guardar directo (ej. "...crea directo", "guárdalo directo"). Deliberadamente
+     * conservador — solo frases específicas de confirmación inmediata, no cualquier verbo
+     * de creación, para evitar guardar por accidente ante una frase ambigua. Mismo estilo
+     * que `AiChatController::detectJailbreakAttempt()`.
+     */
+    private function detectDirectCreateCommand(string $text): bool
+    {
+        // Normalizado (minúsculas, sin tildes) igual que resolveAccountId() — evita tener
+        // que enumerar cada variante acentuada de las conjugaciones ("créalo", "creá",
+        // "regístralo") a mano en el regex.
+        $needle = Str::lower(Str::ascii($text));
+
+        $patterns = [
+            '/\bcrea(lo)?\s+directo\b/',
+            '/\bguarda(lo)?\s+directo\b/',
+            '/\bregistra(lo)?\s+directo\b/',
+            '/\bconfirma(lo)?\s+directo\b/',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
