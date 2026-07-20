@@ -76,6 +76,9 @@ class JarSettingController extends Controller
                 'month' => $monthStart->toDateString(),
                 'leverage_jar_id' => $setting?->leverage_jar_id,
                 'use_real_income' => $setting?->use_real_income ?? false,
+                // OWF-322: indica si ya existe un override mensual guardado, para que el
+                // frontend distinga "sin override (mostrar fallback global)" de "override = null explícito".
+                'exists' => $setting !== null,
             ],
         ]);
     }

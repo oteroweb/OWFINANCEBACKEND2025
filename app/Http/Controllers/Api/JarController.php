@@ -59,6 +59,7 @@ class JarController extends Controller
             'jars.*.reset_cycle_day' => 'nullable|integer|min:1|max:28',
             'jars.*.target_amount' => 'nullable|numeric|min:0',
             'jars.*.leverage_from_jar_id' => 'nullable|integer|exists:jars,id',
+            'jars.*.account_id' => 'nullable|integer|exists:accounts,id',
         ]);
 
         if ($validator->fails()) {
@@ -121,6 +122,8 @@ class JarController extends Controller
                     'reset_cycle_day' => $jarData['reset_cycle_day'] ?? $settings->default_reset_cycle_day,
                     'target_amount' => $jarData['target_amount'] ?? null,
                     'leverage_from_jar_id' => $jarData['leverage_from_jar_id'] ?? null,
+                    // OWF-322: account_id es solo referencia/etiqueta visual — no mueve saldo real.
+                    'account_id' => array_key_exists('account_id', $jarData) ? $jarData['account_id'] : null,
                 ];
 
                 if ($payload['type'] === 'percent') {
@@ -216,6 +219,7 @@ class JarController extends Controller
                 // Recargar relaciones
                 $jar->load(['categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }]);
                 $jar->load(['baseCategories' => function ($q) { $q->select('categories.id', 'categories.name'); }]);
+                $jar->load(['account' => function ($q) { $q->select('id', 'name'); }]);
                 $resultJars[] = $jar;
             }
 
@@ -337,6 +341,7 @@ class JarController extends Controller
                 return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
             }
             if (isset($jar->id)) {
+                $jar->load(['account' => function ($q) { $q->select('id', 'name'); }]);
                 $response = [
                     'status'  => 'OK',
                     'code'    => 200,
@@ -386,6 +391,7 @@ class JarController extends Controller
             'reset_cycle' => 'nullable|in:none,monthly,quarterly,semiannual,annual',
             'reset_cycle_day' => 'nullable|integer|min:1|max:28',
             'target_amount' => 'nullable|numeric|min:0',
+            'account_id' => 'nullable|integer|exists:accounts,id',
         ], $this->custom_message());
 
         if ($validator->fails()) {
@@ -427,6 +433,7 @@ class JarController extends Controller
                 'reset_cycle',
                 'reset_cycle_day',
                 'target_amount',
+                'account_id',
             ]);
             // Defaults to satisfy minimal payloads in tests
             $payload['type'] = $payload['type'] ?? 'percent';
@@ -474,7 +481,8 @@ class JarController extends Controller
                     // Recargar con relaciones
                     $jar->load([
                         'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
-                        'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
+                        'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
+                        'account' => function ($q) { $q->select('id', 'name'); },
                     ]);
 
                     return [
@@ -532,6 +540,7 @@ class JarController extends Controller
                 'reset_cycle' => 'nullable|in:none,monthly,quarterly,semiannual,annual',
                 'reset_cycle_day' => 'nullable|integer|min:1|max:28',
                 'target_amount' => 'nullable|numeric|min:0',
+                'account_id' => 'nullable|integer|exists:accounts,id',
             ]);
             if ($validator->fails()) {
                 return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()], 400);
@@ -565,6 +574,7 @@ class JarController extends Controller
                 'reset_cycle',
                 'reset_cycle_day',
                 'target_amount',
+                'account_id',
             ]);
             if ($request->exists('active')) { $payload['active'] = $request->boolean('active'); }
 
@@ -594,7 +604,8 @@ class JarController extends Controller
                     // Recargar con relaciones
                     $jar->load([
                         'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
-                        'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
+                        'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
+                        'account' => function ($q) { $q->select('id', 'name'); },
                     ]);
 
                     return [

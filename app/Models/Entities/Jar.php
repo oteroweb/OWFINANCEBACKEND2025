@@ -35,6 +35,7 @@ class Jar extends Model
         'last_reset_date',
         'status',
         'leverage_from_jar_id',
+        'account_id',
     ];
 
     protected $casts = [
@@ -44,6 +45,7 @@ class Jar extends Model
         'use_global_start_date' => 'boolean',
         'reset_cycle_day' => 'integer',
         'leverage_from_jar_id' => 'integer',
+        'account_id' => 'integer',
         'created_at' => 'datetime:Y-m-d',
         'updated_at' => 'datetime:Y-m-d',
         'deleted_at' => 'datetime:Y-m-d',
@@ -52,6 +54,15 @@ class Jar extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * OWF-322: cuenta vinculada al cántaro — solo informativo/referencia visual.
+     * No mueve saldo real ni afecta ningún cálculo de balance existente.
+     */
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 
     public function categories()

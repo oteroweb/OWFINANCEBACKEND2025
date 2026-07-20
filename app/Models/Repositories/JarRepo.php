@@ -11,6 +11,7 @@ class JarRepo
     {
     $query = Jar::with([
         'user',
+        'account' => function ($q) { $q->select('id', 'name'); },
         'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
         'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
         ])
@@ -81,6 +82,7 @@ class JarRepo
     return Jar::withTrashed()
         ->with([
             'user',
+            'account' => function ($q) { $q->select('id', 'name'); },
             'categories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); },
             'baseCategories' => function ($q) { $q->select('categories.id', 'categories.name')->wherePivotNull('deleted_at'); }
         ])
