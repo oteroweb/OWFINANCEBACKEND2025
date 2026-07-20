@@ -34,6 +34,9 @@ class Transaction extends Model
         'category_id',
         'amount_tax',
     'include_in_balance',
+        'commission_type',
+        'commission_value',
+        'commission_amount',
     ];
 
     protected $casts = [

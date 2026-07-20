@@ -15,6 +15,7 @@ use App\Models\Entities\Tax;
 use App\Models\Entities\UserCurrency;
 use App\Models\Entities\Account;
 use App\Models\Entities\Tag;
+use App\Models\Entities\OfficialRate;
 
 class TransactionController extends Controller
 {
@@ -242,6 +243,9 @@ class TransactionController extends Controller
             'rate_id' => 'nullable|integer',
             'transaction_type_id' => 'nullable|exists:transaction_types,id',
             'amount_tax' => 'nullable|numeric',
+            'commission_type' => 'nullable|string|max:50',
+            'commission_value' => 'nullable|numeric',
+            'commission_amount' => 'nullable|numeric',
             'category_id' => 'nullable|exists:categories,id',
             'active' => 'sometimes|boolean',
             'include_in_balance' => 'sometimes|boolean',
@@ -422,6 +426,9 @@ class TransactionController extends Controller
                 'rate_id'=> $request->input('rate_id'),
                 'transaction_type_id'=> $request->input('transaction_type_id'),
                 'amount_tax'=> $request->input('amount_tax'),
+                'commission_type'=> $request->input('commission_type'),
+                'commission_value'=> $request->input('commission_value'),
+                'commission_amount'=> $request->input('commission_amount'),
                 'account_id'=> $request->input('account_id'),
                 'category_id'=> $request->input('category_id'),
                 'user_id'=> $user->id,
@@ -628,6 +635,9 @@ class TransactionController extends Controller
                 'rate_id' => 'sometimes|nullable|integer',
                 'transaction_type_id' => 'sometimes|nullable|exists:transaction_types,id',
                 'amount_tax' => 'sometimes|nullable|numeric',
+                'commission_type' => 'sometimes|nullable|string|max:50',
+                'commission_value' => 'sometimes|nullable|numeric',
+                'commission_amount' => 'sometimes|nullable|numeric',
                 'category_id' => 'sometimes|nullable|exists:categories,id',
                 'active' => 'sometimes|boolean',
                 'include_in_balance' => 'sometimes|boolean',
@@ -794,6 +804,9 @@ class TransactionController extends Controller
             if ($request->has('rate_id')) { $data['rate_id'] = $request->input('rate_id'); }
             if ($request->has('transaction_type_id')) { $data['transaction_type_id'] = $request->input('transaction_type_id'); }
             if ($request->has('amount_tax')) { $data['amount_tax'] = $request->input('amount_tax'); }
+            if ($request->has('commission_type')) { $data['commission_type'] = $request->input('commission_type'); }
+            if ($request->has('commission_value')) { $data['commission_value'] = $request->input('commission_value'); }
+            if ($request->has('commission_amount')) { $data['commission_amount'] = $request->input('commission_amount'); }
             if ($request->has('account_id')) { $data['account_id'] = $request->input('account_id'); }
             if ($request->has('user_id')) { $data['user_id'] = $request->input('user_id'); }
             if ($request->has('category_id')) { $data['category_id'] = $request->input('category_id'); }
@@ -1134,6 +1147,16 @@ class TransactionController extends Controller
         if ($current && $current->current_rate && (float)$current->current_rate > 0) {
             return (float) $current->current_rate;
         }
+
+        // No explicit rate and no user current rate: fall back to the most recent
+        // scheduled official rate for this currency (see BcvRateFetcher/bcv:fetch-rate).
+        $official = OfficialRate::where('currency_id', $currencyId)
+            ->orderByDesc('fetched_at')
+            ->first();
+        if ($official && (float) $official->rate > 0) {
+            return (float) $official->rate;
+        }
+
         return 1.0; // fallback
     }
 

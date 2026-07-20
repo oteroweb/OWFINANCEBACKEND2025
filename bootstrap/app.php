@@ -30,6 +30,15 @@ return Application::configure(basePath: dirname(__DIR__))
             ->monthlyOn(1, '00:15')
             ->withoutOverlapping()
             ->runInBackground();
+
+        // Fetch the official BCV dollar rate from pydolarve.org twice daily.
+        // Feeds official_rates, consumed by TransactionController::resolveUserCurrencyRate()
+        // as a fallback below the user's own current rate.
+        $schedule->command('bcv:fetch-rate')
+            ->twiceDailyAt(9, 16, 0)
+            ->timezone('America/Caracas')
+            ->withoutOverlapping()
+            ->runInBackground();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => null);

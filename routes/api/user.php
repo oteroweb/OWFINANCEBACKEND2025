@@ -13,7 +13,7 @@ Route::middleware(['auth:sanctum'])->prefix('user')->group(function () {
 
     // Configuración y Preferencias
     Route::get('/settings', [UserSettingController::class, 'show']);
-    Route::put('/settings', [UserSettingController::class, 'update']);
+    Route::match(['put', 'patch'], '/settings', [UserSettingController::class, 'update']);
 
     // Perfil financiero (onboarding + settings)
     Route::get('/financial-profile', [UserFinancialProfileController::class, 'show']);

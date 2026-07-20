@@ -39,4 +39,9 @@ return [
         'key' => env('ANTHROPIC_API_KEY'),
     ],
 
+    'pydolarve' => [
+        // Best estimate of the BCV endpoint; easy to change here if pydolarve.org changes its shape/path.
+        'url' => env('PYDOLARVE_URL', 'https://pydolarve.org/api/v1/dollar?page=bcv'),
+    ],
+
 ];
