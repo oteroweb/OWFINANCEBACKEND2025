@@ -3,7 +3,6 @@
 namespace App\Services\AI\Providers;
 
 use App\Services\AI\Contracts\AiProviderInterface;
-use Illuminate\Support\Facades\Http;
 
 class GeminiProvider implements AiProviderInterface
 {
@@ -38,7 +37,16 @@ class GeminiProvider implements AiProviderInterface
         // proveedor, sin dejar rastro claro del motivo real. `thinkingBudget: 0` desactiva
         // el razonamiento (no hace falta para extraer datos estructurados de un texto/imagen
         // corta) y libera todo el presupuesto para la respuesta real.
-        $response = Http::timeout(30)->post($url, [
+        //
+        // OWF-131: además, el cliente HTTP de Laravel (Illuminate\Support\Facades\Http,
+        // Guzzle por debajo) devuelve 401 "ACCESS_TOKEN_TYPE_UNSUPPORTED" con esta key
+        // específica (formato `AQ.` que Google emite ahora para algunas cuentas) — un
+        // `curl` crudo con la MISMA key/URL/body funciona perfecto tanto en local como
+        // corriendo directo en el servidor de prod. La causa exacta de la incompatibilidad
+        // de Guzzle no se identificó (algún header/negociación que Google interpreta como
+        // intento de OAuth), pero como `streamChat()` de esta misma clase YA usa curl crudo
+        // con éxito, `extract()` se migra al mismo patrón en vez de seguir depurando Guzzle.
+        $payload = json_encode([
             'system_instruction' => ['parts' => [['text' => $systemPrompt]]],
             'contents'           => [['role' => 'user', 'parts' => $parts]],
             'generationConfig'   => [
@@ -48,11 +56,28 @@ class GeminiProvider implements AiProviderInterface
             ],
         ]);
 
-        if (!$response->successful()) {
-            throw new \RuntimeException('Gemini API error: ' . $response->body());
+        $curlHandle = curl_init();
+        curl_setopt_array($curlHandle, [
+            CURLOPT_URL            => $url,
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 30,
+        ]);
+        $body     = curl_exec($curlHandle);
+        $httpCode = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
+        curl_close($curlHandle);
+
+        if ($curlErr) {
+            throw new \RuntimeException("Gemini transport error: {$curlErr}");
+        }
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new \RuntimeException('Gemini API error: ' . $body);
         }
 
-        $data    = $response->json();
+        $data    = json_decode($body, true) ?? [];
         $content = $data['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
         $meta    = $data['usageMetadata'] ?? [];
 
