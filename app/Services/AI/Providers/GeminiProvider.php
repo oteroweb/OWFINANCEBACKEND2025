@@ -38,14 +38,19 @@ class GeminiProvider implements AiProviderInterface
         // el razonamiento (no hace falta para extraer datos estructurados de un texto/imagen
         // corta) y libera todo el presupuesto para la respuesta real.
         //
-        // OWF-131: además, el cliente HTTP de Laravel (Illuminate\Support\Facades\Http,
-        // Guzzle por debajo) devuelve 401 "ACCESS_TOKEN_TYPE_UNSUPPORTED" con esta key
-        // específica (formato `AQ.` que Google emite ahora para algunas cuentas) — un
-        // `curl` crudo con la MISMA key/URL/body funciona perfecto tanto en local como
-        // corriendo directo en el servidor de prod. La causa exacta de la incompatibilidad
-        // de Guzzle no se identificó (algún header/negociación que Google interpreta como
-        // intento de OAuth), pero como `streamChat()` de esta misma clase YA usa curl crudo
-        // con éxito, `extract()` se migra al mismo patrón en vez de seguir depurando Guzzle.
+        // OWF-131: causa raíz REAL encontrada (no era la key, no era Guzzle específicamente):
+        // para cuerpos POST de más de ~1KB, curl agrega automáticamente el header
+        // `Expect: 100-continue`. Con la key real del usuario (formato `AQ.`, la que Google
+        // emite ahora para su cuenta) + un payload de este tamaño (prompt con lista de
+        // cuentas + imagen en base64, siempre >1KB), Google responde 401
+        // "ACCESS_TOKEN_TYPE_UNSUPPORTED" — un mensaje totalmente engañoso para lo que en
+        // realidad es una negociación de `Expect: 100-continue` que su API no maneja bien.
+        // Confirmado aislando variable por variable con curl crudo (prompt corto: funciona;
+        // prompt real completo + imagen: 401; el MISMO payload con el header `Expect:`
+        // (vacío, desactiva la negociación) explícito: 200 limpio). `Illuminate\Http`
+        // (Guzzle) tiene el mismo problema por el mismo motivo — no es exclusivo de curl,
+        // cualquier cliente que no desactive `Expect: 100-continue` lo va a pisar con esta
+        // combinación de key+tamaño de payload.
         $payload = json_encode([
             'system_instruction' => ['parts' => [['text' => $systemPrompt]]],
             'contents'           => [['role' => 'user', 'parts' => $parts]],
@@ -60,7 +65,9 @@ class GeminiProvider implements AiProviderInterface
         curl_setopt_array($curlHandle, [
             CURLOPT_URL            => $url,
             CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            // 'Expect:' vacío desactiva el header automático 'Expect: 100-continue' de curl
+            // para POSTs grandes — ver comentario arriba, esa era la causa real del 401.
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Expect:'],
             CURLOPT_POSTFIELDS     => $payload,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 30,
@@ -111,7 +118,10 @@ class GeminiProvider implements AiProviderInterface
         curl_setopt_array($curlHandle, [
             CURLOPT_URL        => $url,
             CURLOPT_POST       => true,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            // OWF-131: mismo fix que extract() — 'Expect:' vacío evita el 401 engañoso que
+            // Google devuelve ante 'Expect: 100-continue' en POSTs grandes (conversaciones
+            // largas con esta key superan fácil el umbral de ~1KB que lo dispara).
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Expect:'],
             // OWF-131: mismo fix que extract() — thinkingBudget:0 evita que el modelo gaste
             // el presupuesto de tokens en razonamiento interno antes de la respuesta visible.
             CURLOPT_POSTFIELDS => json_encode([
