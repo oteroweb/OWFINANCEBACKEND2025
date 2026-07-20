@@ -29,10 +29,23 @@ class GeminiProvider implements AiProviderInterface
             }, $userMessage)
             : [['text' => $userMessage]];
 
+        // OWF-131: gemini-2.5-flash es un modelo "thinking" — gasta una porción de
+        // maxOutputTokens en razonamiento interno (usageMetadata.thoughtsTokenCount) ANTES
+        // de escribir la respuesta visible. Con maxOutputTokens=512 el presupuesto se
+        // agotaba en el razonamiento y la respuesta JSON quedaba cortada a la mitad (ej.
+        // `{"type":"expense",...,"category_suggestion":"` sin cerrar) — parseJsonContent()
+        // la rechazaba como JSON inválido y el chain caía en silencio al siguiente
+        // proveedor, sin dejar rastro claro del motivo real. `thinkingBudget: 0` desactiva
+        // el razonamiento (no hace falta para extraer datos estructurados de un texto/imagen
+        // corta) y libera todo el presupuesto para la respuesta real.
         $response = Http::timeout(30)->post($url, [
             'system_instruction' => ['parts' => [['text' => $systemPrompt]]],
             'contents'           => [['role' => 'user', 'parts' => $parts]],
-            'generationConfig'   => ['maxOutputTokens' => 512, 'responseMimeType' => 'application/json'],
+            'generationConfig'   => [
+                'maxOutputTokens'  => 1024,
+                'responseMimeType' => 'application/json',
+                'thinkingConfig'   => ['thinkingBudget' => 0],
+            ],
         ]);
 
         if (!$response->successful()) {
@@ -74,10 +87,15 @@ class GeminiProvider implements AiProviderInterface
             CURLOPT_URL        => $url,
             CURLOPT_POST       => true,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            // OWF-131: mismo fix que extract() — thinkingBudget:0 evita que el modelo gaste
+            // el presupuesto de tokens en razonamiento interno antes de la respuesta visible.
             CURLOPT_POSTFIELDS => json_encode([
                 'system_instruction' => ['parts' => [['text' => $systemPrompt]]],
                 'contents'           => $contents,
-                'generationConfig'   => ['maxOutputTokens' => 1024],
+                'generationConfig'   => [
+                    'maxOutputTokens' => 2048,
+                    'thinkingConfig'  => ['thinkingBudget' => 0],
+                ],
             ]),
             CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($onDelta, &$usage, &$rawOutput) {
                 $rawOutput .= $data;
