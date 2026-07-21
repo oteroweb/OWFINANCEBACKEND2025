@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\Entities\ItemTransaction;
+use App\Models\Entities\SharedTransactionCategory;
 use App\Models\Entities\PaymentTransaction;
 use App\Models\Entities\Tax;
 use App\Models\Entities\UserCurrency;
@@ -271,6 +272,13 @@ class TransactionController extends Controller
             'items.*.tags.*' => 'integer|exists:tags,id',
             'items.*.is_fee' => 'nullable|boolean',
             'items.*.fee_type' => 'nullable|string|max:50',
+            // OWF-326: split por categoría del panel "Gasto compartido" — a diferencia de
+            // items[], acá el monto de la transacción NO se deriva de la suma, se valida
+            // que coincida (ver chequeo más abajo, después de la validación de reglas).
+            'shared_categories' => 'nullable|array',
+            'shared_categories.*.category_id' => 'required_with:shared_categories|exists:categories,id',
+            'shared_categories.*.amount' => 'required_with:shared_categories|numeric|min:0.01',
+            'shared_categories.*.jar_id' => 'nullable|exists:jars,id',
             // Payments (siempre requeridos)
             'payments' => 'required|array|min:1',
             'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
@@ -415,6 +423,23 @@ class TransactionController extends Controller
                 }
             }
 
+            // OWF-326: "Gasto compartido" — a diferencia de items[] (donde el monto se
+            // DERIVA de la suma de líneas), acá el monto de la transacción ya viene fijo
+            // (el usuario lo llenó en el campo Monto) y las categorías deben sumar EXACTO
+            // ese valor — mismo modelo que la UI ya valida visualmente ("Suma: X / Y").
+            $sharedCategories = $request->input('shared_categories', []);
+            if (!empty($sharedCategories)) {
+                $sharedSum = round(array_sum(array_column($sharedCategories, 'amount')), 2);
+                $targetAmount = round(abs((float) ($derivedAmount ?? $providedAmount)), 2);
+                if (abs($sharedSum - $targetAmount) > 0.01) {
+                    return response()->json([
+                        'status'  => 'FAILED', 'code' => 422,
+                        'message' => __('La suma de las categorías no coincide con el monto total'),
+                        'data'    => ['shared_sum' => $sharedSum, 'target_amount' => $targetAmount],
+                    ], 422);
+                }
+            }
+
             $data = [
                 'name'=> $request->input('name'),
                 // Final amount: prefer derived if present, otherwise provided
@@ -555,6 +580,17 @@ class TransactionController extends Controller
                 if (!empty($it['tags'])) {
                     $itemTransaction->tags()->sync($it['tags']);
                 }
+            }
+
+            // OWF-326: crear las filas del split por categoría de "Gasto compartido" —
+            // jar_id ya viene resuelto desde el frontend (jarForCategory()), igual que Items.
+            foreach ($sharedCategories as $sc) {
+                SharedTransactionCategory::create([
+                    'transaction_id' => $transaction->id,
+                    'category_id'    => $sc['category_id'],
+                    'amount'         => $sc['amount'],
+                    'jar_id'         => $sc['jar_id'] ?? null,
+                ]);
             }
 
             // Create Payment Transactions

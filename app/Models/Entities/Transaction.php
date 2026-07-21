@@ -80,6 +80,13 @@ class Transaction extends Model
         return $this->hasMany(ItemTransaction::class);
     }
 
+    // OWF-326: split por categoría del panel "Gasto compartido" — una transacción puede
+    // repartirse entre N categorías que deben sumar el monto total.
+    public function sharedCategories()
+    {
+        return $this->hasMany(SharedTransactionCategory::class);
+    }
+
     // Relationship: a transaction can be paid with multiple payment transactions (split payments)
     public function paymentTransactions()
     {
