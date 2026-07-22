@@ -75,7 +75,7 @@ class TransactionRatePrecedenceTest extends TestCase
         OfficialRate::create([
             'currency_id' => $currency->id,
             'rate' => 30,
-            'source' => 'pydolarve',
+            'source' => 'dolarapi',
             'fetched_at' => now(),
         ]);
 
@@ -101,7 +101,7 @@ class TransactionRatePrecedenceTest extends TestCase
         OfficialRate::create([
             'currency_id' => $currency->id,
             'rate' => 30,
-            'source' => 'pydolarve',
+            'source' => 'dolarapi',
             'fetched_at' => now(),
         ]);
 
@@ -121,7 +121,7 @@ class TransactionRatePrecedenceTest extends TestCase
         OfficialRate::create([
             'currency_id' => $currency->id,
             'rate' => 40,
-            'source' => 'pydolarve',
+            'source' => 'dolarapi',
             'fetched_at' => now(),
         ]);
 
@@ -158,7 +158,7 @@ class TransactionRatePrecedenceTest extends TestCase
         OfficialRate::create([
             'currency_id' => $currency->id,
             'rate' => 40,
-            'source' => 'pydolarve',
+            'source' => 'dolarapi',
             'fetched_at' => now(),
         ]);
 

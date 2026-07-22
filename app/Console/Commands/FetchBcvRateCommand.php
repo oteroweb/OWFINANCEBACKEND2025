@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Fetch the official BCV dollar rate from pydolarve.org and persist it into
+ * Fetch the official BCV dollar rate from ve.dolarapi.com and persist it into
  * official_rates. Scheduled twice daily (9:00 AM / 4:00 PM America/Caracas) via
  * bootstrap/app.php (see 'jars:materialize-cycles' for the same schedule pattern).
  *
@@ -25,7 +25,7 @@ class FetchBcvRateCommand extends Command
 {
     protected $signature = 'bcv:fetch-rate {--currency=VES : Currency code to fetch the official rate for}';
 
-    protected $description = 'Fetch the official BCV dollar rate from pydolarve.org and store it in official_rates';
+    protected $description = 'Fetch the official BCV dollar rate from ve.dolarapi.com and store it in official_rates';
 
     public function handle(BcvRateFetcher $fetcher): int
     {

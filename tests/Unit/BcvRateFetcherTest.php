@@ -21,9 +21,9 @@ class BcvRateFetcherTest extends TestCase
     public function test_fetch_returns_rate_and_fetched_at_on_success(): void
     {
         Http::fake([
-            'pydolarve.org/*' => Http::response([
-                'price' => 40.25,
-                'last_update' => '20/07/2026, 09:00 AM',
+            'dolarapi.com/*' => Http::response([
+                'promedio' => 40.25,
+                'fechaActualizacion' => '2026-07-20T09:00:00-04:00',
             ], 200),
         ]);
 
@@ -38,7 +38,7 @@ class BcvRateFetcherTest extends TestCase
     public function test_fetch_returns_null_on_missing_rate_field(): void
     {
         Http::fake([
-            'pydolarve.org/*' => Http::response(['last_update' => '20/07/2026, 09:00 AM'], 200),
+            'dolarapi.com/*' => Http::response(['fechaActualizacion' => '2026-07-20T09:00:00-04:00'], 200),
         ]);
 
         $fetcher = new BcvRateFetcher();
@@ -48,7 +48,7 @@ class BcvRateFetcherTest extends TestCase
     public function test_fetch_returns_null_on_non_numeric_rate(): void
     {
         Http::fake([
-            'pydolarve.org/*' => Http::response(['price' => 'not-a-number'], 200),
+            'dolarapi.com/*' => Http::response(['promedio' => 'not-a-number'], 200),
         ]);
 
         $fetcher = new BcvRateFetcher();
@@ -58,7 +58,7 @@ class BcvRateFetcherTest extends TestCase
     public function test_fetch_returns_null_on_negative_rate(): void
     {
         Http::fake([
-            'pydolarve.org/*' => Http::response(['price' => -5], 200),
+            'dolarapi.com/*' => Http::response(['promedio' => -5], 200),
         ]);
 
         $fetcher = new BcvRateFetcher();
@@ -68,7 +68,7 @@ class BcvRateFetcherTest extends TestCase
     public function test_fetch_returns_null_on_500_response(): void
     {
         Http::fake([
-            'pydolarve.org/*' => Http::response([], 500),
+            'dolarapi.com/*' => Http::response([], 500),
         ]);
 
         $fetcher = new BcvRateFetcher();
@@ -88,7 +88,7 @@ class BcvRateFetcherTest extends TestCase
     public function test_fetch_returns_null_on_malformed_json(): void
     {
         Http::fake([
-            'pydolarve.org/*' => Http::response('not json at all', 200, ['Content-Type' => 'text/plain']),
+            'dolarapi.com/*' => Http::response('not json at all', 200, ['Content-Type' => 'text/plain']),
         ]);
 
         $fetcher = new BcvRateFetcher();
@@ -99,7 +99,10 @@ class BcvRateFetcherTest extends TestCase
     {
         $currency = $this->makeVesCurrency();
         Http::fake([
-            'pydolarve.org/*' => Http::response(['price' => 41.10, 'last_update' => '20/07/2026, 04:00 PM'], 200),
+            'dolarapi.com/*' => Http::response([
+                'promedio' => 41.10,
+                'fechaActualizacion' => '2026-07-20T16:00:00-04:00',
+            ], 200),
         ]);
 
         $fetcher = new BcvRateFetcher();
@@ -108,7 +111,7 @@ class BcvRateFetcherTest extends TestCase
         $this->assertInstanceOf(OfficialRate::class, $result);
         $this->assertDatabaseHas('official_rates', [
             'currency_id' => $currency->id,
-            'source' => 'pydolarve',
+            'source' => 'dolarapi',
         ]);
         $this->assertEquals(41.10, (float) OfficialRate::first()->rate);
     }
@@ -117,7 +120,7 @@ class BcvRateFetcherTest extends TestCase
     {
         $this->makeVesCurrency();
         Http::fake([
-            'pydolarve.org/*' => Http::response([], 500),
+            'dolarapi.com/*' => Http::response([], 500),
         ]);
 
         $fetcher = new BcvRateFetcher();
@@ -131,7 +134,7 @@ class BcvRateFetcherTest extends TestCase
     {
         // No VES currency created at all.
         Http::fake([
-            'pydolarve.org/*' => Http::response(['price' => 40], 200),
+            'dolarapi.com/*' => Http::response(['promedio' => 40], 200),
         ]);
 
         $fetcher = new BcvRateFetcher();

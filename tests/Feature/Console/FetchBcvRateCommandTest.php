@@ -16,20 +16,23 @@ class FetchBcvRateCommandTest extends TestCase
     {
         Currency::factory()->create(['code' => 'VES']);
         Http::fake([
-            'pydolarve.org/*' => Http::response(['price' => 39.99, 'last_update' => '20/07/2026, 09:00 AM'], 200),
+            'dolarapi.com/*' => Http::response([
+                'promedio' => 39.99,
+                'fechaActualizacion' => '2026-07-20T09:00:00-04:00',
+            ], 200),
         ]);
 
         $exitCode = Artisan::call('bcv:fetch-rate');
 
         $this->assertEquals(0, $exitCode);
-        $this->assertDatabaseHas('official_rates', ['source' => 'pydolarve']);
+        $this->assertDatabaseHas('official_rates', ['source' => 'dolarapi']);
     }
 
     public function test_command_does_not_explode_when_http_fails(): void
     {
         Currency::factory()->create(['code' => 'VES']);
         Http::fake([
-            'pydolarve.org/*' => Http::response([], 500),
+            'dolarapi.com/*' => Http::response([], 500),
         ]);
 
         $exitCode = Artisan::call('bcv:fetch-rate');
@@ -55,12 +58,15 @@ class FetchBcvRateCommandTest extends TestCase
     {
         Currency::factory()->create(['code' => 'USD']);
         Http::fake([
-            'pydolarve.org/*' => Http::response(['price' => 1.0, 'last_update' => '20/07/2026, 09:00 AM'], 200),
+            'dolarapi.com/*' => Http::response([
+                'promedio' => 1.0,
+                'fechaActualizacion' => '2026-07-20T09:00:00-04:00',
+            ], 200),
         ]);
 
         $exitCode = Artisan::call('bcv:fetch-rate', ['--currency' => 'USD']);
 
         $this->assertEquals(0, $exitCode);
-        $this->assertDatabaseHas('official_rates', ['source' => 'pydolarve']);
+        $this->assertDatabaseHas('official_rates', ['source' => 'dolarapi']);
     }
 }

@@ -9,14 +9,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Fetches the official BCV (Venezuelan Central Bank) dollar rate from pydolarve.org
+ * Fetches the official BCV (Venezuelan Central Bank) dollar rate from ve.dolarapi.com
  * and persists it into the official_rates history table.
  *
- * IMPORTANT: pydolarve.org's exact JSON response shape could NOT be verified live —
- * this dev/agent sandbox has no outbound network access (DNS resolution fails for
- * pydolarve.org). All shape-dependent logic is isolated in parseResponse() so it can
- * be corrected in one place once the real response is observed from an environment
- * with internet access (e.g. `php artisan bcv:fetch-rate` on the backend server).
+ * OWF-321: originally targeted pydolarve.org, but that domain never resolved (confirmed
+ * DNS failure from the prod server itself and from multiple independent networks, not a
+ * sandbox restriction) — switched to ve.dolarapi.com, verified live against the real
+ * endpoint. Response shape confirmed:
+ *   {"moneda":"USD","fuente":"oficial","nombre":"Dólar","compra":null,"venta":null,
+ *    "promedio":737.2321,"fechaActualizacion":"2026-07-22T00:00:00-04:00"}
  */
 class BcvRateFetcher
 {
@@ -44,7 +45,7 @@ class BcvRateFetcher
             return OfficialRate::create([
                 'currency_id' => $currency->id,
                 'rate' => $parsed['rate'],
-                'source' => 'pydolarve',
+                'source' => 'dolarapi',
                 'fetched_at' => $parsed['fetched_at'],
             ]);
         } catch (\Throwable $e) {
@@ -56,19 +57,19 @@ class BcvRateFetcher
     }
 
     /**
-     * Hit pydolarve.org and return ['rate' => float, 'fetched_at' => Carbon], or null
+     * Hit ve.dolarapi.com and return ['rate' => float, 'fetched_at' => Carbon], or null
      * on any network/parse failure. Never throws — every failure path is caught,
      * logged via Log::warning, and returns null.
      */
     public function fetch(): ?array
     {
         try {
-            $url = config('services.pydolarve.url');
+            $url = config('services.bcv_rate.url');
 
             $response = Http::timeout(10)->acceptJson()->get($url);
 
             if (!$response->successful()) {
-                Log::warning('BcvRateFetcher: non-success HTTP response from pydolarve.org', [
+                Log::warning('BcvRateFetcher: non-success HTTP response from BCV rate source', [
                     'status' => $response->status(),
                 ]);
                 return null;
@@ -76,13 +77,13 @@ class BcvRateFetcher
 
             $json = $response->json();
             if (!is_array($json)) {
-                Log::warning('BcvRateFetcher: pydolarve.org response was not valid JSON');
+                Log::warning('BcvRateFetcher: BCV rate source response was not valid JSON');
                 return null;
             }
 
             return $this->parseResponse($json);
         } catch (\Throwable $e) {
-            Log::warning('BcvRateFetcher: exception while fetching rate from pydolarve.org', [
+            Log::warning('BcvRateFetcher: exception while fetching rate from BCV rate source', [
                 'error' => $e->getMessage(),
             ]);
             return null;
@@ -90,23 +91,17 @@ class BcvRateFetcher
     }
 
     /**
-     * Map pydolarve.org's JSON payload into ['rate' => float, 'fetched_at' => Carbon].
+     * Map ve.dolarapi.com's JSON payload into ['rate' => float, 'fetched_at' => Carbon].
      * Returns null when the shape is unrecognized or the rate is not a valid positive number.
      *
-     * This is the ONLY place that assumes pydolarve's response shape — adjust here if the
-     * real shape differs from what's assumed below.
-     *
-     * Assumed shape (unverified live, see class docblock): the `?page=bcv` query selects a
-     * single monitor. We defensively accept either the monitor object at the top level
-     * (`{"price": ..., "last_update": ...}`) or nested under a `monitors.bcv` key
-     * (`{"monitors": {"bcv": {"price": ..., "last_update": ...}}}`), since both shapes have
-     * been observed in different versions of similar community dollar-rate APIs.
+     * This is the ONLY place that assumes the response shape — adjust here if the source
+     * changes again. Confirmed live shape:
+     *   {"moneda":"USD","fuente":"oficial","promedio":737.2321,
+     *    "fechaActualizacion":"2026-07-22T00:00:00-04:00"}
      */
     private function parseResponse(array $json): ?array
     {
-        $monitor = $json['monitors']['bcv'] ?? $json;
-
-        $rate = $monitor['price'] ?? $monitor['rate'] ?? null;
+        $rate = $json['promedio'] ?? null;
         if (!is_numeric($rate)) {
             Log::warning('BcvRateFetcher: rate field missing or non-numeric in response', [
                 'json' => $json,
@@ -121,7 +116,7 @@ class BcvRateFetcher
         }
 
         $fetchedAt = null;
-        $rawDate = $monitor['last_update'] ?? $monitor['fetched_at'] ?? null;
+        $rawDate = $json['fechaActualizacion'] ?? null;
         if (is_string($rawDate) && $rawDate !== '') {
             try {
                 $fetchedAt = Carbon::parse($rawDate);

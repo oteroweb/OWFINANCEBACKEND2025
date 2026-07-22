@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ->withoutOverlapping()
             ->runInBackground();
 
-        // Fetch the official BCV dollar rate from pydolarve.org twice daily.
+        // Fetch the official BCV dollar rate (via ve.dolarapi.com) twice daily.
         // Feeds official_rates, consumed by TransactionController::resolveUserCurrencyRate()
         // as a fallback below the user's own current rate.
         $schedule->command('bcv:fetch-rate')
