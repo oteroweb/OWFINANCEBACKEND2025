@@ -43,6 +43,9 @@ return [
         // OWF-321: pydolarve.org never resolved (DNS down, confirmed from prod + multiple
         // networks) — switched to ve.dolarapi.com, verified live and returning clean JSON.
         'url' => env('BCV_RATE_URL', 'https://ve.dolarapi.com/v1/dolares/oficial'),
+        // OWF-329: kept as a fallback in BcvRateFetcher in case pydolarve.org ever resolves
+        // again — never verified live (DNS was down for the whole time it was primary).
+        'fallback_url' => env('BCV_RATE_FALLBACK_URL', 'https://pydolarve.org/api/v1/dollar?page=bcv'),
     ],
 
 ];

@@ -143,4 +143,85 @@ class BcvRateFetcherTest extends TestCase
         $this->assertNull($result);
         $this->assertDatabaseCount('official_rates', 0);
     }
+
+    // ── OWF-329: fallback a pydolarve.org cuando dolarapi falla ──────────────
+
+    public function test_fetch_falls_back_to_pydolarve_when_dolarapi_fails(): void
+    {
+        Http::fake([
+            'dolarapi.com/*' => Http::response([], 500),
+            'pydolarve.org/*' => Http::response([
+                'price' => 39.75,
+                'last_update' => '2026-07-20T09:00:00-04:00',
+            ], 200),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $result = $fetcher->fetch();
+
+        $this->assertIsArray($result);
+        $this->assertEquals(39.75, $result['rate']);
+        $this->assertEquals('pydolarve', $result['source']);
+    }
+
+    public function test_fetch_falls_back_to_pydolarve_nested_monitors_shape(): void
+    {
+        Http::fake([
+            'dolarapi.com/*' => Http::response([], 500),
+            'pydolarve.org/*' => Http::response([
+                'monitors' => ['bcv' => ['price' => 38.90, 'last_update' => '2026-07-20T09:00:00-04:00']],
+            ], 200),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $result = $fetcher->fetch();
+
+        $this->assertIsArray($result);
+        $this->assertEquals(38.90, $result['rate']);
+        $this->assertEquals('pydolarve', $result['source']);
+    }
+
+    public function test_fetch_does_not_try_fallback_when_primary_succeeds(): void
+    {
+        Http::fake([
+            'dolarapi.com/*' => Http::response(['promedio' => 40.25], 200),
+            'pydolarve.org/*' => Http::response(['price' => 999], 200),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $result = $fetcher->fetch();
+
+        $this->assertEquals(40.25, $result['rate']);
+        $this->assertEquals('dolarapi', $result['source']);
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'pydolarve.org'));
+    }
+
+    public function test_fetch_returns_null_when_both_sources_fail(): void
+    {
+        Http::fake([
+            'dolarapi.com/*' => Http::response([], 500),
+            'pydolarve.org/*' => Http::response([], 500),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $this->assertNull($fetcher->fetch());
+    }
+
+    public function test_fetch_and_persist_uses_pydolarve_as_source_when_it_was_the_fallback(): void
+    {
+        $currency = $this->makeVesCurrency();
+        Http::fake([
+            'dolarapi.com/*' => Http::response([], 500),
+            'pydolarve.org/*' => Http::response(['price' => 39.00], 200),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $result = $fetcher->fetchAndPersist('VES');
+
+        $this->assertInstanceOf(OfficialRate::class, $result);
+        $this->assertDatabaseHas('official_rates', [
+            'currency_id' => $currency->id,
+            'source' => 'pydolarve',
+        ]);
+    }
 }
