@@ -22,6 +22,10 @@ class TransactionRepo {
             ->with([
                 'provider','rate','user','account','transactionType','category',
                 'itemTransactions', 'itemTransactions.category', 'itemTransactions.itemCategory',
+                // OWF-340: el listado debe poder mostrar las N categorías de un "Gasto
+                // compartido" (transaction.category_id queda null en ese caso, el detalle
+                // real vive en sharedCategories) — mismo patrón que itemTransactions.category.
+                'sharedCategories', 'sharedCategories.category',
                 // Include payment rate relation so each payment contains its rate object
                 'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency',
                 'tags',
@@ -257,6 +261,7 @@ class TransactionRepo {
             ->with([
                 'provider','rate','user','account','transactionType','category',
                 'itemTransactions','itemTransactions.category','itemTransactions.itemCategory',
+                'sharedCategories', 'sharedCategories.category',
                 'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency',
                 'tags',
             ]);
