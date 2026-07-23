@@ -7,9 +7,37 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use App\Models\Entities\UserCurrency;
+use App\Models\Entities\OfficialRate;
 
 class UserCurrencyController extends Controller
 {
+    /**
+     * OWF-337: última tasa oficial (BCV) automática, para prellenar el campo "Tasa oficial
+     * (BCV) hoy" del formulario de transacciones — antes ese campo nunca se auto-completaba
+     * al crear (solo se restauraba al editar una transacción ya guardada con esa tasa).
+     * Fuente: official_rates, poblada por BcvRateFetcher (ver OWF-321).
+     */
+    public function officialLatest(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'currency_id' => 'required|exists:currencies,id',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()],400);
+        }
+        $official = OfficialRate::where('currency_id', $request->input('currency_id'))
+            ->orderByDesc('fetched_at')
+            ->first();
+        if (!$official) {
+            return response()->json(['status'=>'OK','code'=>200,'data'=>null]);
+        }
+        return response()->json(['status'=>'OK','code'=>200,'data'=>[
+            'rate' => (float) $official->rate,
+            'fetched_at' => $official->fetched_at,
+            'source' => $official->source,
+        ]]);
+    }
+
     public function index(Request $request)
     {
         $auth = $request->user();
@@ -78,6 +106,18 @@ class UserCurrencyController extends Controller
         ]);
         if (array_key_exists('is_current', $data)) { $record->is_current = (bool)$data['is_current']; }
         if (array_key_exists('is_official', $data)) { $record->is_official = (bool)$data['is_official']; }
+        // Bug real (reportado por el usuario, tasa paralela mostrando un valor viejo/al azar
+        // en vez de la última guardada): a diferencia de UserRateService::applyFromPayment()
+        // (usado al guardar una transacción), este endpoint nunca desmarcaba is_current en
+        // los demás registros de la misma moneda — permitía que coexistieran varias filas
+        // "actuales" a la vez, y cuál ganaba en el frontend (useUserRates.ts) dependía del
+        // orden de retorno, no de cuál se guardó último. Mismo criterio que UserRateService.
+        if ($record->is_current) {
+            UserCurrency::where('user_id', $data['user_id'])
+                ->where('currency_id', $data['currency_id'])
+                ->where('id', '!=', $record->id)
+                ->update(['is_current' => false]);
+        }
         $record->save();
         return response()->json(['status'=>'OK','code'=>200,'message'=>__('Saved'),'data'=>$record]);
     }
@@ -99,7 +139,14 @@ class UserCurrencyController extends Controller
         }
         $record->fill($validator->validated());
         $record->save();
-        // No desmarcamos otros registros; permitimos múltiples is_current=true si el usuario así lo define.
+        // Mismo fix que store(): si esta fila queda como "actual", ninguna otra fila de la
+        // misma moneda debe seguir marcada is_current — evita que quede ambiguo cuál rige.
+        if ($record->is_current) {
+            UserCurrency::where('user_id', $record->user_id)
+                ->where('currency_id', $record->currency_id)
+                ->where('id', '!=', $record->id)
+                ->update(['is_current' => false]);
+        }
         return response()->json(['status'=>'OK','code'=>200,'message'=>__('Updated'),'data'=>$record]);
     }
 

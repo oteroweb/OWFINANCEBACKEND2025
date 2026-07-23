@@ -43,6 +43,7 @@ Route::group([
     'prefix'     => 'user-currencies',
 ], function () {
     Route::get('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'index']);
+    Route::get('/official-latest', [\App\Http\Controllers\Api\UserCurrencyController::class, 'officialLatest']);
     Route::post('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'store']);
     Route::put('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'update']);
     Route::delete('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'destroy']);
@@ -54,6 +55,7 @@ Route::group([
     'prefix'     => 'user_currencies',
 ], function () {
     Route::get('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'index']);
+    Route::get('/official-latest', [\App\Http\Controllers\Api\UserCurrencyController::class, 'officialLatest']);
     Route::post('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'store']);
     Route::put('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'update']);
     Route::delete('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'destroy']);
