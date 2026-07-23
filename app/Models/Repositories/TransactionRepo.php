@@ -474,6 +474,8 @@ class TransactionRepo {
         return Transaction::with([
             'provider','rate','user','account','transactionType','category',
             'itemTransactions','itemTransactions.category','itemTransactions.itemCategory',
+            // OWF-342: hidratar el panel Gasto compartido al editar necesita esta relación.
+            'sharedCategories', 'sharedCategories.category',
             'paymentTransactions.account','paymentTransactions.rate','paymentTransactions.userCurrency',
             'tags',
         ])->find($id);

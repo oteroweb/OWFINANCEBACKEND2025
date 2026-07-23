@@ -699,6 +699,13 @@ class TransactionController extends Controller
                 'items.*.tags.*' => 'integer|exists:tags,id',
                 'items.*.is_fee' => 'nullable|boolean',
                 'items.*.fee_type' => 'nullable|string|max:50',
+                // OWF-342: shared_categories nunca se validaba/procesaba en update() — solo
+                // en store(). Editar una transacción de "Gasto compartido" no sincronizaba
+                // los cambios del split, aunque el frontend ya hidratara el panel (OWF-342).
+                'shared_categories' => 'nullable|array',
+                'shared_categories.*.category_id' => 'required_with:shared_categories|exists:categories,id',
+                'shared_categories.*.amount' => 'required_with:shared_categories|numeric|min:0.01',
+                'shared_categories.*.jar_id' => 'nullable|exists:jars,id',
                 // payments
                 'payments' => 'sometimes|array|min:1',
                 'payments.*.account_id' => 'required_with:payments|exists:accounts,id',
@@ -765,6 +772,19 @@ class TransactionController extends Controller
                             'provided_amount' => round(abs($providedAmount),2),
                             'items_total' => $allNeg? abs($itemsTotal): $itemsTotal,
                         ],
+                    ], 422);
+                }
+            }
+
+            $sharedCategoriesUpd = $request->input('shared_categories', null);
+            if (is_array($sharedCategoriesUpd) && !empty($sharedCategoriesUpd) && $providedAmount !== null) {
+                $sharedSum = round(array_sum(array_column($sharedCategoriesUpd, 'amount')), 2);
+                $targetAmount = round(abs($providedAmount), 2);
+                if (abs($sharedSum - $targetAmount) > 0.01) {
+                    return response()->json([
+                        'status'  => 'FAILED', 'code' => 422,
+                        'message' => __('La suma de las categorías no coincide con el monto total'),
+                        'data'    => ['shared_sum' => $sharedSum, 'target_amount' => $targetAmount],
                     ], 422);
                 }
             }
@@ -895,6 +915,20 @@ class TransactionController extends Controller
                     if (!empty($it['tags'])) {
                         $itemTransaction->tags()->sync($it['tags']);
                     }
+                }
+            }
+
+            // Si vienen shared_categories en el payload, reescribir el split (estrategia
+            // replace, mismo patrón que items arriba).
+            if (is_array($sharedCategoriesUpd)) {
+                SharedTransactionCategory::where('transaction_id', $transaction->id)->delete();
+                foreach ($sharedCategoriesUpd as $sc) {
+                    SharedTransactionCategory::create([
+                        'transaction_id' => $transaction->id,
+                        'category_id'    => $sc['category_id'],
+                        'amount'         => $sc['amount'],
+                        'jar_id'         => $sc['jar_id'] ?? null,
+                    ]);
                 }
             }
 

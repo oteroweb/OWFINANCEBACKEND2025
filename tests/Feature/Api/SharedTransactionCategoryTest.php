@@ -177,4 +177,106 @@ class SharedTransactionCategoryTest extends TestCase
         $row = SharedTransactionCategory::where('transaction_id', $res->json('data.id'))->first();
         $this->assertEquals($jar->id, $row->jar_id);
     }
+
+    /**
+     * OWF-342: update() nunca procesaba shared_categories (solo store()) — editar una
+     * transacción de "Gasto compartido" no sincronizaba los cambios del split, aunque el
+     * frontend ya hidratara el panel de edición con los datos guardados.
+     */
+    public function test_update_replaces_shared_categories_with_new_set(): void
+    {
+        $account = $this->makeAccount();
+        $type    = $this->makeType();
+        $food    = $this->makeCategory('Comida');
+        $home    = $this->makeCategory('Hogar');
+        $transport = $this->makeCategory('Transporte');
+
+        $created = $this->postJson('/api/v1/transactions/', [
+            'name' => 'Mercado compartido', 'amount' => 100.00, 'date' => $this->baseDate(),
+            'transaction_type_id' => $type->id,
+            'shared_categories' => [
+                ['category_id' => $food->id, 'amount' => 60.00],
+                ['category_id' => $home->id, 'amount' => 40.00],
+            ],
+            'payments' => [['account_id' => $account->id, 'amount' => -100.00]],
+        ]);
+        $txId = $created->json('data.id');
+
+        $res = $this->putJson("/api/v1/transactions/{$txId}", [
+            'amount' => 100.00,
+            'shared_categories' => [
+                ['category_id' => $food->id, 'amount' => 70.00],
+                ['category_id' => $transport->id, 'amount' => 30.00],
+            ],
+        ]);
+
+        $res->assertStatus(200)->assertJson(['status' => 'OK']);
+        $this->assertEquals(2, SharedTransactionCategory::where('transaction_id', $txId)->count());
+        $this->assertDatabaseHas('shared_transaction_categories', [
+            'transaction_id' => $txId, 'category_id' => $food->id, 'amount' => 70.00,
+        ]);
+        $this->assertDatabaseHas('shared_transaction_categories', [
+            'transaction_id' => $txId, 'category_id' => $transport->id, 'amount' => 30.00,
+        ]);
+        $this->assertDatabaseMissing('shared_transaction_categories', [
+            'transaction_id' => $txId, 'category_id' => $home->id,
+        ]);
+    }
+
+    public function test_update_shared_categories_sum_mismatch_returns_422_and_leaves_original_intact(): void
+    {
+        $account = $this->makeAccount();
+        $type    = $this->makeType();
+        $food    = $this->makeCategory('Comida');
+        $home    = $this->makeCategory('Hogar');
+
+        $created = $this->postJson('/api/v1/transactions/', [
+            'name' => 'Mercado compartido', 'amount' => 100.00, 'date' => $this->baseDate(),
+            'transaction_type_id' => $type->id,
+            'shared_categories' => [
+                ['category_id' => $food->id, 'amount' => 60.00],
+                ['category_id' => $home->id, 'amount' => 40.00],
+            ],
+            'payments' => [['account_id' => $account->id, 'amount' => -100.00]],
+        ]);
+        $txId = $created->json('data.id');
+
+        $res = $this->putJson("/api/v1/transactions/{$txId}", [
+            'amount' => 100.00,
+            'shared_categories' => [
+                ['category_id' => $food->id, 'amount' => 60.00],
+                ['category_id' => $home->id, 'amount' => 10.00],
+            ],
+        ]);
+
+        $res->assertStatus(422);
+        $this->assertEquals(2, SharedTransactionCategory::where('transaction_id', $txId)->count());
+        $this->assertDatabaseHas('shared_transaction_categories', [
+            'transaction_id' => $txId, 'category_id' => $home->id, 'amount' => 40.00,
+        ]);
+    }
+
+    public function test_update_without_shared_categories_key_leaves_existing_rows_untouched(): void
+    {
+        $account = $this->makeAccount();
+        $type    = $this->makeType();
+        $food    = $this->makeCategory('Comida');
+        $home    = $this->makeCategory('Hogar');
+
+        $created = $this->postJson('/api/v1/transactions/', [
+            'name' => 'Mercado compartido', 'amount' => 100.00, 'date' => $this->baseDate(),
+            'transaction_type_id' => $type->id,
+            'shared_categories' => [
+                ['category_id' => $food->id, 'amount' => 60.00],
+                ['category_id' => $home->id, 'amount' => 40.00],
+            ],
+            'payments' => [['account_id' => $account->id, 'amount' => -100.00]],
+        ]);
+        $txId = $created->json('data.id');
+
+        $res = $this->putJson("/api/v1/transactions/{$txId}", ['name' => 'Mercado compartido (editado)']);
+
+        $res->assertStatus(200);
+        $this->assertEquals(2, SharedTransactionCategory::where('transaction_id', $txId)->count());
+    }
 }
