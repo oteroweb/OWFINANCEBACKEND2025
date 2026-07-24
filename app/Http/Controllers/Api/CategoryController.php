@@ -470,6 +470,52 @@ class CategoryController extends Controller
         return response()->json(['status' => 'OK', 'code' => 200, 'data' => ['id' => (int)$category->id, 'parent_id' => $category->parent_id]], 200);
     }
 
+    /**
+     * @group Category
+     * Reassign the jar a category belongs to (drag-and-drop en el sidebar de
+     * Transacciones — port de item #7 del audit diseño↔prod, D-004). Sync
+     * liviano del pivot jar_category para UNA categoría — a diferencia de
+     * /jars/bulk-sync (usado por la pantalla Cántaros), no toca porcentajes ni
+     * el resto de cántaros del usuario.
+     * @urlParam id integer required The ID of the category.
+     * @bodyParam jar_id integer|null New jar id, or null to unassign.
+     */
+    public function assignJar(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['status' => 'FAILED', 'code' => 401, 'message' => __('Unauthenticated')], 401);
+        }
+        $validator = Validator::make($request->all(), [
+            'jar_id' => 'nullable|exists:jars,id',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => __('Incorrect Params'), 'errors' => $validator->errors()], 400);
+        }
+        $category = \App\Models\Entities\Category::where('id', $id)
+            ->where(function ($q) use ($user) { $q->whereNull('user_id')->orWhere('user_id', $user->id); })
+            ->first();
+        if (!$category) {
+            return response()->json(['status' => 'FAILED', 'code' => 404, 'message' => __('Category not found')], 404);
+        }
+        $jarId = $request->input('jar_id');
+        if (!empty($jarId)) {
+            $jar = \App\Models\Entities\Jar::where('id', $jarId)->where('user_id', $user->id)->first();
+            if (!$jar) {
+                return response()->json(['status' => 'FAILED', 'code' => 400, 'message' => __('Invalid jar for this user')], 400);
+            }
+            $category->jars()->sync([$jarId]);
+        } else {
+            $category->jars()->sync([]);
+        }
+        $category->refresh();
+        return response()->json([
+            'status' => 'OK',
+            'code' => 200,
+            'data' => ['id' => (int) $category->id, 'assigned_jar_id' => $category->assigned_jar_id],
+        ], 200);
+    }
+
     private static function collectCategoryDescendants(\App\Models\Entities\Category $category): array
     {
         $ids = [];

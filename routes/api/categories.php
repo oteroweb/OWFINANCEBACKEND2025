@@ -17,6 +17,7 @@ Route::group([
     Route::put('/{id}', [CategoryController::class, 'update']);
     Route::patch('/{id}', [CategoryController::class, 'update']);
     Route::patch('/{id}/move', [CategoryController::class, 'move']);
+    Route::patch('/{id}/jar', [CategoryController::class, 'assignJar']);
     Route::delete('/{id}', [CategoryController::class, 'delete']);
     Route::get('/{id}', [CategoryController::class, 'find']);
 });
