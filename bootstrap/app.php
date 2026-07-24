@@ -39,6 +39,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ->timezone('America/Caracas')
             ->withoutOverlapping()
             ->runInBackground();
+
+        // OWF-330: same cadence, EUR rate (derived cross-rate, see BcvRateFetcher docblock).
+        $schedule->command('bcv:fetch-rate --currency=EUR')
+            ->twiceDailyAt(9, 16, 0)
+            ->timezone('America/Caracas')
+            ->withoutOverlapping()
+            ->runInBackground();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => null);

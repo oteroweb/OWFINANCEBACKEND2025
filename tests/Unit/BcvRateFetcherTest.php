@@ -18,6 +18,11 @@ class BcvRateFetcherTest extends TestCase
         return Currency::factory()->create(['code' => 'VES']);
     }
 
+    private function makeEurCurrency(): Currency
+    {
+        return Currency::factory()->create(['code' => 'EUR']);
+    }
+
     public function test_fetch_returns_rate_and_fetched_at_on_success(): void
     {
         Http::fake([
@@ -222,6 +227,78 @@ class BcvRateFetcherTest extends TestCase
         $this->assertDatabaseHas('official_rates', [
             'currency_id' => $currency->id,
             'source' => 'pydolarve',
+        ]);
+    }
+
+    // ── OWF-330: tasa EUR (cross-rate derivada VES/USD ÷ VES/EUR) ────────────
+
+    public function test_fetch_and_persist_eur_derives_usd_relative_rate(): void
+    {
+        $eurCurrency = $this->makeEurCurrency();
+        Http::fake([
+            '*/dolares/oficial*' => Http::response(['promedio' => 40.00, 'fechaActualizacion' => '2026-07-23T09:00:00-04:00'], 200),
+            '*/euros/oficial*' => Http::response(['promedio' => 46.00, 'fechaActualizacion' => '2026-07-23T09:00:00-04:00'], 200),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $result = $fetcher->fetchAndPersist('EUR');
+
+        $this->assertInstanceOf(OfficialRate::class, $result);
+        // 40 VES/USD ÷ 46 VES/EUR = 0.8696 EUR por 1 USD (no 46, no 40 — la cross-rate).
+        $this->assertEqualsWithDelta(40.00 / 46.00, (float) $result->rate, 0.0001);
+        $this->assertDatabaseHas('official_rates', [
+            'currency_id' => $eurCurrency->id,
+            'source' => 'dolarapi',
+        ]);
+    }
+
+    public function test_fetch_and_persist_eur_returns_null_when_usd_ves_fetch_fails(): void
+    {
+        $this->makeEurCurrency();
+        Http::fake([
+            '*/dolares/oficial*' => Http::response([], 500),
+            'pydolarve.org/*' => Http::response([], 500),
+            '*/euros/oficial*' => Http::response(['promedio' => 46.00], 200),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $result = $fetcher->fetchAndPersist('EUR');
+
+        $this->assertNull($result);
+        $this->assertDatabaseCount('official_rates', 0);
+    }
+
+    public function test_fetch_and_persist_eur_returns_null_when_eur_ves_fetch_fails(): void
+    {
+        $this->makeEurCurrency();
+        Http::fake([
+            '*/dolares/oficial*' => Http::response(['promedio' => 40.00], 200),
+            '*/euros/oficial*' => Http::response([], 500),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $result = $fetcher->fetchAndPersist('EUR');
+
+        $this->assertNull($result);
+        $this->assertDatabaseCount('official_rates', 0);
+    }
+
+    public function test_fetch_and_persist_eur_uses_pydolarve_fallback_for_usd_leg(): void
+    {
+        $eurCurrency = $this->makeEurCurrency();
+        Http::fake([
+            '*/dolares/oficial*' => Http::response([], 500),
+            'pydolarve.org/*' => Http::response(['price' => 40.00], 200),
+            '*/euros/oficial*' => Http::response(['promedio' => 46.00], 200),
+        ]);
+
+        $fetcher = new BcvRateFetcher();
+        $result = $fetcher->fetchAndPersist('EUR');
+
+        $this->assertInstanceOf(OfficialRate::class, $result);
+        $this->assertEqualsWithDelta(40.00 / 46.00, (float) $result->rate, 0.0001);
+        $this->assertDatabaseHas('official_rates', [
+            'currency_id' => $eurCurrency->id,
         ]);
     }
 }

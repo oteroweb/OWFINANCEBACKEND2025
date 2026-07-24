@@ -46,6 +46,10 @@ return [
         // OWF-329: kept as a fallback in BcvRateFetcher in case pydolarve.org ever resolves
         // again — never verified live (DNS was down for the whole time it was primary).
         'fallback_url' => env('BCV_RATE_FALLBACK_URL', 'https://pydolarve.org/api/v1/dollar?page=bcv'),
+        // OWF-330: same API family, but this one reports VES per EUR directly (not USD per
+        // EUR) — BcvRateFetcher derives the USD-relative EUR rate this system needs by
+        // dividing the VES/USD rate by this VES/EUR rate.
+        'eur_ves_url' => env('BCV_RATE_EUR_VES_URL', 'https://ve.dolarapi.com/v1/euros/oficial'),
     ],
 
 ];

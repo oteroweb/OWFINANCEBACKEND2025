@@ -21,6 +21,14 @@ use Illuminate\Support\Facades\Log;
  * primary), so parsePydolarveResponse() defensively accepts a couple of plausible
  * shapes seen in similar community dollar-rate APIs. If pydolarve.org starts resolving
  * again and this shape turns out wrong, fix it in one place there.
+ *
+ * OWF-330: EUR is a different calculation, not just a different endpoint. Every rate
+ * this system stores means "units of that currency per 1 USD" (see
+ * TransactionController::resolveUserCurrencyRate() — payments in a foreign-currency
+ * account convert to the transaction's USD amount via amount_native / rate). dolarapi's
+ * EUR endpoint reports VES per EUR directly (a Venezuela-specific quote), not USD per
+ * EUR — so fetchAndPersistEur() derives the USD-relative rate this system needs by
+ * dividing the VES/USD rate by the VES/EUR rate.
  */
 class BcvRateFetcher
 {
@@ -31,11 +39,90 @@ class BcvRateFetcher
      */
     public function fetchAndPersist(string $currencyCode = 'VES'): ?OfficialRate
     {
+        if (strtoupper($currencyCode) === 'EUR') {
+            return $this->fetchAndPersistEur();
+        }
+
         $parsed = $this->fetch();
         if ($parsed === null) {
             return null;
         }
 
+        return $this->persist($currencyCode, $parsed);
+    }
+
+    /**
+     * OWF-330: EUR needs a derived cross-rate (see class docblock) — fetches VES/USD
+     * (existing primary+fallback chain) and VES/EUR (dolarapi only, no fallback source
+     * identified yet for EUR specifically), then divides them. If either fetch fails,
+     * no row is persisted this cycle (same "never break, just skip" policy as the
+     * VES/USD path).
+     */
+    private function fetchAndPersistEur(): ?OfficialRate
+    {
+        $usdVes = $this->fetch();
+        if ($usdVes === null) {
+            return null;
+        }
+
+        $eurVes = $this->fetchEurVesRate();
+        if ($eurVes === null) {
+            return null;
+        }
+
+        if ((float) $eurVes['rate'] <= 0) {
+            return null;
+        }
+
+        return $this->persist('EUR', [
+            'rate' => $usdVes['rate'] / $eurVes['rate'],
+            'fetched_at' => $eurVes['fetched_at'],
+            'source' => $eurVes['source'],
+        ]);
+    }
+
+    /**
+     * Hit dolarapi's EUR endpoint (VES per EUR) and return ['rate' => float,
+     * 'fetched_at' => Carbon, 'source' => 'dolarapi'], or null on any failure. Reuses
+     * parseDolarApiResponse() since the response shape is identical to the USD endpoint,
+     * just with different values.
+     */
+    private function fetchEurVesRate(): ?array
+    {
+        try {
+            $url = config('services.bcv_rate.eur_ves_url');
+
+            $response = Http::timeout(10)->acceptJson()->get($url);
+
+            if (!$response->successful()) {
+                Log::warning('BcvRateFetcher: non-success HTTP response from dolarapi (EUR/VES)', [
+                    'status' => $response->status(),
+                ]);
+                return null;
+            }
+
+            $json = $response->json();
+            if (!is_array($json)) {
+                Log::warning('BcvRateFetcher: dolarapi (EUR/VES) response was not valid JSON');
+                return null;
+            }
+
+            return $this->parseDolarApiResponse($json);
+        } catch (\Throwable $e) {
+            Log::warning('BcvRateFetcher: exception while fetching EUR/VES rate from dolarapi', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Persist a fetched/derived rate as a new official_rates row for the given currency
+     * code. Never throws. Returns null if the currency code is not known or the insert
+     * failed.
+     */
+    private function persist(string $currencyCode, array $parsed): ?OfficialRate
+    {
         try {
             $currency = Currency::where('code', $currencyCode)->first();
             if (!$currency) {
