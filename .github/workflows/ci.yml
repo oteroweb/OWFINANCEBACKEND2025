@@ -32,3 +32,23 @@ jobs:
 
       - name: Run tests
         run: php artisan test
+
+  # OWF-295: dispara el auto-sync del puntero de submódulo en el repo central,
+  # reemplazando el paso manual de correr sync-submodule-pointers.sh. Solo en
+  # push a main (no en PRs) y solo si los tests pasaron. Requiere el secret
+  # CENTRAL_DISPATCH_TOKEN (PAT con permiso "contents: write" sobre
+  # oteroweb/OWFINANCE2026 — no confundir con SUBMODULES_DEPLOY_KEY, que es para
+  # el otro sentido: central leyendo este repo).
+  notify-central:
+    name: Notify central (submodule sync)
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch backend-updated to OWFINANCE2026
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: token ${{ secrets.CENTRAL_DISPATCH_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/oteroweb/OWFINANCE2026/dispatches \
+            -d "{\"event_type\":\"backend-updated\",\"client_payload\":{\"sha\":\"${{ github.sha }}\"}}"
