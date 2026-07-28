@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Entities\ItemTransaction;
 use App\Models\Entities\SharedTransactionCategory;
 use App\Models\Entities\PaymentTransaction;
+use App\Models\Entities\PaymentTransactionTax;
 use App\Models\Entities\Tax;
 use App\Models\Entities\UserCurrency;
 use App\Models\Entities\Account;
@@ -288,6 +289,10 @@ class TransactionController extends Controller
             'payments.*.is_official' => 'nullable|boolean',
             // deprecated: rate_is_official removed in favor of is_official
             'payments.*.current_rate' => 'nullable|boolean',
+            // OWF-353: impuesto por fila en "Pago múltiple" — reusa el catálogo `taxes` +
+            // `payment_transaction_taxes` (ya existían, nunca conectados al flujo real),
+            // mismo patrón que `items.*.tax_id` de arriba.
+            'payments.*.tax_id' => 'nullable|exists:taxes,id',
         ], $this->custom_message());
         if ($validator->fails()) {
             $response = [
@@ -595,6 +600,19 @@ class TransactionController extends Controller
 
             // Create Payment Transactions
             foreach ($payments as $idx => $pm) {
+                // OWF-353: impuesto por fila en "Pago múltiple" (p.ej. IGTF) — validado
+                // antes de crear nada, mismo criterio applies_to que items.
+                $paymentTax = null;
+                if (!empty($pm['tax_id'])) {
+                    $paymentTax = Tax::find($pm['tax_id']);
+                    if (!$paymentTax || !in_array($paymentTax->applies_to ?? 'payment', ['payment', 'both'], true)) {
+                        DB::rollBack();
+                        return response()->json([
+                            'status' => 'FAILED', 'code' => 422,
+                            'message' => __('Selected tax does not apply to payments'),
+                        ], 422);
+                    }
+                }
                 $payload = [
                     'transaction_id' => $transaction->id,
                     'account_id' => $pm['account_id'],
@@ -602,7 +620,21 @@ class TransactionController extends Controller
                     'amount' => $pm['amount'],
                     'active' => 1,
                 ];
-                PaymentTransaction::create($payload);
+                $paymentTransaction = PaymentTransaction::create($payload);
+                // amount ya viene con el impuesto horneado (mismo criterio que items) —
+                // se reconstruye el desglose reversando la fórmula base×(1+percent/100).
+                if ($paymentTax) {
+                    $finalAmount = (float) $pm['amount'];
+                    $percent = (float) $paymentTax->percent;
+                    $base = $percent > 0 ? $finalAmount / (1 + $percent / 100) : $finalAmount;
+                    PaymentTransactionTax::create([
+                        'payment_transaction_id' => $paymentTransaction->id,
+                        'tax_id' => $paymentTax->id,
+                        'amount' => round(abs($finalAmount) - abs($base), 2),
+                        'percent' => $percent,
+                        'active' => 1,
+                    ]);
+                }
             }
 
             // Reload with relations (including account inside payment transactions)
@@ -715,6 +747,7 @@ class TransactionController extends Controller
                 'payments.*.is_official' => 'nullable|boolean',
                 // deprecated: rate_is_official removed in favor of is_official
                 'payments.*.current_rate' => 'nullable|boolean',
+                'payments.*.tax_id' => 'nullable|exists:taxes,id',
             ], $this->custom_message());
             if ($validator->fails()) {
                 return response()->json([
@@ -935,18 +968,46 @@ class TransactionController extends Controller
             // Si vienen payments en el payload, reemplazar el conjunto de PaymentTransactions
             $newPaymentAccountIds = [];
             if (is_array($paymentsUpd)) {
+                // OWF-353: limpiar el desglose de impuestos de los payments viejos antes de
+                // borrarlos (payment_transaction_taxes no cascadea solo con soft-deletes).
+                $oldPaymentIds = PaymentTransaction::where('transaction_id', $transaction->id)->pluck('id');
+                if ($oldPaymentIds->isNotEmpty()) {
+                    PaymentTransactionTax::whereIn('payment_transaction_id', $oldPaymentIds)->delete();
+                }
                 PaymentTransaction::where('transaction_id', $transaction->id)->delete();
                 foreach ($paymentsUpd as $idx => $pm) {
                     $accId = isset($pm['account_id']) ? (int)$pm['account_id'] : null;
                     $amt = isset($pm['amount']) ? (float)$pm['amount'] : 0.0;
                     if ($accId) { $newPaymentAccountIds[] = $accId; }
-                    PaymentTransaction::create([
+                    $paymentTax = null;
+                    if (!empty($pm['tax_id'])) {
+                        $paymentTax = Tax::find($pm['tax_id']);
+                        if (!$paymentTax || !in_array($paymentTax->applies_to ?? 'payment', ['payment', 'both'], true)) {
+                            DB::rollBack();
+                            return response()->json([
+                                'status' => 'FAILED', 'code' => 422,
+                                'message' => __('Selected tax does not apply to payments'),
+                            ], 422);
+                        }
+                    }
+                    $newPayment = PaymentTransaction::create([
                         'transaction_id' => $transaction->id,
                         'account_id' => $accId,
                         'user_currency_id' => $userCurrencyIdsByIdx[$idx] ?? null,
                         'amount' => $amt,
                         'active' => 1,
                     ]);
+                    if ($paymentTax) {
+                        $percent = (float) $paymentTax->percent;
+                        $base = $percent > 0 ? $amt / (1 + $percent / 100) : $amt;
+                        PaymentTransactionTax::create([
+                            'payment_transaction_id' => $newPayment->id,
+                            'tax_id' => $paymentTax->id,
+                            'amount' => round(abs($amt) - abs($base), 2),
+                            'percent' => $percent,
+                            'active' => 1,
+                        ]);
+                    }
                 }
             }
 

@@ -55,6 +55,14 @@ class PaymentTransaction extends Model
     }
 
     /**
+     * OWF-353: impuesto(s) aplicados a este pago (p.ej. IGTF) — panel "Pago múltiple".
+     */
+    public function taxes()
+    {
+        return $this->hasMany(PaymentTransactionTax::class);
+    }
+
+    /**
      * Convenience appended attributes for API responses.
      * - account_name: the related account name
      * - rate_id: alias of user_currency_id (what client expects)
