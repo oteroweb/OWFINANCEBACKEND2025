@@ -38,6 +38,49 @@ class UserCurrencyController extends Controller
         ]]);
     }
 
+    /**
+     * OWF-346: historial de tasa paralela (propia del usuario) para el picker "Tasa
+     * paralelo (actual)" en SmartTransactionModal.vue — antes solo se veía la más reciente
+     * (is_current:true), sin forma de reusar una tasa de otro momento pese a que el
+     * usuario acumula muchas filas históricas de user_currencies.
+     */
+    public function history(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'currency_id' => 'required|exists:currencies,id',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()],400);
+        }
+        $rows = UserCurrency::where('user_id', $request->user()->id)
+            ->where('currency_id', $request->input('currency_id'))
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->limit(30)
+            ->get(['id', 'current_rate', 'is_official', 'is_current', 'updated_at']);
+        return response()->json(['status'=>'OK','code'=>200,'data'=>$rows]);
+    }
+
+    /**
+     * OWF-346: historial de tasa oficial (BCV) automática para el picker "Tasa oficial
+     * (BCV) hoy" — mismo criterio que officialLatest() pero devuelve varias, no solo la
+     * última. Fuente: official_rates, poblada por BcvRateFetcher (ver OWF-321).
+     */
+    public function officialHistory(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'currency_id' => 'required|exists:currencies,id',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status'=>'FAILED','code'=>400,'message'=>__('Incorrect Params'),'data'=>$validator->errors()->getMessages()],400);
+        }
+        $rows = OfficialRate::where('currency_id', $request->input('currency_id'))
+            ->orderByDesc('fetched_at')
+            ->limit(30)
+            ->get(['id', 'rate', 'fetched_at', 'source']);
+        return response()->json(['status'=>'OK','code'=>200,'data'=>$rows]);
+    }
+
     public function index(Request $request)
     {
         $auth = $request->user();

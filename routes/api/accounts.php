@@ -44,6 +44,8 @@ Route::group([
 ], function () {
     Route::get('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'index']);
     Route::get('/official-latest', [\App\Http\Controllers\Api\UserCurrencyController::class, 'officialLatest']);
+    Route::get('/history', [\App\Http\Controllers\Api\UserCurrencyController::class, 'history']);
+    Route::get('/official-history', [\App\Http\Controllers\Api\UserCurrencyController::class, 'officialHistory']);
     Route::post('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'store']);
     Route::put('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'update']);
     Route::delete('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'destroy']);
@@ -56,6 +58,8 @@ Route::group([
 ], function () {
     Route::get('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'index']);
     Route::get('/official-latest', [\App\Http\Controllers\Api\UserCurrencyController::class, 'officialLatest']);
+    Route::get('/history', [\App\Http\Controllers\Api\UserCurrencyController::class, 'history']);
+    Route::get('/official-history', [\App\Http\Controllers\Api\UserCurrencyController::class, 'officialHistory']);
     Route::post('/', [\App\Http\Controllers\Api\UserCurrencyController::class, 'store']);
     Route::put('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'update']);
     Route::delete('/{id}', [\App\Http\Controllers\Api\UserCurrencyController::class, 'destroy']);
