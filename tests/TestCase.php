@@ -9,12 +9,14 @@ use App\Models\Role;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected ?User $authUser = null;
+
     protected function setUp(): void
     {
         parent::setUp();
         try {
-            $user = User::factory()->create();
-            Sanctum::actingAs($user, ['*']);
+            $this->authUser = User::factory()->create();
+            Sanctum::actingAs($this->authUser, ['*']);
         } catch (\Throwable $e) {
             // continue without auth if factories unavailable
         }

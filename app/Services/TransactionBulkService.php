@@ -207,7 +207,7 @@ class TransactionBulkService
         }
         $accountsToCheck = array_values(array_unique(array_filter($accountsToCheck)));
 
-        if (!empty($accountsToCheck) && !$user->isAdmin() && !app()->environment('testing')) {
+        if (!empty($accountsToCheck) && !$user->isAdmin()) {
             $allowed = $user->accounts()
                 ->whereIn('accounts.id', $accountsToCheck)
                 ->pluck('accounts.id')

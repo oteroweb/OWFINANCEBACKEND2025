@@ -87,6 +87,7 @@ class TransactionTest extends TestCase
     public function test_bulk_create_all_valid()
     {
         $account = Account::factory()->create();
+        $this->authUser->accounts()->attach($account->id);
         $type = TransactionType::factory()->create(['slug' => 'expense']);
 
         $data = [
@@ -188,6 +189,7 @@ class TransactionTest extends TestCase
     public function test_bulk_create_partial_success()
     {
         $account = Account::factory()->create();
+        $this->authUser->accounts()->attach($account->id);
         $type = TransactionType::factory()->create(['slug' => 'expense']);
 
         $data = [
@@ -238,6 +240,7 @@ class TransactionTest extends TestCase
     public function test_bulk_create_dry_run()
     {
         $account = Account::factory()->create();
+        $this->authUser->accounts()->attach($account->id);
         $type = TransactionType::factory()->create(['slug' => 'expense']);
 
         $data = [
@@ -340,6 +343,7 @@ class TransactionTest extends TestCase
     {
         $account1 = Account::factory()->create();
         $account2 = Account::factory()->create();
+        $this->authUser->accounts()->attach([$account1->id, $account2->id]);
         $type = TransactionType::factory()->create(['slug' => 'transfer']);
 
         $data = [
