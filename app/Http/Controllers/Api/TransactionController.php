@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Entities\ItemTransaction;
 use App\Models\Entities\SharedTransactionCategory;
 use App\Models\Entities\PaymentTransaction;
@@ -25,6 +26,45 @@ class TransactionController extends Controller
     public function __construct(TransactionRepo $transactionRepo) {
         $this->transactionRepo = $transactionRepo;
     }
+    /**
+     * @group Transaction
+     * Post
+     *
+     * uploadAttachment — OWF-284: sube el "Foto / soporte" (recibo/comprobante) de una
+     * transacción al disco 'public' y devuelve la URL para guardar en transactions.url_file.
+     */
+    public function uploadAttachment(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'FAILED',
+                'code'    => 400,
+                'message' => __('Incorrect Params'),
+                'data'    => $validator->errors()->getMessages(),
+            ], 400);
+        }
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'status'  => 'FAILED',
+                'code'    => 401,
+                'message' => __('Unauthenticated'),
+                'data'    => null,
+            ], 401);
+        }
+        $path = $request->file('file')->store('attachments/' . $user->id, 'public');
+        return response()->json([
+            'status'  => 'OK',
+            'code'    => 200,
+            'message' => __('Success'),
+            'data'    => [
+                'url_file' => Storage::disk('public')->url($path),
+            ],
+        ], 200);
+    }
+
     /**
      * @group Transaction
      * Get
