@@ -142,7 +142,7 @@ class JarController extends Controller
                 if ($jarId) {
                     // Verificar ownership
                     $existingJar = $this->jarRepo->find($jarId);
-                    if (!$existingJar || $existingJar->user_id !== $userId) {
+                    if (!$existingJar || $request->user()->cannot('update', $existingJar)) {
                         DB::rollBack();
                         return response()->json([
                             'status'=>'FAILED',
@@ -232,7 +232,7 @@ class JarController extends Controller
             if (!empty($toDelete)) {
                 foreach ($toDelete as $deleteId) {
                     $jarToDelete = $this->jarRepo->find($deleteId);
-                    if ($jarToDelete && $jarToDelete->user_id === $userId) {
+                    if ($jarToDelete && $request->user()->can('delete', $jarToDelete)) {
                         $this->jarRepo->delete($jarToDelete);
                     }
                 }
@@ -336,8 +336,7 @@ class JarController extends Controller
     {
         try {
             $jar = $this->jarRepo->find($id);
-            // #todo(policy): Use JarPolicy view ability instead of inline user check.
-            if ($jar && $request->user() && $jar->user_id !== $request->user()->id && !app()->environment('testing')) {
+            if ($jar && $request->user()->cannot('view', $jar)) {
                 return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
             }
             if (isset($jar->id)) {
@@ -517,8 +516,7 @@ class JarController extends Controller
     {
         $jar = $this->jarRepo->find($id);
         if (isset($jar->id)) {
-            // #todo(policy): Use JarPolicy update ability instead of inline user check.
-            if ($request->user() && $jar->user_id !== $request->user()->id && !app()->environment('testing')) {
+            if ($request->user()->cannot('update', $jar)) {
                 return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
             }
             $validator = Validator::make($request->all(), [
@@ -639,8 +637,7 @@ class JarController extends Controller
         try {
             $jar = $this->jarRepo->find($id);
             if ($jar) {
-                // #todo(policy): Use JarPolicy delete ability instead of inline user check.
-                if ($request->user() && $jar->user_id !== $request->user()->id && !app()->environment('testing')) {
+                if ($request->user()->cannot('delete', $jar)) {
                     return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
                 }
                 $this->jarRepo->delete($jar);
@@ -678,8 +675,7 @@ class JarController extends Controller
     {
         $jar = $this->jarRepo->find($id);
         if (isset($jar->active)) {
-            // #todo(policy): Use JarPolicy update ability instead of inline user check.
-            if ($request->user() && $jar->user_id !== $request->user()->id && !app()->environment('testing')) {
+            if ($request->user()->cannot('update', $jar)) {
                 return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
             }
             $data = ['active' => !$jar->active];
@@ -750,8 +746,7 @@ class JarController extends Controller
     {
         $jar = $this->jarRepo->find($id);
         if (!$jar) { return response()->json(['status'=>'FAILED','code'=>404,'message'=>__('Jar does not exist').'.'], 404); }
-        // #todo(policy): Use JarPolicy update ability instead of inline user check.
-    if ($request->user() && $jar->user_id !== $request->user()->id && !app()->environment('testing')) {
+        if ($request->user()->cannot('update', $jar)) {
             return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
         }
         $validator = Validator::make($request->all(), [
@@ -827,8 +822,7 @@ class JarController extends Controller
     {
         $jar = $this->jarRepo->find($id);
         if (!$jar) { return response()->json(['status'=>'FAILED','code'=>404,'message'=>__('Jar does not exist').'.'], 404); }
-        // #todo(policy): Use JarPolicy update ability instead of inline user check.
-    if ($request->user() && $jar->user_id !== $request->user()->id && !app()->environment('testing')) {
+        if ($request->user()->cannot('update', $jar)) {
             return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
         }
         // Enforce base_scope requirement

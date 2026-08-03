@@ -25,6 +25,7 @@ class AdjustBalanceTest extends TestCase
         $acctType = \App\Models\Entities\AccountType::factory()->create();
         $account = Account::factory()->create(['initial' => 100, 'currency_id' => $currency->id, 'account_type_id' => $acctType->id]);
         $user->accounts()->attach($account->id, ['is_owner' => 1]);
+        \Laravel\Sanctum\Sanctum::actingAs($user, ['*']);
         $headers = $this->authHeaders($user);
 
         // Transacción existente +50 (incluida)
@@ -53,6 +54,7 @@ class AdjustBalanceTest extends TestCase
         $acctType = \App\Models\Entities\AccountType::factory()->create();
         $account = Account::factory()->create(['initial' => 0, 'currency_id' => $currency->id, 'account_type_id' => $acctType->id]);
         $user->accounts()->attach($account->id, ['is_owner' => 1]);
+        \Laravel\Sanctum\Sanctum::actingAs($user, ['*']);
         $headers = $this->authHeaders($user);
 
         // Sin transacciones, target=120 => debe crear txn +120

@@ -16,6 +16,12 @@ use App\Models\Entities\Provider;
 use App\Policies\ProviderPolicy;
 use App\Models\Entities\AccountFolder;
 use App\Policies\AccountFolderPolicy;
+use App\Models\Entities\Account;
+use App\Policies\AccountPolicy;
+use App\Models\Entities\Debt;
+use App\Policies\DebtPolicy;
+use App\Models\Entities\Dream;
+use App\Policies\DreamPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -31,6 +37,9 @@ class AuthServiceProvider extends ServiceProvider
         ItemTransaction::class => ItemTransactionPolicy::class,
         Provider::class => ProviderPolicy::class,
         AccountFolder::class => AccountFolderPolicy::class,
+        Account::class => AccountPolicy::class,
+        Debt::class => DebtPolicy::class,
+        Dream::class => DreamPolicy::class,
     ];
 
     /**
@@ -38,6 +47,6 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // #todo: Add gates/policies for Accounts, AccountFolder when ready.
+        //
     }
 }

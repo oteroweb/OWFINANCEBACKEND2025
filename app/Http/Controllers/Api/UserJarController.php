@@ -619,7 +619,7 @@ class UserJarController extends Controller
             return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden')], 403);
         }
         $jar = \App\Models\Entities\Jar::find($id);
-        if (!$jar || (int)$jar->user_id !== (int)$userId) { return response()->json(['status'=>'FAILED','code'=>404,'message'=>__('Jar not found')], 404); }
+        if (!$jar || $auth->cannot('update', $jar)) { return response()->json(['status'=>'FAILED','code'=>404,'message'=>__('Jar not found')], 404); }
         $v = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
             'type' => 'required|in:fixed,percent',
@@ -668,7 +668,7 @@ class UserJarController extends Controller
             return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden')], 403);
         }
         $jar = \App\Models\Entities\Jar::find($id);
-        if (!$jar || (int)$jar->user_id !== (int)$userId) { return response()->json(['status'=>'FAILED','code'=>404,'message'=>__('Jar not found')], 404); }
+        if (!$jar || $auth->cannot('delete', $jar)) { return response()->json(['status'=>'FAILED','code'=>404,'message'=>__('Jar not found')], 404); }
         $jar->active = 0; $jar->save(); $jar->delete();
         return response()->json(['status'=>'OK','code'=>200], 200);
     }
@@ -681,7 +681,7 @@ class UserJarController extends Controller
             return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden')], 403);
         }
         $jar = \App\Models\Entities\Jar::find($id);
-        if (!$jar || (int)$jar->user_id !== (int)$userId) { return response()->json(['status'=>'FAILED','code'=>404,'message'=>__('Jar not found')], 404); }
+        if (!$jar || $auth->cannot('update', $jar)) { return response()->json(['status'=>'FAILED','code'=>404,'message'=>__('Jar not found')], 404); }
         $v = Validator::make($request->all(), [
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'integer|exists:categories,id',

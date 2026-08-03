@@ -86,6 +86,7 @@ class AccountsFullTest extends TestCase
     {
         $currency = $this->makeCurrency();
         $account  = Account::factory()->create(['currency_id' => $currency->id, 'initial' => 5000.00]);
+        $this->authUser->accounts()->attach($account->id, ['is_owner' => 1]);
 
         $res = $this->postJson('/api/v1/accounts/' . $account->id . '/recalculate-account');
         $res->assertStatus(200);
@@ -97,6 +98,7 @@ class AccountsFullTest extends TestCase
     {
         $currency = $this->makeCurrency();
         $account  = Account::factory()->create(['currency_id' => $currency->id, 'initial' => 1000.00]);
+        $this->authUser->accounts()->attach($account->id, ['is_owner' => 1]);
 
         $res = $this->postJson('/api/v1/accounts/' . $account->id . '/adjust-balance', [
             'target_balance' => 1200.00,

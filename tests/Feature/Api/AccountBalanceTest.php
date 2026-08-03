@@ -28,6 +28,7 @@ class AccountBalanceTest extends TestCase
     $account = Account::factory()->create(['initial' => 0, 'currency_id' => $currency->id, 'account_type_id' => $acctType->id]);
     // Vincular usuario a la cuenta para pasar autorización
     $user->accounts()->attach($account->id, ['is_owner' => 1]);
+    \Laravel\Sanctum\Sanctum::actingAs($user, ['*']);
         $type = TransactionType::factory()->create(['slug' => 'income']);
         $headers = $this->authHeaders($user);
 
@@ -92,6 +93,7 @@ class AccountBalanceTest extends TestCase
     $acctType = \App\Models\Entities\AccountType::factory()->create();
     $account = Account::factory()->create(['initial' => 0, 'currency_id' => $currency->id, 'account_type_id' => $acctType->id]);
     $user->accounts()->attach($account->id, ['is_owner' => 1]);
+    \Laravel\Sanctum\Sanctum::actingAs($user, ['*']);
         $type = TransactionType::factory()->create(['slug' => 'income']);
         $headers = $this->authHeaders($user);
 

@@ -16,7 +16,7 @@ class JarPolicy
 
     public function view(User $user, Jar $jar): bool
     {
-    return app()->environment('testing') ? (bool) $user?->id : ($jar->user_id === $user->id);
+        return $user->isAdmin() || (int) $jar->user_id === (int) $user->id;
     }
 
     public function create(User $user): bool
@@ -26,11 +26,11 @@ class JarPolicy
 
     public function update(User $user, Jar $jar): bool
     {
-    return app()->environment('testing') ? (bool) $user?->id : ($jar->user_id === $user->id);
+        return $user->isAdmin() || (int) $jar->user_id === (int) $user->id;
     }
 
     public function delete(User $user, Jar $jar): bool
     {
-    return app()->environment('testing') ? (bool) $user?->id : ($jar->user_id === $user->id);
+        return $user->isAdmin() || (int) $jar->user_id === (int) $user->id;
     }
 }

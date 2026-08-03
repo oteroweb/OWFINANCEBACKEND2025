@@ -78,10 +78,13 @@ class AccountController extends Controller
      * Find an account by ID
      * @urlParam id integer required The ID of the account. Example: 1
      */
-    public function find($id)
+    public function find(Request $request, $id)
     {
         try {
             $account = $this->accountRepo->find($id);
+            if (isset($account->id) && $request->user()->cannot('view', $account)) {
+                return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+            }
             if (isset($account->id)) {
                 $response = [
                     'status'  => 'OK',
@@ -189,6 +192,9 @@ class AccountController extends Controller
     public function update(Request $request, $id)
     {
         $account = $this->accountRepo->find($id);
+        if (isset($account->id) && $request->user()->cannot('update', $account)) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+        }
         if (isset($account->id)) {
             $data = $request->only(['name', 'currency_id', 'initial', 'account_type_id']);
             if ($request->exists('active')) {
@@ -250,6 +256,9 @@ class AccountController extends Controller
                 'code' => 404,
                 'message' => __('Account not found'),
             ], 404);
+        }
+        if ($request->user()->cannot('update', $account)) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
         }
 
         // Base de cálculo: saldo inicial + suma firmada de transacciones
@@ -325,13 +334,16 @@ class AccountController extends Controller
      * @urlParam id integer required The ID of the account. Example: 1
      * Force recalculation of cached balance from all active + include_in_balance transactions.
      */
-    public function recalcBalance($id)
+    public function recalcBalance(Request $request, $id)
     {
         $account = $this->accountRepo->find($id);
         if (!$account) {
             return response()->json([
                 'status' => 'FAILED','code'=>404,'message'=>__('Account not found')
             ],404);
+        }
+        if ($request->user()->cannot('update', $account)) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
         }
         $value = $this->accountRepo->recalcAndStore($account->id);
         $account->balance_calculado = $value;
@@ -346,13 +358,16 @@ class AccountController extends Controller
      * @urlParam id integer required The ID of the account. Example: 1
      * Force recalculation of balance from initial plus signed transaction sums by type.
      */
-    public function recalcBalanceFromInitialByType($id)
+    public function recalcBalanceFromInitialByType(Request $request, $id)
     {
         $account = $this->accountRepo->find($id);
         if (!$account) {
             return response()->json([
                 'status' => 'FAILED','code'=>404,'message'=>__('Account not found')
             ],404);
+        }
+        if ($request->user()->cannot('update', $account)) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
         }
         $value = $this->accountRepo->recalcAndStoreFromInitialByType($account->id);
         $account->balance_calculado = $value;
@@ -366,10 +381,13 @@ class AccountController extends Controller
      * Delete an account
      * @urlParam id integer required The ID of the account. Example: 1
      */
-    public function delete($id)
+    public function delete(Request $request, $id)
     {
         try {
             $account = $this->accountRepo->find($id);
+            if ($account && $request->user()->cannot('delete', $account)) {
+                return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+            }
             if ($account) {
                 $account = $this->accountRepo->delete($account);
                 $response = [
@@ -403,9 +421,12 @@ class AccountController extends Controller
      * Change account status
      * @urlParam id integer required The ID of the account. Example: 1
      */
-    public function change_status($id)
+    public function change_status(Request $request, $id)
     {
         $account = $this->accountRepo->find($id);
+        if (isset($account->active) && $request->user()->cannot('update', $account)) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+        }
         if (isset($account->active)) {
             $data = ['active' => !$account->active];
             $this->accountRepo->update($account, $data);

@@ -80,7 +80,7 @@ class JarTest extends TestCase
 
     public function test_change_status_jar()
     {
-        $jar = Jar::factory()->create(['active' => 1]);
+        $jar = Jar::factory()->create(['active' => 1, 'user_id' => $this->authUser->id]);
         $response = $this->patchJson('/api/v1/jars/' . $jar->id . '/status');
         $response->assertStatus(200)
             ->assertJson(['status' => 'OK', 'message' => __('Status Jar updated')]);

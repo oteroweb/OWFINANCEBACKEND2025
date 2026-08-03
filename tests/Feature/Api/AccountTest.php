@@ -103,6 +103,7 @@ class AccountTest extends TestCase
         $currency = \App\Models\Entities\Currency::factory()->create();
         $accountType = \App\Models\Entities\AccountType::factory()->create();
         $account = Account::factory()->create(['active' => 1, 'currency_id' => $currency->id, 'account_type_id' => $accountType->id]);
+        $this->authUser->accounts()->attach($account->id, ['is_owner' => 1]);
         $response = $this->patchJson('/api/v1/accounts/' . $account->id . '/status');
         $response->assertStatus(200)
             ->assertJson(['status' => 'OK', 'message' => __('Status Account updated')]);
