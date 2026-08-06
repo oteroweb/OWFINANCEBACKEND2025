@@ -40,6 +40,11 @@ class UserFinancialProfileController extends Controller
             'dream'             => ['nullable', 'string', 'max:500'],
             'emotional_keyword' => ['nullable', 'string', Rule::in(['tranquilo', 'libre', 'seguro', 'control', 'prospero'])],
             'onboarding_profile_completed' => ['nullable', 'boolean'],
+            // OWF-366: perfil narrativo avanzado (solo Pro)
+            'income_detail'  => ['nullable', 'string', Rule::in(['estable', 'variable', 'mixto'])],
+            'risk_tolerance' => ['nullable', 'string', Rule::in(['conservador', 'equilibrado', 'agresivo'])],
+            'time_horizon'   => ['nullable', 'string', Rule::in(['corto', 'medio', 'largo'])],
+            'goal_priority'  => ['nullable', 'string', Rule::in(['seguridad', 'crecimiento', 'experiencias'])],
             // Configuración del Asesor IA
             'advisor_name'        => ['nullable', 'string', 'max:60'],
             'advisor_personality' => ['nullable', 'string', Rule::in(['formal', 'friendly', 'coach'])],
@@ -104,6 +109,11 @@ class UserFinancialProfileController extends Controller
             'dream'                        => $setting->dream,
             'emotional_keyword'            => $setting->emotional_keyword,
             'onboarding_profile_completed' => (bool) $setting->onboarding_profile_completed,
+            // OWF-366: perfil narrativo avanzado (solo Pro)
+            'income_detail'                => $setting->income_detail,
+            'risk_tolerance'               => $setting->risk_tolerance,
+            'time_horizon'                 => $setting->time_horizon,
+            'goal_priority'                => $setting->goal_priority,
             // prefs del asesor (ya existían)
             'advisor_name'                 => $setting->advisor_name,
             'advisor_personality'          => $setting->advisor_personality,

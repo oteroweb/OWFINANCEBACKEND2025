@@ -29,6 +29,11 @@ class AiUserSetting extends Model
         'dream',
         'emotional_keyword',
         'onboarding_profile_completed',
+        // OWF-366: perfil narrativo avanzado (solo Pro)
+        'income_detail',
+        'risk_tolerance',
+        'time_horizon',
+        'goal_priority',
     ];
 
     protected $casts = [
