@@ -50,9 +50,18 @@ class User extends Authenticatable
     public function accounts()
     {
         return $this->belongsToMany(\App\Models\Entities\Account::class, 'account_user', 'user_id', 'account_id')
-            ->withPivot('is_owner')
+            ->withPivot('is_owner', 'permission', 'shared_by_user_id')
             ->withTimestamps()
-            ->select('accounts.*', 'account_user.is_owner as is_owner');
+            ->select('accounts.*', 'account_user.is_owner as is_owner', 'account_user.permission as permission', 'account_user.shared_by_user_id as shared_by_user_id');
+    }
+
+    /**
+     * OWF: grupos familiares donde este usuario es miembro (activo o invitado) — un
+     * usuario puede pertenecer a varios a la vez.
+     */
+    public function familyGroupMemberships()
+    {
+        return $this->hasMany(\App\Models\Entities\FamilyGroupMember::class);
     }
 
     /**

@@ -51,8 +51,8 @@ class Account extends Model
     {
         return $this->belongsToMany(User::class)
             ->withTimestamps()
-            ->withPivot('is_owner')
-            ->select('users.*', 'account_user.is_owner as is_owner');
+            ->withPivot('is_owner', 'permission', 'shared_by_user_id')
+            ->select('users.*', 'account_user.is_owner as is_owner', 'account_user.permission as permission', 'account_user.shared_by_user_id as shared_by_user_id');
     }
 
     protected static function newFactory()

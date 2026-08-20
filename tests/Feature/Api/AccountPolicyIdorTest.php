@@ -89,7 +89,14 @@ class AccountPolicyIdorTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_non_owner_member_can_view_and_update_but_not_delete()
+    /**
+     * OWF-369: antes de los niveles de permiso (manage|view_full|view_balance), CUALQUIER
+     * fila is_owner=false en el pivot daba acceso de edición completo — sin distinguir
+     * "puede ver" de "puede modificar". Con el sistema de cuentas compartidas del grupo
+     * familiar, una fila sin permission explícito (el caso is_owner=false "pelado" de
+     * antes) ya NO alcanza para editar — solo para ver. Editar requiere permission=manage.
+     */
+    public function test_non_owner_member_without_permission_can_view_but_not_update_or_delete()
     {
         [$victim, $account] = $this->makeVictimAccount();
         $member = User::factory()->create();
@@ -97,8 +104,31 @@ class AccountPolicyIdorTest extends TestCase
         \Laravel\Sanctum\Sanctum::actingAs($member, ['*']);
 
         $this->getJson('/api/v1/accounts/' . $account->id)->assertStatus(200);
+        $this->putJson('/api/v1/accounts/' . $account->id, ['name' => 'Shared edit'])->assertStatus(403);
+        $this->deleteJson('/api/v1/accounts/' . $account->id)->assertStatus(403);
+    }
+
+    public function test_member_with_manage_permission_can_view_and_update_but_not_delete()
+    {
+        [$victim, $account] = $this->makeVictimAccount();
+        $member = User::factory()->create();
+        $account->users()->attach($member->id, ['is_owner' => false, 'permission' => 'manage']);
+        \Laravel\Sanctum\Sanctum::actingAs($member, ['*']);
+
+        $this->getJson('/api/v1/accounts/' . $account->id)->assertStatus(200);
         $this->putJson('/api/v1/accounts/' . $account->id, ['name' => 'Shared edit'])->assertStatus(200);
         $this->deleteJson('/api/v1/accounts/' . $account->id)->assertStatus(403);
+    }
+
+    public function test_member_with_view_only_permission_cannot_update()
+    {
+        [$victim, $account] = $this->makeVictimAccount();
+        $member = User::factory()->create();
+        $account->users()->attach($member->id, ['is_owner' => false, 'permission' => 'view_full']);
+        \Laravel\Sanctum\Sanctum::actingAs($member, ['*']);
+
+        $this->getJson('/api/v1/accounts/' . $account->id)->assertStatus(200);
+        $this->putJson('/api/v1/accounts/' . $account->id, ['name' => 'Shared edit'])->assertStatus(403);
     }
 
     public function test_owner_can_still_manage_own_account()

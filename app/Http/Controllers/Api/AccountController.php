@@ -715,6 +715,143 @@ class AccountController extends Controller
         ], 200);
     }
 
+    /**
+     * @group Account
+     * OWF-369: comparte una cuenta con un miembro del grupo familiar, con un nivel de
+     * permiso (manage|view_full|view_balance). Solo el dueño real puede compartir, y
+     * solo se puede compartir con alguien que ya sea miembro activo de un grupo
+     * familiar en común (candado de negocio, no solo de UI).
+     * @bodyParam user_id integer required
+     * @bodyParam permission string required manage|view_full|view_balance
+     */
+    public function share(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id'    => 'required|integer|exists:users,id',
+            'permission' => 'required|string|in:manage,view_full,view_balance',
+        ], $this->custom_message());
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'FAILED',
+                'code'    => 400,
+                'message' => __('Incorrect Params'),
+                'data'    => $validator->errors()->getMessages(),
+            ], 400);
+        }
+
+        $account = $this->accountRepo->find($id);
+        if (!isset($account->id)) {
+            return response()->json(['status' => 'FAILED', 'code' => 404, 'message' => __('Not Data with this Account') . '.'], 404);
+        }
+        if ($request->user()->cannot('share', $account)) {
+            return response()->json(['status' => 'FAILED', 'code' => 403, 'message' => __('Forbidden') . '.'], 403);
+        }
+
+        $authUserId = $request->user()->id;
+        $targetUserId = (int) $request->input('user_id');
+
+        if ($targetUserId === $authUserId) {
+            return response()->json(['status' => 'FAILED', 'code' => 422, 'message' => 'No podés compartir una cuenta con vos mismo.'], 422);
+        }
+
+        $existing = $account->users()->where('users.id', $targetUserId)->first();
+        if ($existing && $existing->is_owner) {
+            return response()->json(['status' => 'FAILED', 'code' => 422, 'message' => 'Ese usuario ya es dueño de la cuenta.'], 422);
+        }
+
+        // OWF: no basta con que la UI lo pida "solo si están en el grupo familiar" —
+        // se valida acá también, porque el endpoint es la superficie real de seguridad.
+        $sharesFamilyGroup = \App\Models\Entities\FamilyGroupMember::where('user_id', $authUserId)
+            ->where('status', 'active')
+            ->whereIn('family_group_id', function ($q) use ($targetUserId) {
+                $q->select('family_group_id')
+                  ->from('family_group_members')
+                  ->where('user_id', $targetUserId)
+                  ->where('status', 'active');
+            })
+            ->exists();
+
+        if (!$sharesFamilyGroup) {
+            return response()->json([
+                'status'  => 'FAILED',
+                'code'    => 422,
+                'message' => 'Solo podés compartir cuentas con miembros activos de tu grupo familiar.',
+            ], 422);
+        }
+
+        $account->users()->syncWithoutDetaching([
+            $targetUserId => [
+                'is_owner'           => 0,
+                'permission'         => $request->input('permission'),
+                'shared_by_user_id'  => $authUserId,
+            ],
+        ]);
+
+        return response()->json([
+            'status'  => 'OK',
+            'code'    => 200,
+            'message' => 'Cuenta compartida correctamente.',
+            'data'    => $this->accountRepo->find($id),
+        ], 200);
+    }
+
+    /**
+     * @group Account
+     * OWF-369: revoca el acceso de un usuario compartido (no afecta al dueño real).
+     * @urlParam id integer required ID de la cuenta.
+     * @urlParam userId integer required ID del usuario a quitar.
+     */
+    public function unshare(Request $request, $id, $userId)
+    {
+        $account = $this->accountRepo->find($id);
+        if (!isset($account->id)) {
+            return response()->json(['status' => 'FAILED', 'code' => 404, 'message' => __('Not Data with this Account') . '.'], 404);
+        }
+        if ($request->user()->cannot('share', $account)) {
+            return response()->json(['status' => 'FAILED', 'code' => 403, 'message' => __('Forbidden') . '.'], 403);
+        }
+
+        $target = $account->users()->where('users.id', (int) $userId)->first();
+        if (!$target || $target->is_owner) {
+            return response()->json(['status' => 'FAILED', 'code' => 422, 'message' => 'No se puede revocar ese acceso.'], 422);
+        }
+
+        $account->users()->detach((int) $userId);
+
+        return response()->json(['status' => 'OK', 'code' => 200, 'message' => 'Acceso revocado correctamente.'], 200);
+    }
+
+    /**
+     * @group Account
+     * OWF-369: cuentas que otros miembros del grupo familiar compartieron conmigo
+     * (no incluye cuentas propias ni co-titularidad clásica is_owner=1).
+     */
+    public function sharedWithMe(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $accounts = \App\Models\Entities\Account::with(['currency'])
+            ->whereHas('users', function ($q) use ($userId) {
+                $q->where('users.id', $userId)->where('account_user.is_owner', 0);
+            })
+            ->get();
+
+        $data = $accounts->map(function ($account) use ($userId) {
+            $myPivot = $account->users()->where('users.id', $userId)->first();
+            $owner = $account->users()->where('account_user.is_owner', 1)->first();
+            return [
+                'id'         => $account->id,
+                'name'       => $account->name,
+                'balance'    => $account->balance,
+                'currency'   => $account->currency,
+                'permission' => $myPivot->permission ?? null,
+                'owner'      => $owner ? ['id' => $owner->id, 'name' => $owner->name] : null,
+            ];
+        })->values();
+
+        return response()->json(['status' => 'OK', 'code' => 200, 'data' => $data], 200);
+    }
+
     public function custom_message()
     {
         return [

@@ -11,6 +11,9 @@ Route::group([
     Route::post('/', [AccountController::class, 'save']);
     Route::get('/active', [AccountController::class, 'allActive']);
     Route::get('/all', [AccountController::class, 'withTrashed']);
+    // OWF-369: literal, debe ir antes de GET /{id} (mismo cuidado de orden de registro
+    // que account_types.php — ver nota de sesión sobre /taxes/all).
+    Route::get('/shared-with-me', [AccountController::class, 'sharedWithMe']);
     Route::get('/', [AccountController::class, 'all']);
     // Account folders
     Route::get('/folders', [\App\Http\Controllers\Api\AccountFolderController::class, 'index']);
@@ -32,6 +35,9 @@ Route::group([
     Route::post('/{id}/recalculate-account', [AccountController::class, 'recalcBalanceFromInitialByType']);
     // Adjust account balance (new logic)
     Route::post('/{id}/adjust-balance', [AccountController::class, 'adjustBalance']);
+    // OWF-369: compartir cuenta con un miembro del grupo familiar
+    Route::post('/{id}/share', [AccountController::class, 'share']);
+    Route::delete('/{id}/share/{userId}', [AccountController::class, 'unshare']);
     Route::put('/{id}', [AccountController::class, 'update']);
     Route::delete('/{id}', [AccountController::class, 'delete']);
     Route::get('/{id}', [AccountController::class, 'find']);
