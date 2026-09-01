@@ -7,8 +7,11 @@
     use Illuminate\Support\Str;
     
     class AccountTypeRepo {
-        public function all(array $params = []) {
+        public function all(array $params = [], ?int $userId = null) {
             $query = AccountType::whereIn('active', [1,0])->with([]);
+            if ($userId !== null) {
+                $query->where(function ($q) use ($userId) { $q->whereNull('user_id')->orWhere('user_id', $userId); });
+            }
             if (!empty($params['search'])) {
                 $this->applyGlobalSearch($query, $params['search'], ['name', 'description', 'icon']);
             }
@@ -21,8 +24,11 @@
             }
             return $query->get();
         }
-        public function allActive(array $params = []) {
+        public function allActive(array $params = [], ?int $userId = null) {
             $query = AccountType::whereIn('active', [1])->with([]);
+            if ($userId !== null) {
+                $query->where(function ($q) use ($userId) { $q->whereNull('user_id')->orWhere('user_id', $userId); });
+            }
             if (!empty($params['search'])) {
                 $this->applyGlobalSearch($query, $params['search'], ['name', 'description', 'icon']);
             }

@@ -143,7 +143,7 @@ class AccountTypeController extends Controller
      * all
      */
     public function all(Request $request) {
-        try { $accounttype = $this->AccountTypeRepo->all($request->only(['page','per_page','sort_by','descending','search']));
+        try { $accounttype = $this->AccountTypeRepo->all($request->only(['page','per_page','sort_by','descending','search']), optional($request->user())->id);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -168,7 +168,7 @@ class AccountTypeController extends Controller
      * all active
      */
     public function allActive(Request $request) {
-        try { $accounttype = $this->AccountTypeRepo->allActive($request->only(['page','per_page','sort_by','descending','search']));
+        try { $accounttype = $this->AccountTypeRepo->allActive($request->only(['page','per_page','sort_by','descending','search']), optional($request->user())->id);
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -287,6 +287,79 @@ class AccountTypeController extends Controller
             return response()->json($response, 500);
         }
     }
+    /**
+     * @group Account Type
+     * Post
+     *
+     * storeCustom — cualquier usuario autenticado crea su propio tipo de cuenta,
+     * visible solo para él (user_id != null), sin tocar el catálogo global (admin-only).
+     * @bodyParam name string required The name of the account type. Example: Ahorro en oro
+     * @bodyParam icon string optional The icon of the account type. Example: savings
+     */
+    public function storeCustom(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|max:35',
+            'icon' => 'nullable|max:35',
+            'description' => 'nullable|max:255',
+        ], $this->custom_message());
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'FAILED',
+                'code'    => 400,
+                'message' => __('Incorrect Params'),
+                'data'    => $validator->errors()->getMessages(),
+            ], 400);
+        }
+        try {
+            $data = [
+                'user_id'     => $request->user()->id,
+                'name'        => $request->input('name'),
+                'icon'        => $request->input('icon', 'category'),
+                'description' => $request->input('description', ''),
+                'active'      => true,
+            ];
+            $accounttype = $this->AccountTypeRepo->store($data);
+            return response()->json([
+                'status'  => 'OK',
+                'code'    => 201,
+                'message' => __('Account Type saved correctly'),
+                'data'    => $accounttype,
+            ], 201);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            return response()->json([
+                'status'  => 'FAILED',
+                'code'    => 500,
+                'message' => __('An error has occurred') . '.',
+            ], 500);
+        }
+    }
+
+    /**
+     * @group Account Type
+     * Delete
+     * @urlParam id integer required The ID of the account type. Example: 1
+     *
+     * deleteCustom — solo el dueño puede borrar su propio tipo personalizado.
+     * Nunca permite borrar un tipo global (user_id null) por esta vía.
+     */
+    public function deleteCustom(Request $request, $id) {
+        try {
+            $accounttype = $this->AccountTypeRepo->find($id);
+            if (!$accounttype) {
+                return response()->json(['status' => 'FAILED', 'code' => 404, 'message' => __('Account Type not Found')], 404);
+            }
+            if ($accounttype->user_id === null || (int) $accounttype->user_id !== (int) $request->user()->id) {
+                return response()->json(['status' => 'FAILED', 'code' => 403, 'message' => __('Forbidden')], 403);
+            }
+            $accounttype->delete();
+            return response()->json(['status' => 'OK', 'code' => 200, 'message' => __('Account Type Deleted Successfully')], 200);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            return response()->json(['status' => 'FAILED', 'code' => 500, 'message' => __('An error has occurred') . '.'], 500);
+        }
+    }
+
     public function custom_message() {
         
         return [

@@ -26,11 +26,17 @@
     Route::delete('/{id}', [AccountTypeController::class, 'delete']);
   });
 
-  // Lectura: cualquier autenticado.
+  // Lectura + tipos personalizados: cualquier autenticado.
+  // OWF-373: un usuario puede crear su propio tipo de cuenta (user_id != null, visible
+  // solo para él); el catálogo global (user_id null) sigue siendo admin-only vía el
+  // grupo de arriba. Rutas literales '/custom' y '/custom/{id}' antes de '/{id}' para
+  // evitar el mismo bug de orden de registro ya documentado en este archivo.
   Route::group([
     'middleware' => ['api', 'auth:sanctum'],
     'prefix'     => 'account_types',
 ], function () {
+    Route::post('/custom', [AccountTypeController::class, 'storeCustom']);
+    Route::delete('/custom/{id}', [AccountTypeController::class, 'deleteCustom']);
     Route::get('/active', [AccountTypeController::class, 'allActive']);
     Route::get('/', [AccountTypeController::class, 'all']);
     Route::get('/{id}', [AccountTypeController::class, 'find']);
