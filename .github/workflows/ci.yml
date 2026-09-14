@@ -31,7 +31,11 @@ jobs:
         run: php artisan key:generate --ansi
 
       - name: Run tests
-        run: php artisan test
+        # OWF-290: AiProviderFactory exige al menos una API key no vacía o devuelve
+        # 503 antes de intentar cualquier llamada HTTP — .env.example trae todas
+        # vacías, así que los tests de extracción IA (con Http::fake(), nunca
+        # tocan la red real) fallaban en CI. Dummy key, jamás sale de este job.
+        run: GROQ_API_KEY=ci-dummy-key-never-used php artisan test
 
   # OWF-295: dispara el auto-sync del puntero de submódulo en el repo central,
   # reemplazando el paso manual de correr sync-submodule-pointers.sh. Solo en
