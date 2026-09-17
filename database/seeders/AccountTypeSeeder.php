@@ -55,8 +55,16 @@ class AccountTypeSeeder extends Seeder
             ],
         ];
 
+        // OWF-377: `create()` sin guard corría de nuevo cada vez que alguien ejecutaba
+        // este seeder a mano (backfill de datos base en un ambiente nuevo, etc.) —
+        // en prod terminó corriendo 11 veces, duplicando los 7 tipos globales a 77
+        // filas y volviendo el selector de "Tipo de cuenta" inusable. firstOrCreate
+        // por nombre (scope global, user_id null) lo hace seguro de re-ejecutar.
         foreach ($types as $data) {
-            AccountType::create($data);
+            AccountType::firstOrCreate(
+                ['name' => $data['name'], 'user_id' => null],
+                $data
+            );
         }
     }
 }
