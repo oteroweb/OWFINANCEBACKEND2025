@@ -75,9 +75,18 @@ class OpenCodeGoProvider implements AiProviderInterface
             array_map(fn($m) => ['role' => $m['role'], 'content' => $m['content']], $messages)
         );
 
-        $usage     = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_tokens' => 0, 'cache_creation_tokens' => 0];
-        $rawOutput = '';
+        $usage = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_tokens' => 0, 'cache_creation_tokens' => 0];
 
+        // OWF-379: el fix de OWF-310 (validar HTTP code) no alcanzaba — seguía usando
+        // CURLOPT_WRITEFUNCTION con RETURNTRANSFER=false, y en respuestas de error libcurl
+        // deja de invocar el WRITEFUNCTION (reproducido en vivo: un callback de diagnóstico
+        // adentro nunca se ejecutaba) y escribe el body crudo del proveedor DIRECTO al
+        // output buffer de PHP — que en un request real ES la respuesta HTTP al cliente
+        // (así se filtró la URL interna de opt-in de OpenCode Zen a un usuario real). Con
+        // RETURNTRANSFER en true no hay output buffer de por medio: el body siempre vuelve
+        // como string, se valida el HTTP code ANTES de tocarlo, recién entonces se parsea.
+        // Se pierde el streaming token-a-token real (los deltas se emiten en loop apenas
+        // llega la respuesta completa) — trade-off aceptado por seguridad.
         $curlHandle = curl_init();
         curl_setopt_array($curlHandle, [
             CURLOPT_URL        => "{$this->baseUrl}/chat/completions",
@@ -88,40 +97,30 @@ class OpenCodeGoProvider implements AiProviderInterface
                 'stream'   => true,
                 'messages' => $outMessages,
             ]),
-            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($onDelta, &$usage, &$rawOutput) {
-                $rawOutput .= $data;
-                foreach (explode("\n", $data) as $line) {
-                    if (!str_starts_with($line, 'data: ') || trim($line) === 'data: [DONE]') continue;
-                    $json = json_decode(substr($line, 6), true);
-                    if (!$json) continue;
-                    $text = $json['choices'][0]['delta']['content'] ?? '';
-                    if ($text) $onDelta($text);
-                    if (isset($json['usage'])) {
-                        $usage['input_tokens']  = $json['usage']['prompt_tokens'] ?? 0;
-                        $usage['output_tokens'] = $json['usage']['completion_tokens'] ?? 0;
-                    }
-                }
-                return strlen($data);
-            },
-            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_RETURNTRANSFER => true,
         ]);
-        curl_exec($curlHandle);
-        // OWF-310: el callback de arriba solo procesa líneas SSE ("data: ..."). Si el
-        // proveedor responde con un error plano (ej. `{"type":"error",...}` sin formato
-        // SSE, como hace OpenCode Zen cuando la cuenta no tiene crédito), esas líneas se
-        // descartaban en silencio y esta función retornaba como si hubiera tenido éxito
-        // — sin lanzar excepción, así que AiProviderChain nunca hacía fallback a groq/etc,
-        // y el error crudo del proveedor terminaba filtrándose sin el mensaje amigable del
-        // controller. Ahora se valida el código HTTP real antes de dar por buena la llamada.
-        $httpCode = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
-        $curlErr  = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
+        $rawOutput = curl_exec($curlHandle);
+        $httpCode  = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $curlErr   = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
         curl_close($curlHandle);
 
         if ($curlErr) {
             throw new \RuntimeException("OpenCode Go streamChat transport error: {$curlErr}");
         }
         if ($httpCode < 200 || $httpCode >= 300) {
-            throw new \RuntimeException("OpenCode Go streamChat HTTP {$httpCode}: " . substr($rawOutput, 0, 300));
+            throw new \RuntimeException("OpenCode Go streamChat HTTP {$httpCode}: " . substr((string) $rawOutput, 0, 300));
+        }
+
+        foreach (explode("\n", (string) $rawOutput) as $line) {
+            if (!str_starts_with($line, 'data: ') || trim($line) === 'data: [DONE]') continue;
+            $json = json_decode(substr($line, 6), true);
+            if (!$json) continue;
+            $text = $json['choices'][0]['delta']['content'] ?? '';
+            if ($text) $onDelta($text);
+            if (isset($json['usage'])) {
+                $usage['input_tokens']  = $json['usage']['prompt_tokens'] ?? 0;
+                $usage['output_tokens'] = $json['usage']['completion_tokens'] ?? 0;
+            }
         }
 
         return ['usage' => $usage, 'model' => $this->advisorModel];

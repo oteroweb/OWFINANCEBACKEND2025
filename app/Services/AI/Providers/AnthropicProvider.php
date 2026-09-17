@@ -58,21 +58,32 @@ class AnthropicProvider implements AiProviderInterface
                 ],
                 'messages' => $messages,
             ]),
-            CURLOPT_WRITEFUNCTION  => function ($ch, $data) use ($onDelta, &$usage) {
-                foreach (explode("\n", $data) as $line) {
-                    if (!str_starts_with($line, 'data: ')) continue;
-                    $json = json_decode(substr($line, 6), true);
-                    if (!$json) continue;
-                    if ($json['type'] === 'content_block_delta') $onDelta($json['delta']['text'] ?? '');
-                    if ($json['type'] === 'message_delta') $usage = array_merge($usage, $json['usage'] ?? []);
-                    if ($json['type'] === 'message_start') $usage = array_merge($usage, $json['message']['usage'] ?? []);
-                }
-                return strlen($data);
-            },
-            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_RETURNTRANSFER => true,
         ]);
-        curl_exec($curlHandle);
+        // OWF-379: RETURNTRANSFER en vez de WRITEFUNCTION — ver comentario largo en
+        // GroqProvider::streamChat(). libcurl deja de invocar el WRITEFUNCTION en
+        // respuestas de error, filtrando el body crudo del proveedor directo al output
+        // buffer de PHP (= la respuesta HTTP real en un request web).
+        $rawOutput = curl_exec($curlHandle);
+        $httpCode  = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $curlErr   = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
         curl_close($curlHandle);
+
+        if ($curlErr) {
+            throw new \RuntimeException("Anthropic streamChat transport error: {$curlErr}");
+        }
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new \RuntimeException("Anthropic streamChat HTTP {$httpCode}: " . substr((string) $rawOutput, 0, 300));
+        }
+
+        foreach (explode("\n", (string) $rawOutput) as $line) {
+            if (!str_starts_with($line, 'data: ')) continue;
+            $json = json_decode(substr($line, 6), true);
+            if (!$json) continue;
+            if ($json['type'] === 'content_block_delta') $onDelta($json['delta']['text'] ?? '');
+            if ($json['type'] === 'message_delta') $usage = array_merge($usage, $json['usage'] ?? []);
+            if ($json['type'] === 'message_start') $usage = array_merge($usage, $json['message']['usage'] ?? []);
+        }
 
         return ['usage' => $this->normalizeUsage($usage), 'model' => $this->advisorModel];
     }

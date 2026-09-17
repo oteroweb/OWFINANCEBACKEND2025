@@ -111,8 +111,7 @@ class GeminiProvider implements AiProviderInterface
             'parts' => [['text' => $m['content']]],
         ], $messages);
 
-        $usage     = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_tokens' => 0, 'cache_creation_tokens' => 0];
-        $rawOutput = '';
+        $usage = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_tokens' => 0, 'cache_creation_tokens' => 0];
 
         $curlHandle = curl_init();
         curl_setopt_array($curlHandle, [
@@ -132,35 +131,35 @@ class GeminiProvider implements AiProviderInterface
                     'thinkingConfig'  => ['thinkingBudget' => 0],
                 ],
             ]),
-            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($onDelta, &$usage, &$rawOutput) {
-                $rawOutput .= $data;
-                foreach (explode("\n", $data) as $line) {
-                    if (!str_starts_with($line, 'data: ')) continue;
-                    $json = json_decode(substr($line, 6), true);
-                    if (!$json) continue;
-                    $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                    if ($text) $onDelta($text);
-                    if (isset($json['usageMetadata'])) {
-                        $usage['input_tokens']  += $json['usageMetadata']['promptTokenCount'] ?? 0;
-                        $usage['output_tokens'] += $json['usageMetadata']['candidatesTokenCount'] ?? 0;
-                    }
-                }
-                return strlen($data);
-            },
-            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_RETURNTRANSFER => true,
         ]);
-        curl_exec($curlHandle);
-        // OWF-310: mismo fix que OpenCodeGoProvider — validar el HTTP status real en vez
-        // de asumir éxito solo porque curl no tiró un error de transporte.
-        $httpCode = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
-        $curlErr  = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
+        // OWF-379: RETURNTRANSFER en vez de WRITEFUNCTION — el fix de OWF-310 (validar HTTP
+        // status) no alcanzaba solo: libcurl deja de invocar el WRITEFUNCTION en respuestas
+        // de error, filtrando el body crudo del proveedor directo al output buffer de PHP
+        // (= la respuesta HTTP real en un request web). Ver comentario largo en
+        // GroqProvider::streamChat().
+        $rawOutput = curl_exec($curlHandle);
+        $httpCode  = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $curlErr   = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
         curl_close($curlHandle);
 
         if ($curlErr) {
             throw new \RuntimeException("Gemini streamChat transport error: {$curlErr}");
         }
         if ($httpCode < 200 || $httpCode >= 300) {
-            throw new \RuntimeException("Gemini streamChat HTTP {$httpCode}: " . substr($rawOutput, 0, 300));
+            throw new \RuntimeException("Gemini streamChat HTTP {$httpCode}: " . substr((string) $rawOutput, 0, 300));
+        }
+
+        foreach (explode("\n", (string) $rawOutput) as $line) {
+            if (!str_starts_with($line, 'data: ')) continue;
+            $json = json_decode(substr($line, 6), true);
+            if (!$json) continue;
+            $text = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            if ($text) $onDelta($text);
+            if (isset($json['usageMetadata'])) {
+                $usage['input_tokens']  += $json['usageMetadata']['promptTokenCount'] ?? 0;
+                $usage['output_tokens'] += $json['usageMetadata']['candidatesTokenCount'] ?? 0;
+            }
         }
 
         return ['usage' => $usage, 'model' => $model];

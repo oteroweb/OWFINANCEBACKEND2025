@@ -75,6 +75,17 @@ class GroqProvider implements AiProviderInterface
 
         $usage = ['input_tokens' => 0, 'output_tokens' => 0, 'cache_read_tokens' => 0, 'cache_creation_tokens' => 0];
 
+        // OWF-379: antes usaba CURLOPT_WRITEFUNCTION con CURLOPT_RETURNTRANSFER=false para
+        // streaming real. En respuestas de error (ej. modelo eliminado/sin acceso), libcurl
+        // deja de invocar el WRITEFUNCTION para ese body (reproducido: fwrite de diagnóstico
+        // dentro del callback nunca se ejecuta) y el body crudo del proveedor (JSON de error,
+        // a veces con URLs internas del proveedor) se escribe DIRECTO al output buffer de
+        // PHP — que en un request HTTP real ES la respuesta al cliente. Con RETURNTRANSFER
+        // en true no hay output buffer involucrado: el body siempre vuelve como string, se
+        // valida el HTTP code ANTES de tocarlo, y solo entonces se parsea. Se pierde el
+        // streaming token-a-token real (los deltas se emiten en un loop apenas llega la
+        // respuesta completa, no a medida que el modelo genera) — trade-off aceptado: nunca
+        // más se filtra un body de error crudo al usuario.
         $curlHandle = curl_init();
         curl_setopt_array($curlHandle, [
             CURLOPT_URL        => 'https://api.groq.com/openai/v1/chat/completions',
@@ -85,24 +96,31 @@ class GroqProvider implements AiProviderInterface
                 'stream'   => true,
                 'messages' => $groqMessages,
             ]),
-            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($onDelta, &$usage) {
-                foreach (explode("\n", $data) as $line) {
-                    if (!str_starts_with($line, 'data: ') || trim($line) === 'data: [DONE]') continue;
-                    $json = json_decode(substr($line, 6), true);
-                    if (!$json) continue;
-                    $text = $json['choices'][0]['delta']['content'] ?? '';
-                    if ($text) $onDelta($text);
-                    if (isset($json['x_groq']['usage'])) {
-                        $usage['input_tokens']  = $json['x_groq']['usage']['prompt_tokens'] ?? 0;
-                        $usage['output_tokens'] = $json['x_groq']['usage']['completion_tokens'] ?? 0;
-                    }
-                }
-                return strlen($data);
-            },
-            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_RETURNTRANSFER => true,
         ]);
-        curl_exec($curlHandle);
+        $rawOutput = curl_exec($curlHandle);
+        $httpCode  = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $curlErr   = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
         curl_close($curlHandle);
+
+        if ($curlErr) {
+            throw new \RuntimeException("Groq streamChat transport error: {$curlErr}");
+        }
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new \RuntimeException("Groq streamChat HTTP {$httpCode}: " . substr((string) $rawOutput, 0, 300));
+        }
+
+        foreach (explode("\n", (string) $rawOutput) as $line) {
+            if (!str_starts_with($line, 'data: ') || trim($line) === 'data: [DONE]') continue;
+            $json = json_decode(substr($line, 6), true);
+            if (!$json) continue;
+            $text = $json['choices'][0]['delta']['content'] ?? '';
+            if ($text) $onDelta($text);
+            if (isset($json['x_groq']['usage'])) {
+                $usage['input_tokens']  = $json['x_groq']['usage']['prompt_tokens'] ?? 0;
+                $usage['output_tokens'] = $json['x_groq']['usage']['completion_tokens'] ?? 0;
+            }
+        }
 
         return ['usage' => $usage, 'model' => $this->advisorModel];
     }

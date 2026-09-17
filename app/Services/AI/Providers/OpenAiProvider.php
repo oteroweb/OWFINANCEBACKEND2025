@@ -77,25 +77,36 @@ class OpenAiProvider implements AiProviderInterface
                 'stream_options' => ['include_usage' => true],
                 'messages'       => $openAiMessages,
             ]),
-            CURLOPT_WRITEFUNCTION => function ($ch, $data) use ($onDelta, &$usage) {
-                foreach (explode("\n", $data) as $line) {
-                    if (!str_starts_with($line, 'data: ') || trim($line) === 'data: [DONE]') continue;
-                    $json = json_decode(substr($line, 6), true);
-                    if (!$json) continue;
-                    $text = $json['choices'][0]['delta']['content'] ?? '';
-                    if ($text) $onDelta($text);
-                    if (isset($json['usage'])) {
-                        $usage['input_tokens']      = $json['usage']['prompt_tokens'] ?? 0;
-                        $usage['output_tokens']     = $json['usage']['completion_tokens'] ?? 0;
-                        $usage['cache_read_tokens'] = $json['usage']['prompt_tokens_details']['cached_tokens'] ?? 0;
-                    }
-                }
-                return strlen($data);
-            },
-            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_RETURNTRANSFER => true,
         ]);
-        curl_exec($curlHandle);
+        // OWF-379: RETURNTRANSFER en vez de WRITEFUNCTION — ver comentario largo en
+        // GroqProvider::streamChat(). libcurl deja de invocar el WRITEFUNCTION en
+        // respuestas de error, filtrando el body crudo del proveedor directo al output
+        // buffer de PHP (= la respuesta HTTP real en un request web).
+        $rawOutput = curl_exec($curlHandle);
+        $httpCode  = curl_getinfo($curlHandle, CURLINFO_HTTP_CODE);
+        $curlErr   = curl_errno($curlHandle) ? curl_error($curlHandle) : null;
         curl_close($curlHandle);
+
+        if ($curlErr) {
+            throw new \RuntimeException("OpenAI streamChat transport error: {$curlErr}");
+        }
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new \RuntimeException("OpenAI streamChat HTTP {$httpCode}: " . substr((string) $rawOutput, 0, 300));
+        }
+
+        foreach (explode("\n", (string) $rawOutput) as $line) {
+            if (!str_starts_with($line, 'data: ') || trim($line) === 'data: [DONE]') continue;
+            $json = json_decode(substr($line, 6), true);
+            if (!$json) continue;
+            $text = $json['choices'][0]['delta']['content'] ?? '';
+            if ($text) $onDelta($text);
+            if (isset($json['usage'])) {
+                $usage['input_tokens']      = $json['usage']['prompt_tokens'] ?? 0;
+                $usage['output_tokens']     = $json['usage']['completion_tokens'] ?? 0;
+                $usage['cache_read_tokens'] = $json['usage']['prompt_tokens_details']['cached_tokens'] ?? 0;
+            }
+        }
 
         return ['usage' => $usage, 'model' => $this->advisorModel];
     }
