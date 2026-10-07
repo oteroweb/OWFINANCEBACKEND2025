@@ -4,6 +4,7 @@ namespace App\Services\AI\Providers;
 
 use App\Services\AI\Contracts\AiProviderInterface;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class OpenCodeGoProvider implements AiProviderInterface
 {
@@ -38,7 +39,7 @@ class OpenCodeGoProvider implements AiProviderInterface
             ));
         }
 
-        $response = Http::withHeaders(['Authorization' => "Bearer {$this->apiKey}", 'Content-Type' => 'application/json'])
+        $response = Http::withHeaders(['Authorization' => "Bearer {$this->apiKey}", 'Content-Type' => 'application/json', 'x-opencode-session' => (string) Str::uuid()])
             ->timeout(30)
             ->post("{$this->baseUrl}/chat/completions", [
                 'model'      => $this->activeModel,
@@ -91,7 +92,10 @@ class OpenCodeGoProvider implements AiProviderInterface
         curl_setopt_array($curlHandle, [
             CURLOPT_URL        => "{$this->baseUrl}/chat/completions",
             CURLOPT_POST       => true,
-            CURLOPT_HTTPHEADER => ["Authorization: Bearer {$this->apiKey}", 'Content-Type: application/json'],
+            // OWF-385: OpenCode Zen/Go ahora rechaza (400 MissingSessionID) toda request sin el
+            // header x-opencode-session ("cannot be routed efficiently"). Un UUID por llamada
+            // alcanza para que enrute; no hay id de conversación disponible en esta interfaz.
+            CURLOPT_HTTPHEADER => ["Authorization: Bearer {$this->apiKey}", 'Content-Type: application/json', 'x-opencode-session: ' . Str::uuid()],
             CURLOPT_POSTFIELDS => json_encode([
                 'model'    => $this->advisorModel,
                 'stream'   => true,
