@@ -6,6 +6,7 @@ use App\Services\AI\Contracts\AiProviderInterface;
 use App\Services\AI\Providers\AnthropicProvider;
 use App\Services\AI\Providers\GeminiProvider;
 use App\Services\AI\Providers\OpenAiProvider;
+use App\Services\AI\Providers\CodexProvider;
 use App\Services\AI\Providers\GroqProvider;
 use App\Services\AI\Providers\OpenCodeGoProvider;
 use App\Services\AI\Providers\OpenRouterProvider;
@@ -94,6 +95,7 @@ class AiProviderFactory
             'anthropic'   => new AnthropicProvider($cfg['key'], $em, $am, $feature),
             'gemini'      => new GeminiProvider($cfg['key'], $em, $am, $feature),
             'openai'      => new OpenAiProvider($cfg['key'], $em, $am, $feature),
+            'codex'       => new CodexProvider($cfg['key'], $em, $am, $feature, $cfg['base_url'] ?? 'https://api.openai.com/v1', $cfg['reasoning_effort'] ?? 'low'),
             'groq'        => new GroqProvider($cfg['key'], $em, $am, $feature, $vm),
             'opencode-go' => new OpenCodeGoProvider($cfg['key'], $em, $am, $feature, $vm),
             'openrouter'  => new OpenRouterProvider($cfg['key'], $em, $am, $feature, $vm),

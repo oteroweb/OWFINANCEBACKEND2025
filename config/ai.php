@@ -8,17 +8,17 @@ return [
     | Primary provider + comma-separated fallback chain (tried in order if
     | the primary fails or has no key).
     |
-    | Options: opencode-go | groq | openrouter | gemini | xai | openai | anthropic
+    | Options: codex | opencode-go | groq | openrouter | gemini | xai | openai | anthropic
     |
     | Recommended priority (cheapest first):
     |   extraction: opencode-go → groq → openrouter → gemini → xai → openai
-    |   advisor:    opencode-go → gemini → openrouter → groq → xai → openai
+    |   advisor:    codex → opencode-go → gemini → openrouter → groq → xai → openai
     */
     'features' => [
         'extraction'          => env('AI_EXTRACTION_PROVIDER', 'opencode-go'),
         'extraction_fallback' => env('AI_EXTRACTION_FALLBACK', 'groq,openrouter,gemini,xai,openai'),
-        'advisor'             => env('AI_ADVISOR_PROVIDER', 'opencode-go'),
-        'advisor_fallback'    => env('AI_ADVISOR_FALLBACK', 'gemini,openrouter,groq,xai,openai'),
+        'advisor'             => env('AI_ADVISOR_PROVIDER', 'codex'),
+        'advisor_fallback'    => env('AI_ADVISOR_FALLBACK', 'opencode-go,gemini,openrouter,groq,xai,openai'),
     ],
 
     /*
@@ -123,6 +123,26 @@ return [
                 'output'      => 0.60,
                 'cache_read'  => 0.075,
                 'cache_write' => 0.15,
+            ],
+        ],
+
+        // OWF-383: modelos Codex de OpenAI (Responses API). Reusa OPENAI_API_KEY salvo que
+        // se defina CODEX_API_KEY aparte. Precios aproximados de gpt-5-codex (USD / 1M tokens).
+        'codex' => [
+            'key'              => env('CODEX_API_KEY', env('OPENAI_API_KEY')),
+            'base_url'         => env('CODEX_BASE_URL', 'https://api.openai.com/v1'),
+            'reasoning_effort' => env('AI_CODEX_REASONING_EFFORT', 'low'),
+            'label'            => 'OpenAI Codex',
+            'models'           => [
+                'extraction' => env('AI_CODEX_EXTRACTION_MODEL', 'gpt-5-codex'),
+                'advisor'    => env('AI_CODEX_ADVISOR_MODEL', 'gpt-5-codex'),
+                'vision'     => null,
+            ],
+            'pricing' => [
+                'input'       => 1.25,
+                'output'      => 10.00,
+                'cache_read'  => 0.125,
+                'cache_write' => 0.00,
             ],
         ],
 
