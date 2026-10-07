@@ -21,6 +21,8 @@ class Account extends Model
         'is_default',
         'balance_cached',
         'include_in_global_balance',
+
+        'business_id',
     ];
 
     protected $hidden = [

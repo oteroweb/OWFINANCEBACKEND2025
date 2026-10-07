@@ -10,6 +10,22 @@ use Illuminate\Support\Str;
 
 class TransactionRepo {
     /**
+     * OWF-370: contexto de contabilidad. Con business_id lista los movimientos de ESA empresa
+     * (acceso por rol, validado en el controller); sin él solo los personales.
+     * Devuelve true si quedó acotada a una empresa (se omite la restricción por cuentas del usuario).
+     */
+    private function applyBusinessScope($query, array $params): bool
+    {
+        $businessId = $params['business_id'] ?? null;
+        if ($businessId !== null && $businessId !== '') {
+            $query->where('transactions.business_id', (int) $businessId);
+            return true;
+        }
+        $query->whereNull('transactions.business_id');
+        return false;
+    }
+
+    /**
      * Get all transactions, sorted by a field and direction.
      * @param string $sortBy
      * @param bool $descending
@@ -31,8 +47,10 @@ class TransactionRepo {
                 'tags',
             ]);
 
+        $businessScoped = $this->applyBusinessScope($query, $params);
+
         // Restricción por usuario autenticado (no admin)
-        if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
+        if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !$businessScoped && !app()->environment('testing')) {
             $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
             if (!empty($allowedAccountIds)) {
                 // Permitir transacciones que pertenezcan a cuentas del usuario
@@ -266,7 +284,9 @@ class TransactionRepo {
                 'tags',
             ]);
 
-        if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !app()->environment('testing')) {
+        $businessScoped = $this->applyBusinessScope($query, $params);
+
+        if ($authUser && method_exists($authUser,'isAdmin') && !$authUser->isAdmin() && !$businessScoped && !app()->environment('testing')) {
             $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
             if (!empty($allowedAccountIds)) {
                 $query->where(function($q) use ($allowedAccountIds) {

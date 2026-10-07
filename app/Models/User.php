@@ -59,6 +59,12 @@ class User extends Authenticatable
      * OWF: grupos familiares donde este usuario es miembro (activo o invitado) — un
      * usuario puede pertenecer a varios a la vez.
      */
+    /** OWF-370: accesos de este usuario a empresas (activos o invitados). */
+    public function businessMemberships()
+    {
+        return $this->hasMany(\App\Models\Entities\BusinessUser::class);
+    }
+
     public function familyGroupMemberships()
     {
         return $this->hasMany(\App\Models\Entities\FamilyGroupMember::class);

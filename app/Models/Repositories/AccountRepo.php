@@ -8,6 +8,21 @@ use Illuminate\Support\Facades\DB;
 
 class AccountRepo
 {
+    /**
+     * OWF-370: aplica el contexto de contabilidad a una query de cuentas. Devuelve true si
+     * quedó acotada a una empresa (se omite el filtro por pivot account_user).
+     */
+    private function applyBusinessScope($query, array $params): bool
+    {
+        $businessId = $params['business_id'] ?? null;
+        if ($businessId !== null && $businessId !== '') {
+            $query->where('accounts.business_id', (int) $businessId);
+            return true;
+        }
+        $query->whereNull('accounts.business_id');
+        return false;
+    }
+
     public function all(array $params = [])
     {
         $query = Account::whereIn('active', [1, 0])
@@ -19,13 +34,21 @@ class AccountRepo
             $query->where('active', $active);
         }
 
+        // OWF-370: contexto de contabilidad — con business_id lista las cuentas de ESA empresa
+        // (el acceso lo da el rol en la empresa, validado en el controller, no el pivot
+        // account_user); sin business_id solo cuentas personales.
+        $businessScoped = $this->applyBusinessScope($query, $params);
+
         // Non-admins can never widen the scope beyond their own user_id via the param
         if (\auth()->check() && !\auth()->user()->isAdmin()) {
             $params['user_id'] = \auth()->id();
         }
+        if ($businessScoped) {
+            unset($params['user_id'], $params['is_owner']);
+        }
 
         // Auto-filter by authenticated user if user_id is not explicitly provided
-        if (empty($params['user_id']) && \auth()->check()) {
+        if (empty($params['user_id']) && \auth()->check() && !$businessScoped) {
             $authenticatedUserId = \auth()->id();
             $query->whereHas('users', function ($q) use ($authenticatedUserId) {
                 $q->where('users.id', $authenticatedUserId);
@@ -181,13 +204,21 @@ class AccountRepo
         $query = Account::where('active', 1)
             ->with(['currency', 'accountType', 'users']);
 
+        // OWF-370: contexto de contabilidad — con business_id lista las cuentas de ESA empresa
+        // (el acceso lo da el rol en la empresa, validado en el controller, no el pivot
+        // account_user); sin business_id solo cuentas personales.
+        $businessScoped = $this->applyBusinessScope($query, $params);
+
         // Non-admins can never widen the scope beyond their own user_id via the param
         if (\auth()->check() && !\auth()->user()->isAdmin()) {
             $params['user_id'] = \auth()->id();
         }
+        if ($businessScoped) {
+            unset($params['user_id'], $params['is_owner']);
+        }
 
         // Auto-filter by authenticated user if user_id is not explicitly provided
-        if (empty($params['user_id']) && \auth()->check()) {
+        if (empty($params['user_id']) && \auth()->check() && !$businessScoped) {
             $authenticatedUserId = \auth()->id();
             $query->whereHas('users', function ($q) use ($authenticatedUserId) {
                 $q->where('users.id', $authenticatedUserId);

@@ -65,6 +65,47 @@ class TransactionController extends Controller
         ], 200);
     }
 
+    /** OWF-370: si viene business_id, el usuario debe ser miembro activo de esa empresa. */
+    private function denyUnlessBusinessMember(Request $request, $businessId)
+    {
+        if ($businessId === null || $businessId === '') {
+            return null;
+        }
+        $business = \App\Models\Entities\Business::find((int) $businessId);
+        if (!$business || !$request->user() || $request->user()->cannot('view', $business)) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+        }
+        return null;
+    }
+
+    /**
+     * OWF-370: deriva el contexto contable de las cuentas del movimiento. Todas deben ser
+     * personales o todas de la MISMA empresa (no se mezclan contabilidades).
+     * @return array{0:?int,1:?\Illuminate\Http\JsonResponse} [business_id, error]
+     */
+    private function resolveBusinessContext(Request $request, array $accountIds): array
+    {
+        if (empty($accountIds)) {
+            return [null, null];
+        }
+        $found = \App\Models\Entities\Account::whereIn('id', $accountIds)->pluck('business_id')
+            ->map(fn($b) => $b === null ? null : (int) $b)->unique()->values()->all();
+        if (count($found) > 1) {
+            return [null, response()->json([
+                'status' => 'FAILED', 'code' => 422,
+                'message' => __('No se pueden mezclar cuentas personales y de empresa (ni de empresas distintas) en un movimiento'),
+            ], 422)];
+        }
+        $businessId = $found[0] ?? null;
+        if ($businessId !== null) {
+            $business = \App\Models\Entities\Business::find($businessId);
+            if (!$business || $request->user()->cannot('write', $business)) {
+                return [null, response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403)];
+            }
+        }
+        return [$businessId, null];
+    }
+
     /**
      * @group Transaction
      * Get
@@ -85,7 +126,7 @@ class TransactionController extends Controller
                 // periodos (extendidos)
                 'period_type', 'month', 'quarter', 'semester', 'year', 'week', 'fortnight',
                 // tags filter
-                'tag_ids'
+                'tag_ids', 'business_id'
             ]);
             // Support multiple and single payment account filters
             // Preferred: payment_account_ids=1,2,3 (or payments_account_ids)
@@ -115,7 +156,11 @@ class TransactionController extends Controller
                 }
             }
             $authUser = $request->user();
-            if ($authUser && !$authUser->isAdmin() && !app()->environment('testing')) {
+            if ($denied = $this->denyUnlessBusinessMember($request, $params['business_id'] ?? null)) {
+                return $denied;
+            }
+            $inBusiness = !empty($params['business_id']);
+            if ($authUser && !$authUser->isAdmin() && !$inBusiness && !app()->environment('testing')) {
                 unset($params['user_id']);
                 $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
                 if (!empty($params['account_ids'])) {
@@ -163,7 +208,7 @@ class TransactionController extends Controller
                 'page', 'per_page', 'sort_by', 'descending',
                 'search', 'provider_id', 'rate_id', 'user_id', 'account_id', 'transaction_type', 'transaction_type_id', 'payments_account_id',
                 // top-level category filters
-                'category_id', 'category'
+                'category_id', 'category', 'business_id'
             ]);
             // Support multiple and single payment account filters (active list)
             $paymentsAccountIdsRaw = $request->input('payment_account_ids')
@@ -190,7 +235,11 @@ class TransactionController extends Controller
                 }
             }
             $authUser = $request->user();
-            if ($authUser && !$authUser->isAdmin() && !app()->environment('testing')) {
+            if ($denied = $this->denyUnlessBusinessMember($request, $params['business_id'] ?? null)) {
+                return $denied;
+            }
+            $inBusiness = !empty($params['business_id']);
+            if ($authUser && !$authUser->isAdmin() && !$inBusiness && !app()->environment('testing')) {
                 unset($params['user_id']);
                 $allowedAccountIds = $authUser->accounts()->pluck('accounts.id')->all();
                 if (!empty($params['account_ids'])) {
@@ -395,7 +444,11 @@ class TransactionController extends Controller
                 $accountsToCheck[] = (int) $request->input('account_id');
             }
             $accountsToCheck = array_values(array_unique(array_filter($accountsToCheck)));
-            if (!empty($accountsToCheck) && !$user->isAdmin() && !app()->environment('testing')) {
+            [$businessId, $ctxError] = $this->resolveBusinessContext($request, $accountsToCheck);
+            if ($ctxError) {
+                return $ctxError;
+            }
+            if (!empty($accountsToCheck) && !$businessId && !$user->isAdmin() && !app()->environment('testing')) {
                 $allowed = $user->accounts()
                     ->whereIn('accounts.id', $accountsToCheck)
                     ->pluck('accounts.id')
@@ -502,6 +555,7 @@ class TransactionController extends Controller
                 'account_id'=> $request->input('account_id'),
                 'category_id'=> $request->input('category_id'),
                 'user_id'=> $user->id,
+                'business_id' => $businessId,
             ];
             if ($request->exists('active')) {
                 $data['active'] = $request->boolean('active');
@@ -732,6 +786,26 @@ class TransactionController extends Controller
     public function update(Request $request, $id) {
         $transaction = $this->transactionRepo->find($id);
         if (isset($transaction->id)) {
+            // OWF-370: movimientos de empresa — solo owner/accountant editan (viewer: solo lectura)
+            if ($transaction->business_id && $request->user()->cannot('update', $transaction)) {
+                return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+            }
+            // OWF-370: no se puede mover un movimiento a cuentas de otro contexto contable
+            $updAccountIds = array_values(array_unique(array_filter(array_map(
+                fn($pm) => (int) ($pm['account_id'] ?? 0), (array) $request->input('payments', [])
+            ))));
+            if (!empty($updAccountIds)) {
+                [$ctxBusinessId, $ctxError] = $this->resolveBusinessContext($request, $updAccountIds);
+                if ($ctxError) {
+                    return $ctxError;
+                }
+                if ((int) $ctxBusinessId !== (int) $transaction->business_id) {
+                    return response()->json([
+                        'status' => 'FAILED', 'code' => 422,
+                        'message' => __('No se puede mover un movimiento entre contabilidades distintas'),
+                    ], 422);
+                }
+            }
             // Validación condicional en update: sólo valida lo que venga en el payload
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|string|max:100',
@@ -1119,6 +1193,10 @@ class TransactionController extends Controller
         try {
             if ($this->transactionRepo->find($id)) {
                 $transaction = $this->transactionRepo->find($id);
+                // OWF-370: movimientos de empresa — solo owner/accountant borran
+                if ($transaction->business_id && $request->user()->cannot('delete', $transaction)) {
+                    return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+                }
                 $accountId = $transaction->account_id;
                 $this->transactionRepo->delete($transaction, ['active' => 0]);
                 $transaction->delete();

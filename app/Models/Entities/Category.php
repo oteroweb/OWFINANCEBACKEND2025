@@ -23,6 +23,7 @@ class Category extends Model
     'include_in_balance',
     'type',
     'sort_order',
+    'business_id',
     ];
 
     protected $appends = ['jar_slug', 'assigned_jar_id'];

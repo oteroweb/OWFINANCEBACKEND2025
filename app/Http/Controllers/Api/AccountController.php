@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use App\Models\Entities\AccountFolder;
+use App\Models\Entities\Business;
 use Illuminate\Support\Facades\DB;
 
 class AccountController extends Controller
@@ -20,13 +21,32 @@ class AccountController extends Controller
     }
 
     /**
+     * OWF-370: si viene business_id, el usuario debe ser miembro activo de esa empresa.
+     * Devuelve la respuesta 403 a retornar, o null si el contexto es personal / válido.
+     */
+    private function denyUnlessBusinessMember(Request $request, $businessId)
+    {
+        if ($businessId === null || $businessId === '') {
+            return null;
+        }
+        $business = Business::find((int) $businessId);
+        if (!$business || !$request->user() || $request->user()->cannot('view', $business)) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+        }
+        return null;
+    }
+
+    /**
      * @group Account
      * Get all accounts
      */
     public function all(Request $request)
     {
         try {
-            $params = $request->only(['page','per_page','sort_by','descending','search','active','currency_id','currency','account_type_id','account_type','user_id','user','is_owner']);
+            $params = $request->only(['page','per_page','sort_by','descending','search','active','currency_id','currency','account_type_id','account_type','user_id','user','is_owner','business_id']);
+            if ($denied = $this->denyUnlessBusinessMember($request, $params['business_id'] ?? null)) {
+                return $denied;
+            }
             $accounts = $this->accountRepo->all($params);
             $response = [
                 'status'  => 'OK',
@@ -53,7 +73,10 @@ class AccountController extends Controller
     public function allActive(Request $request)
     {
         try {
-            $params = $request->only(['page','per_page','sort_by','descending','search','active','currency_id','currency','account_type_id','account_type','user_id','user','is_owner']);
+            $params = $request->only(['page','per_page','sort_by','descending','search','active','currency_id','currency','account_type_id','account_type','user_id','user','is_owner','business_id']);
+            if ($denied = $this->denyUnlessBusinessMember($request, $params['business_id'] ?? null)) {
+                return $denied;
+            }
             $accounts = $this->accountRepo->allActive($params);
             $response = [
                 'status'  => 'OK',
@@ -127,6 +150,7 @@ class AccountController extends Controller
             'account_type_id' => 'required|exists:account_types,id',
             'active' => 'sometimes|boolean',
             'include_in_global_balance' => 'sometimes|boolean',
+            'business_id' => 'sometimes|nullable|integer|exists:businesses,id',
         ], $this->custom_message());
 
         if ($validator->fails()) {
@@ -147,10 +171,20 @@ class AccountController extends Controller
             if ($request->exists('include_in_global_balance')) {
                 $data['include_in_global_balance'] = $request->boolean('include_in_global_balance');
             }
+            // OWF-370: cuenta de empresa — solo el owner de la empresa puede crear cuentas en ella
+            $businessId = $request->input('business_id');
+            if ($businessId !== null && $businessId !== '') {
+                $business = Business::find((int) $businessId);
+                if (!$business || $request->user()->cannot('manage', $business)) {
+                    return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+                }
+                $data['business_id'] = $business->id;
+            }
             $account = $this->accountRepo->store($data);
 
-            // Attach to user pivot only when authenticated (tests may run unauthenticated)
-            if ($request->user()) {
+            // Attach to user pivot only when authenticated (tests may run unauthenticated).
+            // Las cuentas de empresa NO usan el pivot: el acceso lo da el rol en la empresa.
+            if ($request->user() && empty($data['business_id'])) {
                 $userId = $request->user()->id;
                 $folderId = $request->input('folder_id');
                 $sortOrder = $request->input('sort_order', 0);
@@ -520,19 +554,41 @@ class AccountController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
-        $accounts = DB::table('account_user')
-            ->where('user_id', $userId)
-            ->join('accounts', 'account_user.account_id', '=', 'accounts.id')
-            ->select(
-                'accounts.id',
-                'accounts.name as label',
-                'accounts.include_in_global_balance',
-                'account_user.folder_id',
-                'account_user.sort_order'
-            )
-            ->whereNull('accounts.deleted_at')
-            ->orderBy('account_user.sort_order')
-            ->get();
+        $businessId = $request->input('business_id');
+        if ($denied = $this->denyUnlessBusinessMember($request, $businessId)) {
+            return $denied;
+        }
+        if ($businessId !== null && $businessId !== '') {
+            // OWF-370: contexto empresa — sin carpetas personales ni pivot
+            $folders = collect();
+            $accounts = DB::table('accounts')
+                ->where('accounts.business_id', (int) $businessId)
+                ->whereNull('accounts.deleted_at')
+                ->select(
+                    'accounts.id',
+                    'accounts.name as label',
+                    'accounts.include_in_global_balance',
+                    DB::raw('NULL as folder_id'),
+                    DB::raw('0 as sort_order')
+                )
+                ->orderBy('accounts.name')
+                ->get();
+        } else {
+            $accounts = DB::table('account_user')
+                ->where('user_id', $userId)
+                ->join('accounts', 'account_user.account_id', '=', 'accounts.id')
+                ->select(
+                    'accounts.id',
+                    'accounts.name as label',
+                    'accounts.include_in_global_balance',
+                    'account_user.folder_id',
+                    'account_user.sort_order'
+                )
+                ->whereNull('accounts.deleted_at')
+                ->whereNull('accounts.business_id')
+                ->orderBy('account_user.sort_order')
+                ->get();
+        }
         // Build folder map
         $folderMap = [];
         foreach ($folders as $f) {
@@ -637,9 +693,19 @@ class AccountController extends Controller
         $userId = $user->id;
 
         // Cuentas activas del usuario con su moneda
-        $rows = DB::table('account_user')
-            ->where('account_user.user_id', $userId)
-            ->join('accounts', 'account_user.account_id', '=', 'accounts.id')
+        $businessId = $request->input('business_id');
+        if ($denied = $this->denyUnlessBusinessMember($request, $businessId)) {
+            return $denied;
+        }
+        $rowsQuery = ($businessId !== null && $businessId !== '')
+            // OWF-370: contexto empresa — todas las cuentas de la empresa, sin pivot
+            ? DB::table('accounts')->where('accounts.business_id', (int) $businessId)
+            // Contexto personal: las cuentas de empresa NUNCA suman al balance personal
+            : DB::table('account_user')
+                ->where('account_user.user_id', $userId)
+                ->join('accounts', 'account_user.account_id', '=', 'accounts.id')
+                ->whereNull('accounts.business_id');
+        $rows = $rowsQuery
             ->where('accounts.active', 1)
             ->whereNull('accounts.deleted_at')
             ->leftJoin('currencies', 'accounts.currency_id', '=', 'currencies.id')

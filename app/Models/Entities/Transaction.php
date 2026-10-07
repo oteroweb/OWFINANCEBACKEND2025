@@ -37,6 +37,8 @@ class Transaction extends Model
         'commission_type',
         'commission_value',
         'commission_amount',
+
+        'business_id',
     ];
 
     protected $casts = [

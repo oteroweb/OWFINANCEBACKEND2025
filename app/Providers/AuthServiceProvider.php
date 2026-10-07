@@ -22,6 +22,8 @@ use App\Models\Entities\Debt;
 use App\Policies\DebtPolicy;
 use App\Models\Entities\Dream;
 use App\Policies\DreamPolicy;
+use App\Models\Entities\Business;
+use App\Policies\BusinessPolicy;
 use App\Models\Entities\FamilyGroup;
 use App\Policies\FamilyGroupPolicy;
 
@@ -42,6 +44,7 @@ class AuthServiceProvider extends ServiceProvider
         Account::class => AccountPolicy::class,
         Debt::class => DebtPolicy::class,
         Dream::class => DreamPolicy::class,
+        Business::class => BusinessPolicy::class,
         FamilyGroup::class => FamilyGroupPolicy::class,
     ];
 

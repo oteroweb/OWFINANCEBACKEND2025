@@ -18,6 +18,19 @@ class CategoryController extends Controller
         $this->categoryRepo = $categoryRepo;
     }
 
+    /** OWF-370: si viene business_id, el usuario debe ser miembro activo de esa empresa. */
+    private function denyUnlessBusinessMember(Request $request, $businessId)
+    {
+        if ($businessId === null || $businessId === '') {
+            return null;
+        }
+        $business = \App\Models\Entities\Business::find((int) $businessId);
+        if (!$business || !$request->user() || $request->user()->cannot('view', $business)) {
+            return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+        }
+        return null;
+    }
+
     /**
      * @group Category
      * Get all categories
@@ -26,7 +39,10 @@ class CategoryController extends Controller
     {
         try {
             $user = $request->user();
-            $categories = $this->categoryRepo->all($user ? $user->id : null);
+            if ($denied = $this->denyUnlessBusinessMember($request, $request->query('business_id'))) {
+                return $denied;
+            }
+            $categories = $this->categoryRepo->all($user ? $user->id : null, $request->query('business_id'));
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -53,7 +69,10 @@ class CategoryController extends Controller
     {
         try {
             $user = $request->user();
-            $categories = $this->categoryRepo->allActive($user ? $user->id : null);
+            if ($denied = $this->denyUnlessBusinessMember($request, $request->query('business_id'))) {
+                return $denied;
+            }
+            $categories = $this->categoryRepo->allActive($user ? $user->id : null, $request->query('business_id'));
             $response = [
                 'status'  => 'OK',
                 'code'    => 200,
@@ -122,6 +141,7 @@ class CategoryController extends Controller
             'include_in_balance' => 'nullable|boolean',
             'type' => 'nullable|in:folder,category',
             'sort_order' => 'nullable|integer',
+            'business_id' => 'nullable|integer|exists:businesses,id',
         ], $this->custom_message());
 
         if ($validator->fails()) {
@@ -138,7 +158,12 @@ class CategoryController extends Controller
             // Scope parent_id to current user if provided
             if (!empty($data['parent_id'])) {
                 $parent = \App\Models\Entities\Category::where('id', $data['parent_id'])
-                    ->where(function($q) use ($user) { $q->whereNull('user_id')->orWhere('user_id', optional($user)->id); })
+                    ->where(function($q) use ($user, $request) {
+                        $q->whereNull('user_id')->orWhere('user_id', optional($user)->id);
+                        if ($request->filled('business_id')) {
+                            $q->orWhere('business_id', (int) $request->input('business_id'));
+                        }
+                    })
                     ->first();
                 if (!$parent) {
                     return response()->json([
@@ -162,6 +187,14 @@ class CategoryController extends Controller
             }
             if ($user) {
                 $data['user_id'] = $user->id;
+            }
+            // OWF-370: categoría de empresa — owner o accountant pueden crearla
+            if ($request->filled('business_id')) {
+                $business = \App\Models\Entities\Business::find((int) $request->input('business_id'));
+                if (!$business || !$user || $user->cannot('write', $business)) {
+                    return response()->json(['status'=>'FAILED','code'=>403,'message'=>__('Forbidden').'.'], 403);
+                }
+                $data['business_id'] = $business->id;
             }
             $category = $this->categoryRepo->store($data);
             $response = [
@@ -389,9 +422,22 @@ class CategoryController extends Controller
         $perPage = $request->query('per_page', 1000);
 
         // Load user categories (including globals with null user_id)
-        $cats = \App\Models\Entities\Category::where(function($q) use ($effectiveUserId) {
-            $q->whereNull('user_id')->orWhere('user_id', $effectiveUserId);
-            })
+        $businessId = $request->query('business_id');
+        if ($user && ($denied = $this->denyUnlessBusinessMember($request, $businessId))) {
+            return $denied;
+        }
+        $catsQuery = \App\Models\Entities\Category::query();
+        if ($businessId && $user) {
+            $catsQuery->where(function($q) use ($businessId) {
+                $q->where('business_id', (int) $businessId)
+                  ->orWhere(function($g) { $g->whereNull('user_id')->whereNull('business_id'); });
+            });
+        } else {
+            $catsQuery->whereNull('business_id')->where(function($q) use ($effectiveUserId) {
+                $q->whereNull('user_id')->orWhere('user_id', $effectiveUserId);
+            });
+        }
+        $cats = $catsQuery
             ->orderBy('sort_order')
             ->orderBy('name')
             ->limit($perPage)
