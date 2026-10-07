@@ -121,19 +121,19 @@ class AuthTest extends TestCase
 
     public function test_failed_registration_is_logged_without_password(): void
     {
-        \Illuminate\Support\Facades\Log::spy();
-
-        $this->postJson('/api/v1/auth/register', [
-            'name' => 'X', 'email' => 'mariangela@pandarojocreativo.com',
-            'password' => 'abc123', 'password_confirmation' => 'otra-cosa',
-        ])->assertStatus(422);
-
-        \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')->withArgs(function ($msg, $ctx) {
+        $channel = \Mockery::mock();
+        $channel->shouldReceive('warning')->once()->withArgs(function ($msg, $ctx) {
             return $msg === 'auth.register.failed'
                 && $ctx['email'] === 'mariangela@pandarojocreativo.com'
                 && $ctx['fields'] === ['password']
                 && !str_contains(json_encode($ctx), 'abc123')
                 && !str_contains(json_encode($ctx), 'otra-cosa');
-        })->once();
+        });
+        \Illuminate\Support\Facades\Log::shouldReceive('channel')->with('auth')->andReturn($channel);
+
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'X', 'email' => 'mariangela@pandarojocreativo.com',
+            'password' => 'abc123', 'password_confirmation' => 'otra-cosa',
+        ])->assertStatus(422);
     }
 }

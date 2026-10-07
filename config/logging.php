@@ -65,6 +65,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Intentos de autenticación/registro fallidos. Canal propio con nivel fijo: en prod
+        // LOG_LEVEL=error descartaría los warning y no quedaría rastro.
+        'auth' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/auth.log'),
+            'level' => 'warning',
+            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

@@ -120,7 +120,7 @@ class AuthController extends Controller
             // Los rechazos de validación no dejaban rastro: ante "no pude registrarme" no había
             // forma de saber el motivo. Se registran correo, campos fallidos y mensajes — NUNCA
             // la contraseña ni su confirmación.
-            \Illuminate\Support\Facades\Log::warning('auth.register.failed', [
+            \Illuminate\Support\Facades\Log::channel('auth')->warning('auth.register.failed', [
                 'email'  => substr((string) $request->input('email'), 0, 255),
                 'fields' => array_keys($e->errors()),
                 'errors' => $e->errors(),
