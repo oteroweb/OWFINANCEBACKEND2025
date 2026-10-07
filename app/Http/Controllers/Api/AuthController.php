@@ -109,12 +109,26 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        $data = $request->validate([
-            'name'                  => 'required|string|max:255',
-            'email'                 => 'required|email|unique:users,email',
-            'password'              => 'required|string|min:6|confirmed',
-            'currency_id'           => 'nullable|integer|exists:currencies,id',
-        ]);
+        try {
+            $data = $request->validate([
+                'name'                  => 'required|string|max:255',
+                'email'                 => 'required|email|unique:users,email',
+                'password'              => 'required|string|min:6|confirmed',
+                'currency_id'           => 'nullable|integer|exists:currencies,id',
+            ]);
+        } catch (ValidationException $e) {
+            // Los rechazos de validación no dejaban rastro: ante "no pude registrarme" no había
+            // forma de saber el motivo. Se registran correo, campos fallidos y mensajes — NUNCA
+            // la contraseña ni su confirmación.
+            \Illuminate\Support\Facades\Log::warning('auth.register.failed', [
+                'email'  => substr((string) $request->input('email'), 0, 255),
+                'fields' => array_keys($e->errors()),
+                'errors' => $e->errors(),
+                'ip'     => $request->ip(),
+                'ua'     => substr((string) $request->userAgent(), 0, 160),
+            ]);
+            throw $e;
+        }
 
         // Assign default 'user' role
         $userRole = Role::where('slug', 'user')->first();
